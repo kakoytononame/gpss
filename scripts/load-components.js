@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 contentHtml = await objectsResponse.text();
                 break;
             case 'general':
+                const generalResponse = await fetch(commonPath + 'general.html');
+                contentHtml = await generalResponse.text();
+                break;
             case 'inputs':
             case 'outputs':
             case 'parameters':

@@ -139,3 +139,67 @@ tr.selected {
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+.general-content {
+    padding: 15px;
+    background-color: #fff;
+    display: flex;
+    flex-direction: row;
+    height: ; /* Отнимаем высоту заголовка, вкладок, панели инструментов */
+    overflow: hidden;
+    justify-content: space-between;
+}
+
+.form-row {
+    margin-bottom: 15px;
+}
+
+.form-row label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #007bff;
+}
+
+.form-row input,
+.form-row textarea {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+   
+}
+
+.form-row textarea {
+    font-family: inherit;
+}
+
+.form-column {
+    width: auto;
+    height: 100%;
+}
+
+.form-column textarea {
+    font-family: inherit;
+    height: calc(100vh - 180px);
+}
+
+.image-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.image-actions button {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.image-actions button:hover {
+    background-color: #e9ecef;
+}
