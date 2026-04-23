@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:api": "dotnet run --project backend/GpssStudio.WebApi/GpssStudio.WebApi.csproj --urls http://127.0.0.1:3001",
+    "build:api": "dotnet build backend/GpssStudio.WebApi/GpssStudio.WebApi.csproj",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "dependencies": {
     "react": "^19.1.0",
