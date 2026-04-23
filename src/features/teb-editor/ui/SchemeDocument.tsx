@@ -15,6 +15,8 @@ export function SchemeDocument() {
           <IconButton label="Открыть ТЭБ" title="Перейти к редактору ТЭБа" onClick={() => activateDocument('editor')} />
           <IconButton label="Старт" title="Запустить моделирование" onClick={startSimulation} />
           <IconButton label="Стоп" title="Остановить моделирование" onClick={stopSimulation} />
+          <IconButton label="Отчёт" title="Открыть стандартный отчёт" onClick={() => activateDocument('std-report')} />
+          <IconButton label="Журнал" title="Открыть журнал моделирования" onClick={() => activateDocument('model-log')} />
         </div>
       </div>
 

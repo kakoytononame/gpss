@@ -80,8 +80,8 @@ const projectTree: TreeNode[] = [
             label: 'Моделирование от 10.08.2018 10:59',
             icon: 'run',
             children: [
-              { id: 'std-report', label: 'Стандартный отчёт', icon: 'table', iconAsset: stdReportIcon },
-              { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: modelTextIcon },
+              { id: 'std-report', label: 'Стандартный отчёт', icon: 'table', iconAsset: stdReportIcon, documentId: 'std-report' },
+              { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: modelTextIcon, documentId: 'model-log' },
             ],
           },
           {
@@ -224,7 +224,19 @@ export function ProjectExplorer() {
 
   function handleOpenNode(nodeId: string) {
     const documentId =
-      nodeId === 'scheme' ? 'scheme' : nodeId === 'model-text' ? 'model-text' : nodeId === 'library' ? 'editor' : nodeId === 'project-home' ? 'start' : null;
+      nodeId === 'scheme'
+        ? 'scheme'
+        : nodeId === 'model-text'
+          ? 'model-text'
+          : nodeId === 'std-report'
+            ? 'std-report'
+            : nodeId === 'model-log'
+              ? 'model-log'
+              : nodeId === 'library'
+                ? 'editor'
+                : nodeId === 'project-home'
+                  ? 'start'
+                  : null;
 
     if (documentId) {
       activateDocument(documentId);

@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import { useTebEditorStore } from '../features/teb-editor/store/useTebEditorStore';
+import { ModelLogDocument } from '../features/teb-editor/ui/ModelLogDocument';
 import { ModelTextDocument } from '../features/teb-editor/ui/ModelTextDocument';
 import { SchemeDocument } from '../features/teb-editor/ui/SchemeDocument';
+import { StandardReportDocument } from '../features/teb-editor/ui/StandardReportDocument';
 import { StartPageDocument } from '../features/teb-editor/ui/StartPageDocument';
 import { TebEditorDocument } from '../features/teb-editor/ui/TebEditorDocument';
+import { useTebEditorStore } from '../features/teb-editor/store/useTebEditorStore';
 import { DocumentTabs } from '../widgets/desktop-shell/DocumentTabs';
 import { ProjectExplorer } from '../widgets/desktop-shell/ProjectExplorer';
 import { Ribbon } from '../widgets/desktop-shell/Ribbon';
@@ -21,6 +23,14 @@ function ActiveDocumentView() {
 
   if (activeDocument === 'model-text') {
     return <ModelTextDocument />;
+  }
+
+  if (activeDocument === 'std-report') {
+    return <StandardReportDocument />;
+  }
+
+  if (activeDocument === 'model-log') {
+    return <ModelLogDocument />;
   }
 
   return <TebEditorDocument />;

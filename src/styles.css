@@ -1182,6 +1182,100 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.report-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.report-panel {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: #f9fbfd;
+}
+
+.report-panel--wide {
+  grid-column: 1 / -1;
+}
+
+.report-panel__title {
+  margin: 0 0 14px;
+  color: #1f4e94;
+  font-size: 1rem;
+}
+
+.report-table {
+  display: grid;
+  gap: 8px;
+}
+
+.report-table__row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) 1fr;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #d9e2ec;
+}
+
+.report-table__label {
+  color: #51606f;
+}
+
+.report-table__value {
+  color: #20242b;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.report-list {
+  display: grid;
+  gap: 8px;
+}
+
+.report-list__item {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #d9e2ec;
+  background: #fff;
+}
+
+.report-list__item strong,
+.report-list__item span,
+.report-list__empty {
+  overflow-wrap: anywhere;
+}
+
+.report-list__empty {
+  color: var(--text-soft);
+}
+
+.report-description {
+  margin: 0;
+  color: #474f59;
+  line-height: 1.55;
+}
+
+.log-document {
+  min-height: 320px;
+  padding: 14px 16px;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  color: #d6e4ff;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.55;
+  overflow: auto;
+}
+
+.log-document__line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .start-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1342,6 +1436,20 @@ button:disabled {
 
   .start-example {
     grid-template-columns: 1fr;
+  }
+
+  .report-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .report-panel--wide {
+    grid-column: auto;
+  }
+
+  .report-table__row,
+  .report-list__item {
+    grid-template-columns: 1fr;
+    justify-content: flex-start;
   }
 
   .scheme-canvas {
