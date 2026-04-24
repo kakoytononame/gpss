@@ -4,8 +4,8 @@ import moveDownIcon from '../../../../shared/assets/icons/move-down.png';
 import moveUpIcon from '../../../../shared/assets/icons/move-up.png';
 import removeIcon from '../../../../shared/assets/icons/remove.png';
 import type { TebState } from '../../../../shared/types/teb';
-import { EditableTable, type TableColumn } from '../../../../shared/ui/EditableTable';
-import { IconButton } from '../../../../shared/ui/IconButton';
+import { EditableTable, type TableColumn } from '../../../../shared/ui/EditableTable/EditableTable';
+import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 
 export function StatesTab() {

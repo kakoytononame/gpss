@@ -1,0 +1,28 @@
+.icon-button {
+  min-height: 30px;
+  min-width: 32px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: #27303b;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.icon-button__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.icon-button__img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}

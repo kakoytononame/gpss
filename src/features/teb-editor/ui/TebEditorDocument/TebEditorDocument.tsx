@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { visibleTabsForType } from '../model/constants';
-import { useTebEditorStore } from '../store/useTebEditorStore';
-import { EditorTabs } from './EditorTabs';
-import { GeneralTab } from './tabs/GeneralTab';
-import { GpssModelTab } from './tabs/GpssModelTab';
-import { GpssObjectsTab } from './tabs/GpssObjectsTab';
-import { ParametersTab } from './tabs/ParametersTab';
-import { PortsTab } from './tabs/PortsTab';
-import { StatesTab } from './tabs/StatesTab';
+import { visibleTabsForType } from '../../model/constants';
+import { useTebEditorStore } from '../../store/useTebEditorStore';
+import { EditorTabs } from '../EditorTabs/EditorTabs';
+import { GeneralTab } from '../tabs/GeneralTab';
+import { GpssModelTab } from '../tabs/GpssModelTab';
+import { GpssObjectsTab } from '../tabs/GpssObjectsTab';
+import { ParametersTab } from '../tabs/ParametersTab';
+import { PortsTab } from '../tabs/PortsTab';
+import { StatesTab } from '../tabs/StatesTab';
+import './TebEditorDocument.css';
 
 function renderPanel(activeTab: ReturnType<typeof useTebEditorStore.getState>['activeTab']) {
   switch (activeTab) {

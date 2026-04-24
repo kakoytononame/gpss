@@ -1,6 +1,8 @@
-import saveIcon from '../../../shared/assets/icons/save.png';
-import { IconButton } from '../../../shared/ui/IconButton';
-import { useTebEditorStore } from '../store/useTebEditorStore';
+import saveIcon from '../../../../shared/assets/icons/save.png';
+import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
+import { useTebEditorStore } from '../../store/useTebEditorStore';
+import '../BaseDocument/BaseDocument.css';
+import './StandardReportDocument.css';
 
 interface ReportMetric {
   label: string;

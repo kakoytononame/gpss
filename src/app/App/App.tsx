@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
-import { ModelLogDocument } from '../features/teb-editor/ui/ModelLogDocument';
-import { ModelTextDocument } from '../features/teb-editor/ui/ModelTextDocument';
-import { SchemeDocument } from '../features/teb-editor/ui/SchemeDocument';
-import { StandardReportDocument } from '../features/teb-editor/ui/StandardReportDocument';
-import { StartPageDocument } from '../features/teb-editor/ui/StartPageDocument';
-import { TebEditorDocument } from '../features/teb-editor/ui/TebEditorDocument';
-import { useTebEditorStore } from '../features/teb-editor/store/useTebEditorStore';
-import { DocumentTabs } from '../widgets/desktop-shell/DocumentTabs';
-import { ProjectExplorer } from '../widgets/desktop-shell/ProjectExplorer';
-import { Ribbon } from '../widgets/desktop-shell/Ribbon';
+import { ModelLogDocument } from '../../features/teb-editor/ui/ModelLogDocument/ModelLogDocument';
+import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
+import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
+import { StandardReportDocument } from '../../features/teb-editor/ui/StandardReportDocument/StandardReportDocument';
+import { StartPageDocument } from '../../features/teb-editor/ui/StartPageDocument/StartPageDocument';
+import { TebEditorDocument } from '../../features/teb-editor/ui/TebEditorDocument/TebEditorDocument';
+import { useTebEditorStore } from '../../features/teb-editor/store/useTebEditorStore';
+import { DocumentTabs } from '../../widgets/desktop-shell/DocumentTabs/DocumentTabs';
+import { ProjectExplorer } from '../../widgets/desktop-shell/ProjectExplorer/ProjectExplorer';
+import { Ribbon } from '../../widgets/desktop-shell/Ribbon/Ribbon';
+import './App.css';
 
 function ActiveDocumentView() {
   const activeDocument = useTebEditorStore((state) => state.activeDocument);

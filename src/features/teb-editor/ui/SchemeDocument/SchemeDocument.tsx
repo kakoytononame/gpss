@@ -1,5 +1,7 @@
-import { IconButton } from '../../../shared/ui/IconButton';
-import { useTebEditorStore } from '../store/useTebEditorStore';
+import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
+import { useTebEditorStore } from '../../store/useTebEditorStore';
+import '../BaseDocument/BaseDocument.css';
+import './SchemeDocument.css';
 
 export function SchemeDocument() {
   const activateDocument = useTebEditorStore((state) => state.activateDocument);

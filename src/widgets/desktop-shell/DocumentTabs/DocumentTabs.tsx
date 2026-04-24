@@ -1,4 +1,5 @@
-import type { ActiveDocument } from '../../shared/types/teb';
+import type { ActiveDocument } from '../../../shared/types/teb';
+import './DocumentTabs.css';
 
 interface DocumentTabsProps {
   activeDocument: ActiveDocument;

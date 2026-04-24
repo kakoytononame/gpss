@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import './EditableTable.css';
 
 export interface TableColumn<Row> {
   key: string;

@@ -1,0 +1,92 @@
+.scheme-canvas {
+  position: relative;
+  min-height: 560px;
+  border: 1px solid #9eb4cc;
+  background:
+    linear-gradient(#ffffff, #f9fbfd),
+    repeating-linear-gradient(90deg, rgba(181, 196, 214, 0.14) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(rgba(181, 196, 214, 0.14) 0 1px, transparent 1px 48px);
+  overflow: hidden;
+}
+
+.scheme-node {
+  position: absolute;
+  min-width: 180px;
+  max-width: 220px;
+  padding: 14px 16px;
+  border: 1px solid #7da1c7;
+  background: linear-gradient(#ffffff, #eaf2fb);
+  box-shadow: 0 4px 10px rgba(34, 64, 99, 0.12);
+  color: #20324a;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.scheme-node--top {
+  top: 72px;
+  left: calc(50% - 110px);
+}
+
+.scheme-node--center {
+  top: 210px;
+  left: calc(50% - 110px);
+}
+
+.scheme-node--left {
+  top: 360px;
+  left: 90px;
+}
+
+.scheme-node--middle {
+  top: 360px;
+  left: calc(50% - 110px);
+}
+
+.scheme-node--right {
+  top: 360px;
+  right: 90px;
+}
+
+.scheme-caption {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .scheme-canvas {
+    min-height: 700px;
+  }
+
+  .scheme-node {
+    max-width: none;
+    width: calc(100% - 32px);
+    left: 16px;
+    right: 16px;
+  }
+
+  .scheme-node--top {
+    top: 24px;
+  }
+
+  .scheme-node--center {
+    top: 156px;
+  }
+
+  .scheme-node--left {
+    top: 288px;
+  }
+
+  .scheme-node--middle {
+    top: 420px;
+  }
+
+  .scheme-node--right {
+    top: 552px;
+  }
+}

@@ -1,0 +1,48 @@
+.editor-tabs {
+  min-height: 38px;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: #f1f3f6;
+}
+
+.editor-tab {
+  min-width: 122px;
+  padding: 0 16px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: #27303b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-tab:hover {
+  background: var(--accent-soft);
+}
+
+.editor-tab.is-active {
+  position: relative;
+  background: #fff;
+  color: #0f3f9f;
+  font-weight: 700;
+}
+
+.editor-tab.is-active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .editor-tab {
+    min-width: 116px;
+    padding: 0 12px;
+  }
+}

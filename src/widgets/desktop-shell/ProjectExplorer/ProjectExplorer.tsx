@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
-import { useTebEditorStore } from '../../features/teb-editor/store/useTebEditorStore';
-import type { ActiveDocument } from '../../shared/types/teb';
-import csProjectIcon from '../../shared/assets/icons/cs-project.png';
-import folderIcon from '../../shared/assets/icons/folder.png';
-import libraryIcon from '../../shared/assets/icons/library.png';
-import modelTextIcon from '../../shared/assets/icons/model-text.png';
-import schemeIcon from '../../shared/assets/icons/scheme.png';
-import stdReportIcon from '../../shared/assets/icons/std-report.png';
-import tebsLibraryIcon from '../../shared/assets/icons/tebs-library.png';
+import { useTebEditorStore } from '../../../features/teb-editor/store/useTebEditorStore';
+import type { ActiveDocument } from '../../../shared/types/teb';
+import csProjectIcon from '../../../shared/assets/icons/cs-project.png';
+import folderIcon from '../../../shared/assets/icons/folder.png';
+import libraryIcon from '../../../shared/assets/icons/library.png';
+import modelTextIcon from '../../../shared/assets/icons/model-text.png';
+import schemeIcon from '../../../shared/assets/icons/scheme.png';
+import stdReportIcon from '../../../shared/assets/icons/std-report.png';
+import tebsLibraryIcon from '../../../shared/assets/icons/tebs-library.png';
+import './ProjectExplorer.css';
 
 interface TreeNode {
   id: string;
@@ -41,7 +42,21 @@ const librariesTree: TreeNode[] = [
           { id: 'standard-tebs', label: 'Стандартные ТЭБы', icon: 'library', iconAsset: tebsLibraryIcon },
         ],
       },
-      { id: 'current-project-library', label: 'Текущий проект', icon: 'folder', iconAsset: folderIcon },
+      {
+        id: 'current-project-library',
+        label: 'Текущий проект',
+        icon: 'folder',
+        iconAsset: folderIcon,
+        children: [
+          {
+            id: 'canteen-library-category',
+            label: 'Столовая',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [{ id: 'library', label: 'Обслуживание посетителя. Касса 1', icon: 'library', iconAsset: tebsLibraryIcon, documentId: 'editor' }],
+          },
+        ],
+      },
       {
         id: 'user-libraries',
         label: 'Пользовательские',

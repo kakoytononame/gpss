@@ -1,0 +1,72 @@
+.gpss-desktop {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: #dfe2e6;
+  overflow: hidden;
+}
+
+.workbench {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 424px 1fr;
+  border-top: 1px solid #f7f9fb;
+}
+
+.gpss-desktop--collapsed .workbench {
+  grid-template-columns: 1fr;
+}
+
+.document-host {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 36px 1fr;
+  background: repeating-linear-gradient(45deg, #eef0f3 0 2px, #e2e5e9 2px 4px);
+  overflow: hidden;
+}
+
+.document-surface {
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+}
+
+.global-status {
+  min-height: 26px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #b8c1ce;
+  background: #eef1f5;
+  color: #4b5563;
+  font-size: 0.86rem;
+}
+
+.global-status span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .global-status {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 6px 10px;
+  }
+
+  .global-status span {
+    white-space: normal;
+    text-overflow: clip;
+  }
+}

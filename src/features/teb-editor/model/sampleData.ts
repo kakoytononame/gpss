@@ -1,102 +1,56 @@
 import type { TebDocument } from '../../../shared/types/teb';
 
 export const SAMPLE_TEB_CLASS: TebDocument = {
-  id: '3ef71b95-07f7-41c6-b532-03d83d8a3973',
+  id: '38125a65-f781-48a5-96dd-0bd78372da5b',
   instanceId: '',
   mode: 'class',
   type: 'SimpleTebClass',
-  nameInModel: 'BI_U_3',
-  header: 'Блок-участок 2',
-  description:
-    'Поезд ожидает входа на участок. После освобождения блок-участка предыдущим составом поезд входит на него. После прохождения участка поезд следует на станцию прибытия.',
+  nameInModel: '',
+  header: 'Обслуживание посетителя. Касса 1',
+  description: '',
   imageName: '',
   gpssModel: {
-    text: `; Блок-участок
-QUEUE     BU3_Q
-SEIZE     BU3
-DEPART    BU3_Q
-ADVANCE   travelTime
-RELEASE   BU3
-TRANSFER  ,NEXT_STATION`,
+    text: `PERV    QUEUE        BUF1
+SEIZE                         KASSA1
+    DEPART    BUF1
+        ADVANCE                x$ks,x$ks1
+        RELEASE                  KASSA1
+
+        QUEUE BUF1_1
+        SEIZE VIDACHA1
+    DEPART    BUF1_1
+    ADVANCE x$vd,x$vd1
+RELEASE VIDACHA1`,
   },
-  gpssEntities: [
-    {
-      id: 'entity-queue',
-      type: 'Queue',
-      nameInModel: 'BU3_Q',
-      value: '',
-      description: 'Очередь ожидания входа на блок-участок',
-    },
-    {
-      id: 'entity-facility',
-      type: 'Facility',
-      nameInModel: 'BU3',
-      value: '',
-      description: 'Устройство блок-участка',
-    },
-  ],
+  gpssEntities: [],
   inputs: [
     {
       id: 'input-1',
-      nameInModel: 'IN',
+      nameInModel: 'Вход 1',
       header: 'Вход',
-      connectedBlock: 'QUEUE',
-      connectionsLimit: 1,
-      description: 'Вход транзактов на участок',
+      connectedBlock: 'FirstBlock',
+      connectionsLimit: 0,
+      description: '',
     },
   ],
   outputs: [
     {
       id: 'output-1',
-      nameInModel: 'OUT',
+      nameInModel: 'Выход 1',
       header: 'Выход',
-      connectedBlock: 'TRANSFER',
-      connectionsLimit: 1,
-      description: 'Переход к следующему участку',
+      connectedBlock: 'LastBlock',
+      connectionsLimit: 0,
+      description: '',
     },
   ],
-  parameters: [
-    {
-      id: 'parameter-1',
-      type: 'NumberParameterType',
-      header: 'Время прохода',
-      nameInModel: 'travelTime',
-      defaultValue: 5,
-      allowEmptyValues: false,
-      currentValue: 6,
-    },
-    {
-      id: 'parameter-2',
-      type: 'NameOrPartParameterType',
-      header: 'Следующая станция',
-      nameInModel: 'NEXT_STATION',
-      defaultValue: 'ARRIVAL',
-      allowEmptyValues: false,
-      currentValue: 'ARRIVAL',
-    },
-  ],
-  states: [
-    {
-      id: 'state-1',
-      name: 'Busy',
-      expression: 'F$BU3 = 1',
-      description: 'Участок занят',
-    },
-    {
-      id: 'state-2',
-      name: 'QueueLength',
-      expression: 'Q$BU3_Q',
-      description: 'Длина очереди перед участком',
-    },
-  ],
+  parameters: [],
+  states: [],
   childInstances: [],
 };
 
 export const SAMPLE_TEB_INSTANCE: TebDocument = {
   ...SAMPLE_TEB_CLASS,
-  id: '3ef71b95-07f7-41c6-b532-03d83d8a3973',
-  instanceId: '80ba15bc-7a4a-4b36-ba57-df2cab3b89ad',
+  instanceId: 'sample-canteen-instance',
   mode: 'instance',
-  header: 'Экземпляр Т36а',
-  nameInModel: 'BI_U_3_01',
+  header: 'Обслуживание посетителя. Касса 1',
 };

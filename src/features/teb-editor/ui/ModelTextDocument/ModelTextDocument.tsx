@@ -1,6 +1,8 @@
-import saveIcon from '../../../shared/assets/icons/save.png';
-import { IconButton } from '../../../shared/ui/IconButton';
-import { useTebEditorStore } from '../store/useTebEditorStore';
+import saveIcon from '../../../../shared/assets/icons/save.png';
+import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
+import { useTebEditorStore } from '../../store/useTebEditorStore';
+import '../BaseDocument/BaseDocument.css';
+import './ModelTextDocument.css';
 
 export function ModelTextDocument() {
   const text = useTebEditorStore((state) => state.teb?.gpssModel.text ?? '');

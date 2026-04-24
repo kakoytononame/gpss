@@ -1,4 +1,5 @@
 import type { MouseEventHandler, ReactNode } from 'react';
+import './IconButton.css';
 
 interface IconButtonProps {
   icon?: string;

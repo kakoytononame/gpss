@@ -1,0 +1,67 @@
+.table-shell {
+  min-height: 0;
+  border: 1px solid var(--line);
+  overflow: auto;
+}
+
+.editor-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.editor-table th,
+.editor-table td {
+  height: 39px;
+  border: 1px solid var(--line);
+  padding: 4px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.editor-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef1f5;
+  color: #27303b;
+  font-weight: 700;
+}
+
+.editor-table tr.is-selected td {
+  background: #eaf1ff;
+}
+
+.editor-table input,
+.editor-table select {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #20242b;
+}
+
+.editor-table input:focus,
+.editor-table select:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.25);
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.checkbox-cell {
+  height: 30px;
+  display: grid;
+  place-items: center;
+}
+
+.checkbox-cell input {
+  width: 18px;
+  height: 18px;
+}
+
+.table-empty {
+  height: 180px;
+  color: var(--text-soft);
+  text-align: center;
+}

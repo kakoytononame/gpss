@@ -1,5 +1,6 @@
-import type { TabId } from '../../../shared/types/teb';
-import { EDITOR_TABS } from '../model/constants';
+import type { TabId } from '../../../../shared/types/teb';
+import { EDITOR_TABS } from '../../model/constants';
+import './EditorTabs.css';
 
 interface EditorTabsProps {
   visibleTabs: TabId[];

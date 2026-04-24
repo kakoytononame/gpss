@@ -4,7 +4,7 @@ import zoomInIcon from '../../../../shared/assets/icons/zoom-in.png';
 import zoomOutIcon from '../../../../shared/assets/icons/zoom-out.png';
 import zoomResetIcon from '../../../../shared/assets/icons/zoom-reset.png';
 import saveIcon from '../../../../shared/assets/icons/save.png';
-import { IconButton } from '../../../../shared/ui/IconButton';
+import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 
 export function GpssModelTab() {

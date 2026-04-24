@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
-import { IconButton } from '../../../../shared/ui/IconButton';
+import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 
 export function GeneralTab() {
   const inputRef = useRef<HTMLInputElement | null>(null);
