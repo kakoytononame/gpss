@@ -29,7 +29,7 @@ interface TebEditorState extends EditorQuery {
   syncStatus: SyncStatus;
   syncMessage: string;
   activeTab: TabId;
-  activeDocument: ActiveDocument;
+  activeDocument: ActiveDocument | null;
   openDocuments: ActiveDocument[];
   explorerVisible: boolean;
   selectedNodeId: string;
@@ -307,20 +307,13 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
 
   closeDocument(documentId) {
     set((state) => {
-      if (state.openDocuments.length === 1 && state.openDocuments[0] === documentId) {
-        return {
-          syncStatus: 'offline',
-          syncMessage: 'Нельзя закрыть последнее открытое окно.',
-        } as Partial<TebEditorState>;
-      }
-
       const openDocuments = state.openDocuments.filter((item) => item !== documentId);
-      const activeDocument = state.activeDocument === documentId ? openDocuments.at(-1) ?? 'editor' : state.activeDocument;
+      const activeDocument = state.activeDocument === documentId ? openDocuments.at(-1) ?? null : state.activeDocument;
 
       return {
         openDocuments,
         activeDocument,
-        selectedNodeId: nodeForDocument(activeDocument),
+        selectedNodeId: activeDocument ? nodeForDocument(activeDocument) : state.selectedNodeId,
         syncStatus: 'saved',
         syncMessage: `Окно закрыто: ${documentLabel(documentId)}.`,
       };
@@ -414,9 +407,9 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
       mode: snapshot.mode,
       activeTab: snapshot.activeTab,
       activeDocument: snapshot.activeDocument,
-      openDocuments: snapshot.openDocuments?.length ? snapshot.openDocuments : state.openDocuments,
+      openDocuments: snapshot.openDocuments ?? state.openDocuments,
       explorerVisible: snapshot.explorerVisible,
-      selectedNodeId: snapshot.selectedNodeId ?? nodeForDocument(snapshot.activeDocument),
+      selectedNodeId: snapshot.selectedNodeId ?? (snapshot.activeDocument ? nodeForDocument(snapshot.activeDocument) : state.selectedNodeId),
       collapsedNodeIds: snapshot.collapsedNodeIds ?? state.collapsedNodeIds,
       modelFontSize: snapshot.modelFontSize,
       syncStatus: 'saved',

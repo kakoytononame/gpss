@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ModelLogDocument } from '../../features/teb-editor/ui/ModelLogDocument/ModelLogDocument';
 import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
 import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
@@ -13,6 +13,14 @@ import './App.css';
 
 function ActiveDocumentView() {
   const activeDocument = useTebEditorStore((state) => state.activeDocument);
+
+  if (!activeDocument) {
+    return (
+      <div className="empty-document-surface" aria-label="Нет открытых документов">
+        <span>Нет открытых документов</span>
+      </div>
+    );
+  }
 
   if (activeDocument === 'scheme') {
     return <SchemeDocument />;
@@ -47,19 +55,25 @@ export default function App() {
   const explorerVisible = useTebEditorStore((state) => state.explorerVisible);
   const syncMessage = useTebEditorStore((state) => state.syncMessage);
   const simulationState = useTebEditorStore((state) => state.simulationState);
+  const [explorerAutoHide, setExplorerAutoHide] = useState(false);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   const editorTitle = teb?.header || teb?.nameInModel || 'Экземпляр ТЭБа';
+  const desktopClassName = ['gpss-desktop', explorerVisible ? '' : 'gpss-desktop--collapsed', explorerAutoHide ? 'gpss-desktop--explorer-auto-hide' : ''].filter(Boolean).join(' ');
 
   return (
-    <main className={`gpss-desktop ${explorerVisible ? '' : 'gpss-desktop--collapsed'}`}>
+    <main className={desktopClassName}>
       <Ribbon />
 
       <div className="workbench">
-        {explorerVisible ? <ProjectExplorer /> : null}
+        {explorerVisible ? (
+          <div className="explorer-dock">
+            <ProjectExplorer autoHide={explorerAutoHide} onToggleAutoHide={() => setExplorerAutoHide((value) => !value)} />
+          </div>
+        ) : null}
 
         <section className="document-host">
           <DocumentTabs activeDocument={activeDocument} editorTitle={editorTitle} openDocuments={openDocuments} onActivate={activateDocument} onClose={closeDocument} />

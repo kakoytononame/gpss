@@ -90,6 +90,7 @@ export function Ribbon() {
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const appMenuRef = useRef<HTMLDivElement | null>(null);
+  const previousActiveDocumentRef = useRef<string | null>(null);
   const [isQuickAccessMenuOpen, setIsQuickAccessMenuOpen] = useState(false);
   const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
   const [visibleQuickAccessIds, setVisibleQuickAccessIds] = useState<string[]>([
@@ -103,6 +104,11 @@ export function Ribbon() {
     'stop-sim',
   ]);
   const [activeRibbonTab, setActiveRibbonTab] = useState<RibbonTabId>('Главная');
+  const isReportDocumentActive = activeDocument === 'std-report';
+  const isReportContextVisible = isReportDocumentActive;
+  const visibleRibbonTabs: RibbonTabId[] = isReportDocumentActive
+    ? ['Главная', 'Моделирование', 'Окна', 'Стандартный отчёт']
+    : ['Главная', 'Моделирование', 'Окна'];
 
   const quickAccess = useMemo<RibbonCommand[]>(
     () => [
@@ -232,8 +238,16 @@ export function Ribbon() {
   }, []);
 
   useEffect(() => {
-    if (activeDocument === 'std-report' && activeRibbonTab !== 'Стандартный отчёт') {
+    const previousActiveDocument = previousActiveDocumentRef.current;
+    previousActiveDocumentRef.current = activeDocument;
+
+    if (activeDocument === 'std-report' && previousActiveDocument !== 'std-report') {
       setActiveRibbonTab('Стандартный отчёт');
+      return;
+    }
+
+    if (activeDocument !== 'std-report' && activeRibbonTab === 'Стандартный отчёт') {
+      setActiveRibbonTab('Главная');
     }
   }, [activeDocument, activeRibbonTab]);
 
@@ -590,10 +604,7 @@ export function Ribbon() {
         </div>
 
         <div className="desktop-title">Элина-Компьютер - GPSS Studio (студенческая версия)</div>
-      </div>
-
-      <div className="contextual-strip is-visible">
-        <div className="contextual-strip__group contextual-strip__group--report">Редактор отчётов</div>
+        {isReportContextVisible ? <div className="title-context-label">Редактор отчётов</div> : null}
       </div>
 
       <nav className="ribbon-tabs" aria-label="Разделы ленты">
@@ -632,7 +643,7 @@ export function Ribbon() {
           ) : null}
         </div>
 
-        {(['Главная', 'Моделирование', 'Окна', 'Стандартный отчёт'] as RibbonTabId[]).map((tab) => (
+        {visibleRibbonTabs.map((tab) => (
           <button
             className={`ribbon-tab ${tab === 'Стандартный отчёт' ? 'ribbon-tab--report' : ''} ${activeRibbonTab === tab ? 'is-active' : ''}`.trim()}
             key={tab}
@@ -662,3 +673,4 @@ export function Ribbon() {
     </header>
   );
 }
+

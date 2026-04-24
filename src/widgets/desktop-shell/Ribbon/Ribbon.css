@@ -1,6 +1,6 @@
-﻿.desktop-chrome {
+.desktop-chrome {
   display: grid;
-  grid-template-rows: 32px auto 39px 139px;
+  grid-template-rows: 32px 39px 139px;
   border-bottom: 1px solid #98abc0;
   background: var(--chrome);
 }
@@ -129,55 +129,44 @@
   font-size: 1.08rem;
   white-space: nowrap;
 }
-
-.contextual-strip {
-  height: 34px;
-  display: flex;
-  justify-content: flex-start;
-  padding-left: 624px;
-  overflow: hidden;
-  background: #fff;
-  box-sizing: border-box;
-}
-
-.contextual-strip.is-visible {
-  height: 34px;
-}
-
-.contextual-strip__group {
+.title-context-label {
+  position: absolute;
+  top: 0;
+  left: 624px;
+  z-index: 0;
   width: 220px;
-  min-width: 220px;
-  padding: 6px 18px 5px;
+  height: 32px;
+  display: grid;
+  place-items: center;
   border-left: 1px solid #70cb5f;
   border-right: 1px solid #70cb5f;
   border-top: 4px solid #70cb5f;
-  text-align: center;
+  background: #8ee36f;
   color: #183515;
   font-size: 0.96rem;
-  line-height: 1;
   box-sizing: border-box;
-}
-
-.contextual-strip__group--report {
-  background: #8ee36f;
+  pointer-events: none;
 }
 
 .ribbon-tabs {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: stretch;
-  border-bottom: 1px solid #d7dbe1;
-  background: #f7f8fa;
+  border-bottom: 1px solid #55c64a;
+  background: #fff;
 }
 
 .ribbon-app-slot {
   position: relative;
   display: flex;
   align-items: stretch;
+  height: 35px;
 }
 
 .ribbon-app-button,
 .ribbon-tab {
+  height: 35px;
   width: 156px;
   min-width: 156px;
   padding: 0 20px;
@@ -232,11 +221,11 @@
 }
 
 .ribbon-tab--report.is-active {
-  border-top: 1px solid #70cb5f;
   border-bottom-color: #fff;
   background: #fff;
   color: #1f252c;
  }
+
 
 .app-menu {
   position: absolute;
@@ -402,25 +391,28 @@
 
 @media (max-width: 860px) {
   .desktop-chrome {
-    grid-template-rows: 32px auto 38px 112px;
+    grid-template-rows: 32px 64px 112px;
   }
 
   .desktop-title {
     display: none;
   }
 
-  .contextual-strip.is-visible {
-    height: 28px;
-  }
-
-  .contextual-strip {
-    padding-left: 564px;
-  }
-
-  .contextual-strip__group,
+  .ribbon-context-tab,
   .ribbon-tab--report {
     min-width: 188px;
     width: 188px;
+  }
+
+  .ribbon-context-tab {
+    grid-template-rows: 32px 32px;
+  }
+
+  .ribbon-context-tab__label,
+  .ribbon-app-slot,
+  .ribbon-app-button,
+  .ribbon-tab {
+    height: 32px;
   }
 
   .ribbon-group {

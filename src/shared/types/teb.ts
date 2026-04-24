@@ -87,7 +87,7 @@ export interface WorkspaceSnapshot {
   teb: TebDocument | null;
   mode: EditorMode;
   activeTab: TabId;
-  activeDocument: ActiveDocument;
+  activeDocument: ActiveDocument | null;
   openDocuments?: ActiveDocument[];
   explorerVisible: boolean;
   collapsedNodeIds?: string[];

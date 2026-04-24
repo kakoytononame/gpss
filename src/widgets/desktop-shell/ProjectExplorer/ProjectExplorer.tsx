@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTebEditorStore } from '../../../features/teb-editor/store/useTebEditorStore';
 import type { ActiveDocument } from '../../../shared/types/teb';
 import csProjectIcon from '../../../shared/assets/icons/cs-project.png';
@@ -13,16 +13,23 @@ import './ProjectExplorer.css';
 interface TreeNode {
   id: string;
   label: string;
-  icon: string;
+  icon?: string;
   iconAsset?: string;
   documentId?: ActiveDocument;
   children?: TreeNode[];
 }
 
+type ExplorerMode = 'project' | 'libraries';
+
 interface ExplorerConfig {
   title: string;
   searchPlaceholder: string;
   tree: TreeNode[];
+}
+
+interface ProjectExplorerProps {
+  autoHide: boolean;
+  onToggleAutoHide: () => void;
 }
 
 const librariesTree: TreeNode[] = [
@@ -72,7 +79,7 @@ const projectTree: TreeNode[] = [
   {
     id: 'project-home',
     label: 'Столовая',
-    icon: 'project',
+    icon: 'none',
     documentId: 'start',
     children: [
       {
@@ -103,7 +110,17 @@ const projectTree: TreeNode[] = [
             id: 'forms-root',
             label: 'Формы',
             icon: 'form',
-            children: [{ id: 'forms-canteen', label: 'Столовая', icon: 'form' }],
+            children: [
+              {
+                id: 'forms-canteen',
+                label: 'Столовая',
+                icon: 'form',
+                children: [
+                  { id: 'input-form', label: 'Форма ввода данных', icon: 'form' },
+                  { id: 'report-templates', label: 'Шаблоны отчётов', icon: 'form' },
+                ],
+              },
+            ],
           },
         ],
       },
@@ -207,8 +224,7 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
   );
 }
 
-export function ProjectExplorer() {
-  const activeDocument = useTebEditorStore((state) => state.activeDocument);
+export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerProps) {
   const selectedNodeId = useTebEditorStore((state) => state.selectedNodeId);
   const collapsedNodeIds = useTebEditorStore((state) => state.collapsedNodeIds);
   const projectSearchQuery = useTebEditorStore((state) => state.projectSearchQuery);
@@ -217,9 +233,10 @@ export function ProjectExplorer() {
   const toggleExplorer = useTebEditorStore((state) => state.toggleExplorer);
   const toggleTreeNode = useTebEditorStore((state) => state.toggleTreeNode);
   const setProjectSearchQuery = useTebEditorStore((state) => state.setProjectSearchQuery);
+  const [explorerMode, setExplorerMode] = useState<ExplorerMode>('project');
 
   const explorerConfig = useMemo<ExplorerConfig>(() => {
-    if (activeDocument === 'start') {
+    if (explorerMode === 'libraries') {
       return {
         title: 'Библиотеки ТЭБов',
         searchPlaceholder: 'Поиск по библиотекам ТЭБов (F3)',
@@ -232,7 +249,7 @@ export function ProjectExplorer() {
       searchPlaceholder: 'Поиск в проекте (F3)',
       tree: projectTree,
     };
-  }, [activeDocument]);
+  }, [explorerMode]);
 
   const filteredTree = useMemo(() => filterTree(explorerConfig.tree, projectSearchQuery), [explorerConfig.tree, projectSearchQuery]);
   const forceExpanded = projectSearchQuery.trim().length > 0;
@@ -259,52 +276,91 @@ export function ProjectExplorer() {
   }
 
   return (
-    <aside className="project-explorer">
-      <div className="panel-caption">
-        <span className="panel-caption__title">{explorerConfig.title}</span>
-        <div className="panel-caption__tools">
-          <span className="panel-caption__grip" aria-hidden="true">
-            ............
-          </span>
-          <button className="panel-caption__button" type="button" title="Сбросить поиск" aria-label="Сбросить поиск" onClick={() => setProjectSearchQuery('')}>
-            -
-          </button>
-          <button className="panel-caption__button" type="button" title="Закрыть панель" aria-label="Закрыть панель" onClick={toggleExplorer}>
-            x
-          </button>
+    <aside className={`project-explorer ${autoHide ? 'project-explorer--auto-hide' : ''}`}>
+      {autoHide ? (
+        <div className="explorer-auto-tabs" aria-hidden="true">
+          <span className={`explorer-auto-tab ${explorerMode === 'project' ? 'is-active' : ''}`}>Текущий проект</span>
+          <span className={`explorer-auto-tab ${explorerMode === 'libraries' ? 'is-active' : ''}`}>Библиотеки ТЭБов</span>
         </div>
-      </div>
+      ) : null}
 
-      <div className="project-search">
-        <input
-          className="project-search__input"
-          type="search"
-          value={projectSearchQuery}
-          placeholder={explorerConfig.searchPlaceholder}
-          aria-label={explorerConfig.searchPlaceholder}
-          onChange={(event) => setProjectSearchQuery(event.target.value)}
-        />
-      </div>
+      <div className="project-explorer__panel">
+        <div className="panel-caption">
+          <span className="panel-caption__title">{explorerConfig.title}</span>
+          <div className="panel-caption__tools">
+            <span className="panel-caption__grip" aria-hidden="true">
+              ................................
+            </span>
+            <button className="panel-caption__button" type="button" title="Сбросить поиск" aria-label="Сбросить поиск" onClick={() => setProjectSearchQuery('')}>
+              <span aria-hidden="true">▾</span>
+            </button>
+            <button
+              className={`panel-caption__button panel-caption__button--pin ${autoHide ? 'is-auto-hide' : ''}`}
+              type="button"
+              title={autoHide ? 'Закрепить панель' : 'Скрывать автоматически'}
+              aria-label={autoHide ? 'Закрепить панель' : 'Скрывать автоматически'}
+              aria-pressed={autoHide}
+              onClick={onToggleAutoHide}
+            >
+              <span aria-hidden="true">⌖</span>
+            </button>
+            <button className="panel-caption__button" type="button" title="Закрыть панель" aria-label="Закрыть панель" onClick={toggleExplorer}>
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+        </div>
 
-      <div className="tree-view">
-        <div className="tree-view__content">
-          {filteredTree.length ? (
-            filteredTree.map((node) => (
-              <TreeBranch
-                key={node.id}
-                node={node}
-                level={0}
-                selectedNodeId={selectedNodeId}
-                collapsedNodeIds={collapsedNodeIds}
-                forceExpanded={forceExpanded}
-                onFocus={focusProjectNode}
-                onOpen={handleOpenNode}
-                onToggle={toggleTreeNode}
-              />
-            ))
-          ) : (
-            <div className="tree-empty">Совпадений не найдено.</div>
-          )}
+        <div className="project-search">
+          <input
+            className="project-search__input"
+            type="search"
+            value={projectSearchQuery}
+            placeholder={explorerConfig.searchPlaceholder}
+            aria-label={explorerConfig.searchPlaceholder}
+            onChange={(event) => setProjectSearchQuery(event.target.value)}
+          />
+        </div>
+
+        <div className="tree-view">
+          <div className="tree-view__content">
+            {filteredTree.length ? (
+              filteredTree.map((node) => (
+                <TreeBranch
+                  key={node.id}
+                  node={node}
+                  level={0}
+                  selectedNodeId={selectedNodeId}
+                  collapsedNodeIds={collapsedNodeIds}
+                  forceExpanded={forceExpanded}
+                  onFocus={focusProjectNode}
+                  onOpen={handleOpenNode}
+                  onToggle={toggleTreeNode}
+                />
+              ))
+            ) : (
+              <div className="tree-empty">Совпадений не найдено.</div>
+            )}
+          </div>
+          <div className="tree-view__scrollbar" aria-hidden="true">
+            <span className="tree-view__scroll-arrow">‹</span>
+            <span className="tree-view__scroll-thumb" />
+            <span className="tree-view__scroll-arrow">›</span>
+          </div>
+        </div>
+
+        <div className="explorer-tabs" role="tablist" aria-label="Разделы панели проекта">
+          <button className={`explorer-tab ${explorerMode === 'project' ? 'is-active' : ''}`} type="button" role="tab" aria-selected={explorerMode === 'project'} onClick={() => setExplorerMode('project')}>
+            Текущий проект
+          </button>
+          <button
+            className={`explorer-tab ${explorerMode === 'libraries' ? 'is-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={explorerMode === 'libraries'}
+            onClick={() => setExplorerMode('libraries')}
+          >
+            Библиотеки ТЭБов
+          </button>
         </div>
       </div>
     </aside>

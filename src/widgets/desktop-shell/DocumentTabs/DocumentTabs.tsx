@@ -2,7 +2,7 @@ import type { ActiveDocument } from '../../../shared/types/teb';
 import './DocumentTabs.css';
 
 interface DocumentTabsProps {
-  activeDocument: ActiveDocument;
+  activeDocument: ActiveDocument | null;
   editorTitle: string;
   openDocuments: ActiveDocument[];
   onActivate: (documentId: ActiveDocument) => void;

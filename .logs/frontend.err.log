@@ -951,3 +951,154 @@
       |       ^
   245 |        {
   246 |          title: 'РџСЂРѕРµРєС‚С‹',[39m
+[2m14:39:52[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\widgets\desktop-shell\Ribbon\Ribbon.tsx: Unexpected token, expected ":" (595:69)
+
+[0m [90m 593 |[31m       [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 594 |[31m
+[31m[1m>[22m[31m[90m 595 |[31m       [33m<[31m[33mdiv[31m className[33m=[31m{[32m`contextual-strip ${isReportContextVisible ? ''is-visible'' : ''''}`[31m}[33m>[31m
+ [90m     |[31m                                                                      [31m[1m^[22m[31m
+ [90m 596 |[31m         {isReportContextVisible [33m?[31m [33m<[31m[33mdiv[31m className[33m=[31m[32m"contextual-strip__group contextual-strip__group--report"[31m[33m>[31m[33mР[31m [33mРµРґР°РєС‚РѕСЂ[31m [33mРѕС‚С‡С‘С‚РѕРІ[31m[33m<[31m[33m/[31m[33mdiv[31m[33m>[31m [33m:[31m [36mnull[31m}
+ [90m 597 |[31m       [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 598 |[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/timur/OneDrive/Документы/GitHub/gpss/src/widgets/desktop-shell/Ribbon/Ribbon.tsx[39m:595:69
+[33m  593 |        </div>
+  594 |  
+  595 |        <div className={`contextual-strip ${isReportContextVisible ? ''is-visible'' : ''''}`}>
+      |                                                                       ^
+  596 |          {isReportContextVisible ? <div className="contextual-strip__group contextual-strip__group--report">Р РµРґР°Рє...
+  597 |        </div>[39m
+      at constructor (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:6599:19)
+      at TypeScriptParserMixin.unexpected (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:6619:16)
+      at TypeScriptParserMixin.expect (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:6899:12)
+      at TypeScriptParserMixin.parseConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10892:12)
+      at TypeScriptParserMixin.parseConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9603:18)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10885:17)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9786:20)
+      at TypeScriptParserMixin.parseExpressionBase (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:12426:12)
+      at TypeScriptParserMixin.parseExpression (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:17)
+      at TypeScriptParserMixin.parseTemplateSubstitution (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11805:17)
+      at TypeScriptParserMixin.parseTemplateSubstitution (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:8404:18)
+      at TypeScriptParserMixin.parseTemplate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11796:31)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11351:21)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4764:20)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9786:20)
+      at TypeScriptParserMixin.parseExpressionBase (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:12426:12)
+      at TypeScriptParserMixin.parseExpression (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:17)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4632:31)
+      at TypeScriptParserMixin.jsxParseAttributeValue (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4604:21)
+      at TypeScriptParserMixin.jsxParseAttribute (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4653:38)
+      at TypeScriptParserMixin.jsxParseOpeningElementAfterName (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4667:28)
+      at TypeScriptParserMixin.jsxParseOpeningElementAfterName (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10043:18)
+      at TypeScriptParserMixin.jsxParseOpeningElementAt (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4662:17)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4686:33)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4698:32)
+      at TypeScriptParserMixin.jsxParseElement (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4749:17)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4759:19)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9775:39
+[2m14:39:52[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\widgets\desktop-shell\Ribbon\Ribbon.tsx: Unexpected token, expected ":" (595:69)
+
+[0m [90m 593 |[31m       [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 594 |[31m
+[31m[1m>[22m[31m[90m 595 |[31m       [33m<[31m[33mdiv[31m className[33m=[31m{[32m`contextual-strip ${isReportContextVisible ? ''is-visible'' : ''''}`[31m}[33m>[31m
+ [90m     |[31m                                                                      [31m[1m^[22m[31m
+ [90m 596 |[31m         {isReportContextVisible [33m?[31m [33m<[31m[33mdiv[31m className[33m=[31m[32m"contextual-strip__group contextual-strip__group--report"[31m[33m>[31m[33mР[31m [33mРµРґР°РєС‚РѕСЂ[31m [33mРѕС‚С‡С‘С‚РѕРІ[31m[33m<[31m[33m/[31m[33mdiv[31m[33m>[31m [33m:[31m [36mnull[31m}
+ [90m 597 |[31m       [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 598 |[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/timur/OneDrive/Документы/GitHub/gpss/src/widgets/desktop-shell/Ribbon/Ribbon.tsx[39m:595:69
+[33m  593 |        </div>
+  594 |  
+  595 |        <div className={`contextual-strip ${isReportContextVisible ? ''is-visible'' : ''''}`}>
+      |                                                                       ^
+  596 |          {isReportContextVisible ? <div className="contextual-strip__group contextual-strip__group--report">Р РµРґР°Рє...
+  597 |        </div>[39m
+      at constructor (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:6599:19)
+      at TypeScriptParserMixin.unexpected (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:6619:16)
+      at TypeScriptParserMixin.expect (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:6899:12)
+      at TypeScriptParserMixin.parseConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10892:12)
+      at TypeScriptParserMixin.parseConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9603:18)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10885:17)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9786:20)
+      at TypeScriptParserMixin.parseExpressionBase (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:12426:12)
+      at TypeScriptParserMixin.parseExpression (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:17)
+      at TypeScriptParserMixin.parseTemplateSubstitution (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11805:17)
+      at TypeScriptParserMixin.parseTemplateSubstitution (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:8404:18)
+      at TypeScriptParserMixin.parseTemplate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11796:31)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11351:21)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4764:20)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9786:20)
+      at TypeScriptParserMixin.parseExpressionBase (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:12426:12)
+      at TypeScriptParserMixin.parseExpression (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10780:17)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4632:31)
+      at TypeScriptParserMixin.jsxParseAttributeValue (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4604:21)
+      at TypeScriptParserMixin.jsxParseAttribute (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4653:38)
+      at TypeScriptParserMixin.jsxParseOpeningElementAfterName (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4667:28)
+      at TypeScriptParserMixin.jsxParseOpeningElementAfterName (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10043:18)
+      at TypeScriptParserMixin.jsxParseOpeningElementAt (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4662:17)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4686:33)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4698:32)
+      at TypeScriptParserMixin.jsxParseElement (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4749:17)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:4759:19)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\timur\OneDrive\Документы\GitHub\gpss\node_modules\@babel\parser\lib\index.js:9775:39
+[2m14:40:07[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m Pre-transform error: C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\widgets\desktop-shell\Ribbon\Ribbon.tsx: Unexpected token, expected ":" (595:69)
+
+[0m [90m 593 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 594 |[39m
+[31m[1m>[22m[39m[90m 595 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m{[32m`contextual-strip ${isReportContextVisible ? ''is-visible'' : ''''}`[39m}[33m>[39m
+ [90m     |[39m                                                                      [31m[1m^[22m[39m
+ [90m 596 |[39m         {isReportContextVisible [33m?[39m [33m<[39m[33mdiv[39m className[33m=[39m[32m"contextual-strip__group contextual-strip__group--report"[39m[33m>[39m[33mР[39m [33mРµРґР°РєС‚РѕСЂ[39m [33mРѕС‚С‡С‘С‚РѕРІ[39m[33m<[39m[33m/[39m[33mdiv[39m[33m>[39m [33m:[39m [36mnull[39m}
+ [90m 597 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 598 |[39m[0m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/timur/OneDrive/Документы/GitHub/gpss/src/widgets/desktop-shell/Ribbon/Ribbon.tsx[39m:595:69
+[33m  593 |        </div>
+  594 |  
+  595 |        <div className={`contextual-strip ${isReportContextVisible ? ''is-visible'' : ''''}`}>
+      |                                                                       ^
+  596 |          {isReportContextVisible ? <div className="contextual-strip__group contextual-strip__group--report">Р РµРґР°Рє...
+  597 |        </div>[39m
