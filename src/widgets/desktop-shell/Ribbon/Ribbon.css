@@ -1,6 +1,6 @@
 .desktop-chrome {
   display: grid;
-  grid-template-rows: 32px 39px 139px;
+  grid-template-rows: 24px 24px 84px;
   border-bottom: 1px solid #98abc0;
   background: var(--chrome);
 }
@@ -16,8 +16,8 @@
 .quick-access {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding-left: 8px;
+  gap: 2px;
+  padding-left: 2px;
 }
 
 .quick-access-menu {
@@ -28,9 +28,9 @@
 }
 
 .quick-access button {
-  min-width: 24px;
-  height: 24px;
-  padding: 0 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 2px;
   border: 0;
   background: transparent;
   color: #4f5965;
@@ -42,14 +42,14 @@
 }
 
 .quick-access button img {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   display: block;
 }
 
 .quick-access__drop {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -105,7 +105,7 @@
 
 .quick-access-popover__item span {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .quick-access-popover__reset {
@@ -126,16 +126,18 @@
   left: 340px;
   text-align: right;
   color: #111;
-  font-size: 1.08rem;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .title-context-label {
   position: absolute;
   top: 0;
-  left: 624px;
+  left: 338px;
   z-index: 0;
-  width: 220px;
-  height: 32px;
+  width: 174px;
+  height: 24px;
   display: grid;
   place-items: center;
   border-left: 1px solid #70cb5f;
@@ -143,7 +145,7 @@
   border-top: 4px solid #70cb5f;
   background: #8ee36f;
   color: #183515;
-  font-size: 0.96rem;
+  font-size: 0.82rem;
   box-sizing: border-box;
   pointer-events: none;
 }
@@ -173,25 +175,29 @@
   position: relative;
   display: flex;
   align-items: stretch;
-  height: 35px;
+  height: 24px;
 }
 
 .ribbon-app-button,
 .ribbon-tab {
-  height: 35px;
-  width: 156px;
-  min-width: 156px;
-  padding: 0 20px;
+  height: 24px;
+  width: 104px;
+  min-width: 104px;
+  padding: 0 12px;
   border: 0;
   border-right: 1px solid #d5d9df;
   background: #f7f8fa;
   color: #2f343b;
-  font-size: 1.05rem;
+  font-size: 0.84rem;
+  line-height: 1.2;
   white-space: nowrap;
   box-sizing: border-box;
 }
 
 .ribbon-app-button {
+  width: 80px;
+  min-width: 80px;
+  padding: 0 8px;
   background: var(--accent-strong);
   color: #fff;
 }
@@ -221,8 +227,8 @@
 
 .ribbon-tab--report,
 .ribbon-tab--journal {
-  width: 220px;
-  min-width: 220px;
+  width: 174px;
+  min-width: 174px;
   border-left: 1px solid #70cb5f;
   border-right: 1px solid #70cb5f;
   background: #f7f8fa;
@@ -276,6 +282,7 @@
   color: #253243;
   text-align: left;
   font-size: 0.98rem;
+  line-height: 1.2;
 }
 
 .app-menu__item:hover {
@@ -304,7 +311,7 @@
 
 .app-menu__item-label {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .app-menu__divider {
@@ -352,9 +359,9 @@
 }
 
 .ribbon-group {
-  min-width: 220px;
+  min-width: max-content;
   display: grid;
-  grid-template-rows: 1fr 24px;
+  grid-template-rows: 1fr 18px;
   border-right: 1px solid #d6d9de;
 }
 
@@ -362,58 +369,115 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 12px;
-  padding: 12px 10px 4px;
+  gap: 4px;
+  padding: 6px 5px 1px;
 }
 
 .ribbon-command {
-  width: 76px;
-  min-height: 82px;
+  width: 82px;
+  min-height: 62px;
   display: grid;
-  grid-template-rows: 44px auto;
+  grid-template-rows: 26px auto;
   justify-items: center;
-  gap: 4px;
+  gap: 1px;
+  padding: 2px 3px;
   border: 1px solid transparent;
   background: transparent;
   color: #30363e;
   text-align: center;
-  line-height: 1.24;
+  font-size: 0.76rem;
+  line-height: 1.12;
 }
 
 .ribbon-group--model .ribbon-command,
 .ribbon-group--world-core .ribbon-command,
 .ribbon-group--management .ribbon-command {
-  width: 92px;
+  width: 64px;
 }
 
 .ribbon-group--commands .ribbon-command {
-  width: 72px;
+  width: 58px;
 }
 
 .ribbon-group--journal-clipboard {
-  min-width: 320px;
+  min-width: 178px;
 }
 
 .ribbon-group--journal-history,
 .ribbon-group--journal-search {
-  min-width: 200px;
+  min-width: 126px;
 }
 
 .ribbon-group--journal-groups,
 .ribbon-group--journal-scale {
-  min-width: 210px;
-}
-
-.ribbon-group--journal-operations {
   min-width: 118px;
 }
 
+.ribbon-group--journal-groups .ribbon-commands,
+.ribbon-group--journal-scale .ribbon-commands {
+  height: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 5px 7px 0;
+}
+
+.ribbon-group--journal-operations {
+  min-width: 86px;
+}
+
+.ribbon-group--journal-groups .ribbon-command,
 .ribbon-group--journal-scale .ribbon-command {
-  width: 76px;
+  width: 100%;
+  min-height: 20px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-rows: 20px;
+  justify-items: start;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 3px;
+  color: #30363e;
+  text-align: left;
+  font-size: 0.82rem;
+  line-height: 1.15;
+}
+
+.ribbon-group--journal-groups .ribbon-command {
+  color: #9a9a9a;
+}
+
+.ribbon-group--journal-groups .ribbon-command:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
+.ribbon-group--journal-groups .ribbon-command__icon-image,
+.ribbon-group--journal-scale .ribbon-command__icon-image {
+  width: 14px;
+  height: 14px;
+  opacity: 0.72;
+}
+
+.ribbon-group--journal-scale .ribbon-command__icon-image {
+  opacity: 1;
+}
+
+.ribbon-group--journal-groups .ribbon-group__title,
+.ribbon-group--journal-scale .ribbon-group__title {
+  height: 18px;
+  align-self: end;
+  font-size: 0.84rem;
 }
 
 .ribbon-command span {
-  overflow-wrap: anywhere;
+  max-width: 100%;
+  display: block;
+  padding: 0 1px;
+  line-height: 1.16;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: auto;
 }
 
 .ribbon-command:hover {
@@ -422,8 +486,8 @@
 }
 
 .ribbon-command__icon-image {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   display: block;
 }
@@ -431,8 +495,12 @@
 .ribbon-group__title {
   display: grid;
   place-items: center;
+  padding: 1px 4px;
   color: #687383;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 860px) {

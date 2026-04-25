@@ -28,14 +28,14 @@
   font-weight: 700;
   line-height: 1.25;
   color: #111827;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .window-subtitle {
   margin-top: 3px;
   color: var(--text-soft);
   font-size: 0.88rem;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .window-header__right {
@@ -97,7 +97,7 @@
   color: #3d4652;
   text-align: center;
   font-size: 0.82rem;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .status-pill--api,
@@ -141,9 +141,11 @@
 .segmented-control button,
 .reload-button {
   min-height: 30px;
+  padding: 4px 10px;
   border: 0;
   background: transparent;
   color: #2e3641;
+  line-height: 1.2;
 }
 
 .segmented-control button + button {
@@ -192,7 +194,7 @@
 
 .status-bar span {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .general-grid {
@@ -309,6 +311,7 @@
   padding-right: 8px;
   display: flex;
   gap: 5px;
+  align-items: center;
   border-right: 1px solid var(--line);
 }
 

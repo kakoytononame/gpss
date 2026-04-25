@@ -14,12 +14,12 @@
   min-height: 0;
   height: 100%;
   display: grid;
-  grid-template-rows: 34px 32px 1fr 33px;
+  grid-template-rows: 26px 25px 1fr 26px;
   background: #fff;
 }
 
 .project-explorer--auto-hide {
-  width: 56px;
+  width: 34px;
   height: 100%;
   overflow: visible;
   border-right: 0;
@@ -30,10 +30,10 @@
   position: absolute;
   inset: 0 auto 0 0;
   z-index: 3;
-  width: 424px;
+  width: 252px;
   border-right: 1px solid #8da4bf;
   box-shadow: 4px 0 9px rgba(31, 41, 55, 0.2);
-  transform: translateX(-438px);
+  transform: translateX(-262px);
   transition: transform 120ms ease-out;
 }
 
@@ -43,7 +43,7 @@
 }
 
 .explorer-auto-tabs {
-  width: 56px;
+  width: 34px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -54,9 +54,9 @@
 }
 
 .explorer-auto-tab {
-  width: 34px;
-  min-height: 160px;
-  margin-left: 22px;
+  width: 25px;
+  min-height: 116px;
+  margin-left: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,7 +65,7 @@
   border: 1px solid #c8ced6;
   background: #f7f7f7;
   color: #1f252c;
-  font-size: 0.98rem;
+  font-size: 0.82rem;
   cursor: default;
 }
 
@@ -86,15 +86,15 @@
 }
 
 .panel-caption {
-  height: 34px;
-  padding: 0 4px 0 9px;
+  height: 26px;
+  padding: 0 3px 0 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #b9c5d4;
   background: #f7f7f7;
   color: #1f252c;
-  font-size: 1rem;
+  font-size: 0.86rem;
 }
 
 .panel-caption__title {
@@ -125,8 +125,8 @@
 }
 
 .panel-caption__button {
-  width: 20px;
-  height: 22px;
+  width: 18px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -159,10 +159,10 @@
 }
 
 .project-search {
-  min-height: 32px;
+  min-height: 25px;
   display: flex;
   align-items: center;
-  padding: 0 8px;
+  padding: 0 5px;
   border-bottom: 2px solid #2f9ee5;
   background: #fff;
 }
@@ -182,19 +182,19 @@
 .project-search__input {
   width: 100%;
   min-width: 0;
-  height: 30px;
-  padding: 0;
+  height: 23px;
+  padding: 0 2px;
   border: 0;
   outline: 0;
   background: transparent;
   color: #20242b;
-  font-size: 1rem;
+  font-size: 0.86rem;
 }
 
 .tree-view {
   min-height: 0;
   display: grid;
-  grid-template-rows: 1fr 23px;
+  grid-template-rows: 1fr 20px;
   overflow: hidden;
 }
 
@@ -202,25 +202,26 @@
   min-height: 0;
   min-width: 100%;
   width: 100%;
-  padding: 7px 3px 4px 0;
+  padding: 4px 2px 2px 0;
   overflow: auto;
 }
 
 .tree-row {
   width: 100%;
   min-width: 100%;
-  min-height: 28px;
+  min-height: 22px;
   display: grid;
-  grid-template-columns: 20px 22px minmax(0, 1fr);
-  align-items: center;
+  grid-template-columns: 14px 17px minmax(0, 1fr);
+  align-items: start;
   column-gap: 2px;
-  padding: 2px 6px 2px calc(18px + var(--level) * 29px);
+  padding: 2px 5px 2px calc(6px + var(--level) * 18px);
   border: 0;
   background: transparent;
   text-align: left;
   color: #20242b;
-  font-size: 1rem;
-  white-space: nowrap;
+  font-size: 0.86rem;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .tree-row:hover {
@@ -233,8 +234,8 @@
 }
 
 .tree-row__chevron {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   position: relative;
 }
 
@@ -247,7 +248,7 @@
   position: absolute;
   inset: 4px 3px;
   border-style: solid;
-  border-width: 5px 4px 0 4px;
+  border-width: 4px 3px 0 3px;
   border-color: #5d6976 transparent transparent transparent;
   opacity: 1;
   transform-origin: 50% 35%;
@@ -309,16 +310,19 @@
 }
 
 .tree-row__img {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   object-fit: contain;
 }
 
 .tree-row__label {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
+  padding: 1px 2px;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .tree-row.is-active .tree-row__label {
@@ -338,9 +342,9 @@
 }
 
 .tree-view__scrollbar {
-  height: 23px;
+  height: 20px;
   display: grid;
-  grid-template-columns: 24px 1fr 24px;
+  grid-template-columns: 18px 1fr 18px;
   align-items: center;
   border-top: 1px solid #c9d0d8;
   background: #e7ebef;
@@ -354,7 +358,7 @@
 }
 
 .tree-view__scroll-thumb {
-  height: 19px;
+  height: 14px;
   border: 1px solid #9aa7b5;
   border-radius: 3px;
   background: linear-gradient(#f5f7f9, #d9e0e8);
@@ -362,7 +366,7 @@
 }
 
 .explorer-tabs {
-  min-height: 33px;
+  min-height: 26px;
   display: flex;
   align-items: end;
   padding-left: 6px;
@@ -371,13 +375,13 @@
 }
 
 .explorer-tab {
-  height: 32px;
-  padding: 0 13px;
+  height: 25px;
+  padding: 0 8px;
   border: 1px solid #c8ced6;
   border-bottom-color: #fff;
   background: #f7f7f7;
   color: #20242b;
-  font-size: 0.98rem;
+  font-size: 0.82rem;
 }
 
 .explorer-tab + .explorer-tab {

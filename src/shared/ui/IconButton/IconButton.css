@@ -1,14 +1,15 @@
 .icon-button {
-  min-height: 30px;
-  min-width: 32px;
-  padding: 4px 10px;
+  min-height: 24px;
+  min-width: 26px;
+  padding: 2px 7px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 4px;
   border: 1px solid var(--line-strong);
   background: #fff;
   color: #27303b;
+  line-height: 1.2;
 }
 
 .icon-button:hover:not(:disabled) {
@@ -17,8 +18,10 @@
 
 .icon-button__label {
   min-width: 0;
-  overflow-wrap: anywhere;
+  padding: 0 1px;
+  overflow-wrap: break-word;
   text-align: center;
+  line-height: 1.2;
 }
 
 .icon-button__img {

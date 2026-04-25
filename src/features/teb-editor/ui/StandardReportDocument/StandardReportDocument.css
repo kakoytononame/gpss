@@ -20,6 +20,8 @@
   margin: 0 0 14px;
   color: #1f4e94;
   font-size: 1rem;
+  line-height: 1.25;
+  overflow-wrap: break-word;
 }
 
 .report-table {
@@ -31,18 +33,20 @@
   display: grid;
   grid-template-columns: minmax(180px, 0.9fr) 1fr;
   gap: 12px;
-  padding-bottom: 8px;
+  padding: 4px 2px 8px;
   border-bottom: 1px solid #d9e2ec;
 }
 
 .report-table__label {
+  min-width: 0;
   color: #51606f;
+  overflow-wrap: break-word;
 }
 
 .report-table__value {
   color: #20242b;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .report-list {
@@ -51,7 +55,7 @@
 }
 
 .report-list__item {
-  padding: 10px 12px;
+  padding: 11px 13px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -63,7 +67,7 @@
 .report-list__item strong,
 .report-list__item span,
 .report-list__empty {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .report-list__empty {
@@ -74,6 +78,7 @@
   margin: 0;
   color: #474f59;
   line-height: 1.55;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 860px) {

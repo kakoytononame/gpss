@@ -3,9 +3,9 @@
   height: 100%;
   position: relative;
   display: grid;
-  grid-template-rows: 32px minmax(0, 1fr);
+  grid-template-rows: 28px minmax(0, 1fr);
   border: 1px solid #c5cad3;
-  background: #fff;
+  background: #f4f6f9;
   overflow: hidden;
 }
 
@@ -15,37 +15,45 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 9px;
+  padding: 3px 7px;
   border-bottom: 1px solid #c9d0d8;
   background: linear-gradient(#f4f5f8, #dee2ea);
   color: #2f3540;
-  font-size: 0.95rem;
+  font-size: 0.84rem;
+  line-height: 1.2;
 }
 
 .model-log-document__titlebar span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 1px 2px;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .model-log-document__actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 5px;
+}
+
+.model-log-document__actions .icon-button {
+  min-height: 22px;
+  padding: 2px 8px;
 }
 
 .log-editor {
   min-width: 0;
   min-height: 0;
-  width: 100%;
-  height: 100%;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  margin: 4px;
   padding: 8px 10px;
-  border: 0;
+  border: 1px solid #b9c7d8;
   outline: 0;
   resize: none;
-  background:
-    linear-gradient(90deg, #f3f5f8 0 44px, #d8dee8 44px 45px, transparent 45px),
-    #fff;
+  background: #ffffff;
   color: #1f2933;
   font-family: Consolas, "Courier New", monospace;
   line-height: 1.5;
@@ -81,6 +89,7 @@
   background: #f4ede9;
   color: #111;
   font-size: 1rem;
+  line-height: 1.2;
   cursor: move;
   user-select: none;
 }
@@ -121,6 +130,7 @@
 .find-replace-dialog__tabs button {
   width: 126px;
   height: 37px;
+  padding: 2px 8px;
   border: 1px solid transparent;
   border-bottom: 0;
   background: transparent;
@@ -192,7 +202,8 @@
 
 .find-replace-dialog__actions button {
   width: 166px;
-  height: 36px;
+  min-height: 36px;
+  padding: 4px 10px;
   border: 2px solid #2786ff;
   background: #fff;
   color: #222;

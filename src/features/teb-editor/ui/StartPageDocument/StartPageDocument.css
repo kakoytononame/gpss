@@ -66,6 +66,7 @@
   font-size: 0.98rem;
   font-weight: 700;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 .recent-project__meta {
@@ -78,13 +79,14 @@
 
 .recent-project__meta-label {
   color: #747b85;
-  white-space: nowrap;
+  line-height: 1.25;
+  overflow-wrap: break-word;
 }
 
 .recent-project__meta-value {
   min-width: 0;
   color: #444b54;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .start-page__example-list {
@@ -133,6 +135,8 @@
   font-size: 0.98rem;
   font-weight: 700;
   color: #3b4048;
+  line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 .start-example__badge {
@@ -141,13 +145,14 @@
   border-radius: 3px;
   background: #87f37f;
   color: #167e24;
+  line-height: 1.2;
 }
 
 .start-example__description {
   margin: 0;
   color: #474f59;
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 980px) {

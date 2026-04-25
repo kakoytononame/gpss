@@ -2,8 +2,8 @@
   min-height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
-  gap: 16px;
-  padding: 20px;
+  gap: 6px;
+  padding: 4px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.94);
   overflow: auto;
@@ -13,20 +13,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
 }
 
 .placeholder-document__header h2 {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: 1rem;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .placeholder-document__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
 }
 
 @media (max-width: 860px) {

@@ -8,15 +8,16 @@
 }
 
 .editor-tab {
-  min-width: 122px;
-  padding: 0 16px;
+  min-width: max-content;
+  padding: 4px 18px;
   border: 0;
   border-right: 1px solid var(--line);
   background: transparent;
   color: #27303b;
+  line-height: 1.2;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .editor-tab:hover {

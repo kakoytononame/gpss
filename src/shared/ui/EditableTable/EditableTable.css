@@ -12,11 +12,13 @@
 
 .editor-table th,
 .editor-table td {
-  height: 39px;
+  min-height: 39px;
   border: 1px solid var(--line);
-  padding: 4px;
+  padding: 6px 7px;
   text-align: left;
   vertical-align: middle;
+  line-height: 1.25;
+  overflow-wrap: break-word;
 }
 
 .editor-table th {
@@ -37,6 +39,7 @@
   width: 100%;
   min-width: 0;
   height: 30px;
+  padding: 4px 6px;
   border: 1px solid transparent;
   background: transparent;
   color: #20242b;

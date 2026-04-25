@@ -16,6 +16,7 @@ import simModelCurrentIcon from '../../../shared/assets/icons/gpss-native/simmod
 import simulationIcon from '../../../shared/assets/icons/gpss-native/simmodeltasks_16.png';
 import stdJournalIcon from '../../../shared/assets/icons/gpss-native/stdjournal_16.png';
 import stdReportIcon from '../../../shared/assets/icons/gpss-native/stdreport_16.png';
+import simpleTebIcon from '../../../shared/assets/icons/gpss-native/simpleteb16.png';
 import tebsLibraryCollectionIcon from '../../../shared/assets/icons/gpss-native/tebslibrarycollection_16.png';
 import tebsLibraryIcon from '../../../shared/assets/icons/gpss-native/tebslibrary_16.png';
 import './ProjectExplorer.css';
@@ -42,6 +43,85 @@ interface ProjectExplorerProps {
   onToggleAutoHide: () => void;
 }
 
+const standardGpssBlocks = [
+  'ADOPT',
+  'ADVANCE',
+  'ALTER',
+  'ASSEMBLE',
+  'ASSIGN',
+  'BUFFER',
+  'CLOSE',
+  'COUNT',
+  'DEPART',
+  'DISPLACE',
+  'ENTER',
+  'EXAMINE',
+  'EXECUTE',
+  'FAVAIL',
+  'FUNAVAIL',
+  'GATE',
+  'GATHER',
+  'GENERATE',
+  'INDEX',
+  'JOIN',
+  'LEAVE',
+  'LINK',
+  'LOGIC',
+  'LOOP',
+  'MARK',
+  'MATCH',
+  'MSAVEVALUE',
+  'OPEN',
+  'PREEMPT',
+  'PRIORITY',
+  'QUEUE',
+  'READ',
+  'RELEASE',
+  'REMOVE',
+  'RETURN',
+  'SAVAIL',
+  'SAVEVALUE',
+  'SCAN',
+  'SEEK',
+  'SEIZE',
+  'SELECT',
+  'SPLIT',
+  'SUNAVAIL',
+  'TABULATE',
+  'TERMINATE',
+  'TEST',
+  'TRANSFER',
+  'UNLINK',
+  'WRITE',
+];
+
+const standardGpssEntities = [
+  'Устройство',
+  'Очередь',
+  'Многоканальное устройство',
+  'Логический ключ',
+  'Сохраняемая величина',
+  'Матрица',
+];
+
+const standardAdditionalTebs = [
+  'Внешняя анимация',
+  'Генератор XN-потоков',
+  'Начало события временной шкалы',
+  'Событие временной шкалы',
+  'Окончание события временной шкалы',
+];
+
+function createLibraryItems(prefix: string, labels: string[], iconAsset = simpleTebIcon): TreeNode[] {
+  return labels.map((label) => ({
+    id: `${prefix}-${label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-')}`,
+    label,
+    icon: 'library',
+    iconAsset,
+    documentId: 'editor',
+  }));
+}
+
 const librariesTree: TreeNode[] = [
   {
     id: 'teb-libraries-root',
@@ -55,8 +135,42 @@ const librariesTree: TreeNode[] = [
         icon: 'folder',
         iconAsset: folderOpenedIcon,
         children: [
-          { id: 'mining-library', label: 'Горнодобывающее пр-во', icon: 'library', iconAsset: tebsLibraryIcon },
-          { id: 'standard-tebs', label: 'Стандартные ТЭБы', icon: 'library', iconAsset: tebsLibraryIcon },
+          {
+            id: 'standard-mining-library',
+            label: 'Горнодобывающее пр-во',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [{ id: 'standard-mine-field-block', label: 'Блок шахтного поля', icon: 'library', iconAsset: simpleTebIcon, documentId: 'editor' }],
+          },
+          {
+            id: 'standard-tebs',
+            label: 'Стандартные ТЭБы',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [
+              {
+                id: 'standard-gpss-blocks',
+                label: 'Блоки',
+                icon: 'folder',
+                iconAsset: folderOpenedIcon,
+                children: createLibraryItems('standard-block', standardGpssBlocks),
+              },
+              {
+                id: 'standard-gpss-entities',
+                label: 'Объекты GPSS',
+                icon: 'folder',
+                iconAsset: folderOpenedIcon,
+                children: createLibraryItems('standard-entity', standardGpssEntities, tebsLibraryIcon),
+              },
+              {
+                id: 'standard-gpss-additional',
+                label: 'Дополнительные ТЭБы',
+                icon: 'folder',
+                iconAsset: folderOpenedIcon,
+                children: createLibraryItems('standard-additional', standardAdditionalTebs),
+              },
+            ],
+          },
         ],
       },
       {
@@ -66,11 +180,14 @@ const librariesTree: TreeNode[] = [
         iconAsset: folderOpenedIcon,
         children: [
           {
-            id: 'canteen-library-category',
-            label: 'Столовая',
+            id: 'project-tebs-library',
+            label: 'Библиотека ТЭБов',
             icon: 'library',
             iconAsset: tebsLibraryIcon,
-            children: [{ id: 'library', label: 'Обслуживание посетителя. Касса 1', icon: 'library', iconAsset: tebsLibraryIcon, documentId: 'editor' }],
+            children: [
+              { id: 'project-transactions', label: 'Транзакты', icon: 'folder', iconAsset: folderOpenedIcon },
+              { id: 'project-canteen-library', label: 'Столовая', icon: 'folder', iconAsset: folderIcon },
+            ],
           },
         ],
       },
@@ -79,7 +196,15 @@ const librariesTree: TreeNode[] = [
         label: 'Пользовательские',
         icon: 'folder',
         iconAsset: folderOpenedIcon,
-        children: [{ id: 'user-mining-library', label: 'Горнодобывающее пр-во', icon: 'library', iconAsset: tebsLibraryIcon }],
+        children: [
+          {
+            id: 'user-mining-library',
+            label: 'Горнодобывающее пр-во',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [{ id: 'mine-field-block', label: 'Блок шахтного поля', icon: 'library', iconAsset: simpleTebIcon, documentId: 'editor' }],
+          },
+        ],
       },
     ],
   },
@@ -144,7 +269,7 @@ const projectTree: TreeNode[] = [
         label: 'Библиотеки ТЭБов проекта',
         icon: 'library',
         iconAsset: tebsLibraryCollectionIcon,
-        children: [{ id: 'library', label: 'Библиотека ТЭБов', icon: 'library', iconAsset: tebsLibraryIcon, documentId: 'editor' }],
+        children: [{ id: 'library', label: 'Библиотека ТЭБов', icon: 'library', iconAsset: tebsLibraryIcon }],
       },
       { id: 'csharp-libraries', label: 'Библиотеки C#', icon: 'code', iconAsset: csProjectIcon },
     ],
@@ -194,9 +319,7 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
       return;
     }
 
-    if (node.documentId) {
-      onOpen(node.id);
-    }
+    onOpen(node.id);
   }
 
   return (
@@ -286,6 +409,18 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   }, []);
 
   function handleOpenNode(nodeId: string) {
+    if (nodeId === 'library') {
+      setExplorerMode('libraries');
+      setProjectSearchQuery('');
+      focusProjectNode('project-tebs-library');
+      ['teb-libraries-root', 'current-project-library', 'project-tebs-library'].forEach((expandedNodeId) => {
+        if (collapsedNodeIds.includes(expandedNodeId)) {
+          toggleTreeNode(expandedNodeId);
+        }
+      });
+      return;
+    }
+
     const documentId =
       nodeId === 'scheme'
         ? 'scheme'
@@ -295,7 +430,12 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
             ? 'std-report'
             : nodeId === 'model-log'
               ? 'model-log'
-              : nodeId === 'library'
+              : nodeId === 'library-item-cashier-1' ||
+                  nodeId === 'mine-field-block' ||
+                  nodeId === 'standard-mine-field-block' ||
+                  nodeId.startsWith('standard-block-') ||
+                  nodeId.startsWith('standard-entity-') ||
+                  nodeId.startsWith('standard-additional-')
                 ? 'editor'
                 : nodeId === 'project-home'
                   ? 'start'
