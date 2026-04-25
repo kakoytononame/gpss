@@ -134,7 +134,7 @@
 .title-context-label {
   position: absolute;
   top: 0;
-  left: 338px;
+  left: 392px;
   z-index: 0;
   width: 174px;
   height: 24px;
@@ -400,12 +400,12 @@
 }
 
 .ribbon-group--journal-clipboard {
-  min-width: 178px;
+  min-width: 206px;
 }
 
 .ribbon-group--journal-history,
 .ribbon-group--journal-search {
-  min-width: 126px;
+  min-width: 138px;
 }
 
 .ribbon-group--journal-groups,
@@ -424,7 +424,17 @@
 }
 
 .ribbon-group--journal-operations {
-  min-width: 86px;
+  min-width: 84px;
+}
+
+.ribbon-group--journal-clipboard .ribbon-command,
+.ribbon-group--journal-history .ribbon-command,
+.ribbon-group--journal-search .ribbon-command {
+  width: 62px;
+}
+
+.ribbon-group--journal-operations .ribbon-command {
+  width: 72px;
 }
 
 .ribbon-group--journal-groups .ribbon-command,
