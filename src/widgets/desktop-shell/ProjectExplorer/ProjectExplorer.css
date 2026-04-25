@@ -1,6 +1,7 @@
 .project-explorer {
   min-width: 0;
   min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-rows: 1fr;
   border-right: 1px solid #aeb8c6;
@@ -11,6 +12,7 @@
 .project-explorer__panel {
   min-width: 0;
   min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-rows: 34px 32px 1fr 33px;
   background: #fff;
@@ -64,6 +66,7 @@
   background: #f7f7f7;
   color: #1f252c;
   font-size: 0.98rem;
+  cursor: default;
 }
 
 .explorer-auto-tab + .explorer-auto-tab {
@@ -73,6 +76,13 @@
 .explorer-auto-tab.is-active {
   background: #fff;
   border-left-color: #9fbbe0;
+}
+
+.explorer-auto-tab:hover,
+.explorer-auto-tab:focus-visible {
+  background: #fff;
+  outline: 1px solid #8fbdf3;
+  outline-offset: -1px;
 }
 
 .panel-caption {
@@ -128,16 +138,23 @@
   line-height: 1;
 }
 
+.panel-caption__button img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  display: block;
+}
+
 .panel-caption__button:hover {
   background: #e5f1ff;
 }
 
-.panel-caption__button--pin span {
+.panel-caption__button--pin img {
   display: inline-block;
   transform: rotate(0deg);
 }
 
-.panel-caption__button--pin.is-auto-hide span {
+.panel-caption__button--pin.is-auto-hide img {
   transform: rotate(-90deg);
 }
 

@@ -148,6 +148,14 @@
   pointer-events: none;
 }
 
+.title-context-label--journal {
+  border-left-color: #c7cc49;
+  border-right-color: #c7cc49;
+  border-top-color: #c7cc49;
+  background: #eef17a;
+  color: #111;
+}
+
 .ribbon-tabs {
   position: relative;
   z-index: 1;
@@ -155,6 +163,10 @@
   align-items: stretch;
   border-bottom: 1px solid #55c64a;
   background: #fff;
+}
+
+.desktop-chrome--journal .ribbon-tabs {
+  border-bottom-color: #c7cc49;
 }
 
 .ribbon-app-slot {
@@ -207,7 +219,8 @@
   border-bottom: 1px solid #70cb5f;
 }
 
-.ribbon-tab--report {
+.ribbon-tab--report,
+.ribbon-tab--journal {
   width: 220px;
   min-width: 220px;
   border-left: 1px solid #70cb5f;
@@ -216,15 +229,26 @@
   box-sizing: border-box;
 }
 
-.ribbon-tab--report:hover {
+.ribbon-tab--report:hover,
+.ribbon-tab--journal:hover {
   background: #fafff8;
 }
 
-.ribbon-tab--report.is-active {
+.ribbon-tab--report.is-active,
+.ribbon-tab--journal.is-active {
   border-bottom-color: #fff;
   background: #fff;
   color: #1f252c;
  }
+
+.ribbon-tab--journal {
+  border-left-color: #c7cc49;
+  border-right-color: #c7cc49;
+}
+
+.ribbon-tab--journal:hover {
+  background: #fffff2;
+}
 
 
 .app-menu {
@@ -364,6 +388,28 @@
 
 .ribbon-group--commands .ribbon-command {
   width: 72px;
+}
+
+.ribbon-group--journal-clipboard {
+  min-width: 320px;
+}
+
+.ribbon-group--journal-history,
+.ribbon-group--journal-search {
+  min-width: 200px;
+}
+
+.ribbon-group--journal-groups,
+.ribbon-group--journal-scale {
+  min-width: 210px;
+}
+
+.ribbon-group--journal-operations {
+  min-width: 118px;
+}
+
+.ribbon-group--journal-scale .ribbon-command {
+  width: 76px;
 }
 
 .ribbon-command span {

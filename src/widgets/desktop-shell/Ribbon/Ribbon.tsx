@@ -13,6 +13,19 @@ import cmdStepIcon from '../../../shared/assets/icons/cmd-step.png';
 import conductIcon from '../../../shared/assets/icons/conduct.png';
 import debugExtIcon from '../../../shared/assets/icons/debug-ext.png';
 import debugSimIcon from '../../../shared/assets/icons/debug-sim.png';
+import nativeCopyIcon from '../../../shared/assets/icons/gpss-native/copy_32.png';
+import nativeCutIcon from '../../../shared/assets/icons/gpss-native/cut_32.png';
+import nativeFindIcon from '../../../shared/assets/icons/gpss-native/find_32.png';
+import nativeGoToErrorIcon from '../../../shared/assets/icons/gpss-native/gotoerror_32.png';
+import nativeGroupIcon from '../../../shared/assets/icons/gpss-native/group16.png';
+import nativePasteIcon from '../../../shared/assets/icons/gpss-native/paste_32.png';
+import nativeRedoIcon from '../../../shared/assets/icons/gpss-native/redo_32.png';
+import nativeReplaceIcon from '../../../shared/assets/icons/gpss-native/replace_32.png';
+import nativeUndoIcon from '../../../shared/assets/icons/gpss-native/undo_32.png';
+import nativeUngroupIcon from '../../../shared/assets/icons/gpss-native/groupremove16.png';
+import nativeZoomInIcon from '../../../shared/assets/icons/gpss-native/zoomin16.png';
+import nativeZoomOutIcon from '../../../shared/assets/icons/gpss-native/zoomout16.png';
+import nativeZoomResetIcon from '../../../shared/assets/icons/gpss-native/zoomreset16.png';
 import modelSettingsIcon from '../../../shared/assets/icons/model-settings.png';
 import newModelIcon from '../../../shared/assets/icons/new-model.png';
 import newProjectIcon from '../../../shared/assets/icons/new-project.png';
@@ -64,7 +77,8 @@ interface AppMenuItem {
   onClick: () => void;
 }
 
-type RibbonTabId = 'Главная' | 'Моделирование' | 'Окна' | 'Стандартный отчёт';
+type RibbonTabId = 'Главная' | 'Моделирование' | 'Окна' | 'Стандартный отчёт' | 'Журнал моделирования';
+type JournalCommand = 'cut' | 'copy' | 'paste' | 'undo' | 'redo' | 'find' | 'replace' | 'group' | 'ungroup' | 'go-error' | 'zoom-in' | 'zoom-reset' | 'zoom-out';
 
 function AppMenuGlyph({ glyph }: { glyph: NonNullable<AppMenuItem['glyph']> }) {
   return (
@@ -72,6 +86,10 @@ function AppMenuGlyph({ glyph }: { glyph: NonNullable<AppMenuItem['glyph']> }) {
       {glyph === 'question' ? '?' : glyph === 'info' ? 'i' : '×'}
     </span>
   );
+}
+
+function dispatchJournalCommand(command: JournalCommand) {
+  window.dispatchEvent(new CustomEvent('gpss:journal-command', { detail: { command } }));
 }
 
 export function Ribbon() {
@@ -105,9 +123,13 @@ export function Ribbon() {
   ]);
   const [activeRibbonTab, setActiveRibbonTab] = useState<RibbonTabId>('Главная');
   const isReportDocumentActive = activeDocument === 'std-report';
+  const isLogDocumentActive = activeDocument === 'model-log';
   const isReportContextVisible = isReportDocumentActive;
+  const isLogContextVisible = isLogDocumentActive;
   const visibleRibbonTabs: RibbonTabId[] = isReportDocumentActive
     ? ['Главная', 'Моделирование', 'Окна', 'Стандартный отчёт']
+    : isLogDocumentActive
+      ? ['Главная', 'Моделирование', 'Окна', 'Журнал моделирования']
     : ['Главная', 'Моделирование', 'Окна'];
 
   const quickAccess = useMemo<RibbonCommand[]>(
@@ -246,7 +268,16 @@ export function Ribbon() {
       return;
     }
 
+    if (activeDocument === 'model-log' && previousActiveDocument !== 'model-log') {
+      setActiveRibbonTab('Журнал моделирования');
+      return;
+    }
+
     if (activeDocument !== 'std-report' && activeRibbonTab === 'Стандартный отчёт') {
+      setActiveRibbonTab('Главная');
+    }
+
+    if (activeDocument !== 'model-log' && activeRibbonTab === 'Журнал моделирования') {
       setActiveRibbonTab('Главная');
     }
   }, [activeDocument, activeRibbonTab]);
@@ -528,6 +559,122 @@ export function Ribbon() {
         ],
       },
     ],
+    'Журнал моделирования': [
+      {
+        title: 'Буфер обмена',
+        className: 'ribbon-group--journal-clipboard',
+        commands: [
+          {
+            id: 'journal-cut',
+            label: 'Вырезать',
+            icon: nativeCutIcon,
+            onClick: () => dispatchJournalCommand('cut'),
+          },
+          {
+            id: 'journal-copy',
+            label: 'Копировать',
+            icon: nativeCopyIcon,
+            onClick: () => dispatchJournalCommand('copy'),
+          },
+          {
+            id: 'journal-paste',
+            label: 'Вставить',
+            icon: nativePasteIcon,
+            onClick: () => dispatchJournalCommand('paste'),
+          },
+        ],
+      },
+      {
+        title: 'История изменений',
+        className: 'ribbon-group--journal-history',
+        commands: [
+          {
+            id: 'journal-undo',
+            label: 'Отменить',
+            icon: nativeUndoIcon,
+            onClick: () => dispatchJournalCommand('undo'),
+          },
+          {
+            id: 'journal-redo',
+            label: 'Вернуть',
+            icon: nativeRedoIcon,
+            onClick: () => dispatchJournalCommand('redo'),
+          },
+        ],
+      },
+      {
+        title: 'Поиск и замена',
+        className: 'ribbon-group--journal-search',
+        commands: [
+          {
+            id: 'journal-find',
+            label: 'Найти',
+            icon: nativeFindIcon,
+            onClick: () => dispatchJournalCommand('find'),
+          },
+          {
+            id: 'journal-replace',
+            label: 'Заменить',
+            icon: nativeReplaceIcon,
+            onClick: () => dispatchJournalCommand('replace'),
+          },
+        ],
+      },
+      {
+        title: 'Группы',
+        className: 'ribbon-group--journal-groups',
+        commands: [
+          {
+            id: 'journal-group',
+            label: 'Группировать',
+            icon: nativeGroupIcon,
+            onClick: () => dispatchJournalCommand('group'),
+          },
+          {
+            id: 'journal-ungroup',
+            label: 'Разгруппировать',
+            icon: nativeUngroupIcon,
+            onClick: () => dispatchJournalCommand('ungroup'),
+          },
+        ],
+      },
+      {
+        title: 'Операции',
+        className: 'ribbon-group--journal-operations',
+        commands: [
+          {
+            id: 'journal-go-error',
+            label: 'Перейти к ошибке',
+            icon: nativeGoToErrorIcon,
+            onClick: () => dispatchJournalCommand('go-error'),
+          },
+        ],
+      },
+      {
+        title: 'Масштаб',
+        className: 'ribbon-group--journal-scale',
+        commands: [
+          {
+            id: 'journal-zoom-in',
+            label: 'Приблизить',
+            icon: nativeZoomInIcon,
+            onClick: () => dispatchJournalCommand('zoom-in'),
+          },
+          {
+            id: 'journal-zoom-reset',
+            label: 'Исходный размер',
+            icon: nativeZoomResetIcon,
+            onClick: () => dispatchJournalCommand('zoom-reset'),
+          },
+          {
+            id: 'journal-zoom-out',
+            label: 'Отдалить',
+            icon: nativeZoomOutIcon,
+            onClick: () => dispatchJournalCommand('zoom-out'),
+          },
+        ],
+      },
+    ],
   };
 
   const visibleQuickAccess = quickAccess.filter((command) => visibleQuickAccessIds.includes(command.id));
@@ -560,7 +707,7 @@ export function Ribbon() {
   }
 
   return (
-    <header className="desktop-chrome">
+    <header className={`desktop-chrome ${isLogContextVisible ? 'desktop-chrome--journal' : isReportContextVisible ? 'desktop-chrome--report' : ''}`.trim()}>
       <div className="title-row">
         <div className="quick-access" aria-label="Быстрый доступ">
           {visibleQuickAccess.map((command) => (
@@ -604,7 +751,8 @@ export function Ribbon() {
         </div>
 
         <div className="desktop-title">Элина-Компьютер - GPSS Studio (студенческая версия)</div>
-        {isReportContextVisible ? <div className="title-context-label">Редактор отчётов</div> : null}
+        {isReportContextVisible ? <div className="title-context-label title-context-label--report">Редактор отчётов</div> : null}
+        {isLogContextVisible ? <div className="title-context-label title-context-label--journal">Редактор журнала</div> : null}
       </div>
 
       <nav className="ribbon-tabs" aria-label="Разделы ленты">
@@ -645,7 +793,7 @@ export function Ribbon() {
 
         {visibleRibbonTabs.map((tab) => (
           <button
-            className={`ribbon-tab ${tab === 'Стандартный отчёт' ? 'ribbon-tab--report' : ''} ${activeRibbonTab === tab ? 'is-active' : ''}`.trim()}
+            className={`ribbon-tab ${tab === 'Стандартный отчёт' ? 'ribbon-tab--report' : ''} ${tab === 'Журнал моделирования' ? 'ribbon-tab--journal' : ''} ${activeRibbonTab === tab ? 'is-active' : ''}`.trim()}
             key={tab}
             type="button"
             onClick={() => handleRibbonTabClick(tab)}

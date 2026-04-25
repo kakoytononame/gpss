@@ -1,13 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTebEditorStore } from '../../../features/teb-editor/store/useTebEditorStore';
 import type { ActiveDocument } from '../../../shared/types/teb';
-import csProjectIcon from '../../../shared/assets/icons/cs-project.png';
-import folderIcon from '../../../shared/assets/icons/folder.png';
-import libraryIcon from '../../../shared/assets/icons/library.png';
-import modelTextIcon from '../../../shared/assets/icons/model-text.png';
-import schemeIcon from '../../../shared/assets/icons/scheme.png';
-import stdReportIcon from '../../../shared/assets/icons/std-report.png';
-import tebsLibraryIcon from '../../../shared/assets/icons/tebs-library.png';
+import arrowDownIcon from '../../../shared/assets/icons/gpss-native/arrowdown_16.png';
+import closeIcon from '../../../shared/assets/icons/gpss-native/closeblack_13.png';
+import csProjectIcon from '../../../shared/assets/icons/gpss-native/csproject_16.png';
+import folderIcon from '../../../shared/assets/icons/gpss-native/folder_16.png';
+import folderOpenedIcon from '../../../shared/assets/icons/gpss-native/folderopened_16.png';
+import formCollectionIcon from '../../../shared/assets/icons/gpss-native/formcollection_16.png';
+import formIcon from '../../../shared/assets/icons/gpss-native/form_16.png';
+import modelTextIcon from '../../../shared/assets/icons/gpss-native/simmodeltext_16.png';
+import pinIcon from '../../../shared/assets/icons/gpss-native/ribbonpin.png';
+import projectModelsIcon from '../../../shared/assets/icons/gpss-native/simmodelscollection_16.png';
+import schemeIcon from '../../../shared/assets/icons/gpss-native/simmodeldiagram_16.png';
+import simModelCurrentIcon from '../../../shared/assets/icons/gpss-native/simmodelcur_16.png';
+import simulationIcon from '../../../shared/assets/icons/gpss-native/simmodeltasks_16.png';
+import stdJournalIcon from '../../../shared/assets/icons/gpss-native/stdjournal_16.png';
+import stdReportIcon from '../../../shared/assets/icons/gpss-native/stdreport_16.png';
+import tebsLibraryCollectionIcon from '../../../shared/assets/icons/gpss-native/tebslibrarycollection_16.png';
+import tebsLibraryIcon from '../../../shared/assets/icons/gpss-native/tebslibrary_16.png';
 import './ProjectExplorer.css';
 
 interface TreeNode {
@@ -37,13 +47,13 @@ const librariesTree: TreeNode[] = [
     id: 'teb-libraries-root',
     label: 'Библиотеки ТЭБов',
     icon: 'library',
-    iconAsset: libraryIcon,
+    iconAsset: tebsLibraryCollectionIcon,
     children: [
       {
         id: 'standard-libraries',
         label: 'Стандартные',
         icon: 'folder',
-        iconAsset: folderIcon,
+        iconAsset: folderOpenedIcon,
         children: [
           { id: 'mining-library', label: 'Горнодобывающее пр-во', icon: 'library', iconAsset: tebsLibraryIcon },
           { id: 'standard-tebs', label: 'Стандартные ТЭБы', icon: 'library', iconAsset: tebsLibraryIcon },
@@ -53,7 +63,7 @@ const librariesTree: TreeNode[] = [
         id: 'current-project-library',
         label: 'Текущий проект',
         icon: 'folder',
-        iconAsset: folderIcon,
+        iconAsset: folderOpenedIcon,
         children: [
           {
             id: 'canteen-library-category',
@@ -68,7 +78,7 @@ const librariesTree: TreeNode[] = [
         id: 'user-libraries',
         label: 'Пользовательские',
         icon: 'folder',
-        iconAsset: folderIcon,
+        iconAsset: folderOpenedIcon,
         children: [{ id: 'user-mining-library', label: 'Горнодобывающее пр-во', icon: 'library', iconAsset: tebsLibraryIcon }],
       },
     ],
@@ -86,11 +96,13 @@ const projectTree: TreeNode[] = [
         id: 'models-root',
         label: 'Модели',
         icon: 'model',
+        iconAsset: projectModelsIcon,
         children: [
           {
             id: 'current-model',
             label: 'Столовая (текущая модель)',
             icon: 'model',
+            iconAsset: simModelCurrentIcon,
             children: [
               { id: 'scheme', label: 'Структурная схема', icon: 'scheme', iconAsset: schemeIcon, documentId: 'scheme' },
               { id: 'model-text', label: 'Текст модели', icon: 'text', iconAsset: modelTextIcon, documentId: 'model-text' },
@@ -101,23 +113,26 @@ const projectTree: TreeNode[] = [
             id: 'model-run',
             label: 'Моделирование от 10.08.2018 10:59',
             icon: 'run',
+            iconAsset: simulationIcon,
             children: [
               { id: 'std-report', label: 'Стандартный отчёт', icon: 'table', iconAsset: stdReportIcon, documentId: 'std-report' },
-              { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: modelTextIcon, documentId: 'model-log' },
+              { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: stdJournalIcon, documentId: 'model-log' },
             ],
           },
           {
             id: 'forms-root',
             label: 'Формы',
             icon: 'form',
+            iconAsset: formCollectionIcon,
             children: [
               {
                 id: 'forms-canteen',
                 label: 'Столовая',
                 icon: 'form',
+                iconAsset: formIcon,
                 children: [
-                  { id: 'input-form', label: 'Форма ввода данных', icon: 'form' },
-                  { id: 'report-templates', label: 'Шаблоны отчётов', icon: 'form' },
+                  { id: 'input-form', label: 'Форма ввода данных', icon: 'form', iconAsset: formIcon },
+                  { id: 'report-templates', label: 'Шаблоны отчётов', icon: 'form', iconAsset: formCollectionIcon },
                 ],
               },
             ],
@@ -128,7 +143,7 @@ const projectTree: TreeNode[] = [
         id: 'libraries-root',
         label: 'Библиотеки ТЭБов проекта',
         icon: 'library',
-        iconAsset: libraryIcon,
+        iconAsset: tebsLibraryCollectionIcon,
         children: [{ id: 'library', label: 'Библиотека ТЭБов', icon: 'library', iconAsset: tebsLibraryIcon, documentId: 'editor' }],
       },
       { id: 'csharp-libraries', label: 'Библиотеки C#', icon: 'code', iconAsset: csProjectIcon },
@@ -225,6 +240,7 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
 }
 
 export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerProps) {
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const selectedNodeId = useTebEditorStore((state) => state.selectedNodeId);
   const collapsedNodeIds = useTebEditorStore((state) => state.collapsedNodeIds);
   const projectSearchQuery = useTebEditorStore((state) => state.projectSearchQuery);
@@ -254,6 +270,21 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   const filteredTree = useMemo(() => filterTree(explorerConfig.tree, projectSearchQuery), [explorerConfig.tree, projectSearchQuery]);
   const forceExpanded = projectSearchQuery.trim().length > 0;
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'F3') {
+        return;
+      }
+
+      event.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   function handleOpenNode(nodeId: string) {
     const documentId =
       nodeId === 'scheme'
@@ -278,9 +309,29 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   return (
     <aside className={`project-explorer ${autoHide ? 'project-explorer--auto-hide' : ''}`}>
       {autoHide ? (
-        <div className="explorer-auto-tabs" aria-hidden="true">
-          <span className={`explorer-auto-tab ${explorerMode === 'project' ? 'is-active' : ''}`}>Текущий проект</span>
-          <span className={`explorer-auto-tab ${explorerMode === 'libraries' ? 'is-active' : ''}`}>Библиотеки ТЭБов</span>
+        <div className="explorer-auto-tabs" role="tablist" aria-label="Скрытые панели проекта">
+          <button
+            className={`explorer-auto-tab ${explorerMode === 'project' ? 'is-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={explorerMode === 'project'}
+            onFocus={() => setExplorerMode('project')}
+            onPointerEnter={() => setExplorerMode('project')}
+            onClick={() => setExplorerMode('project')}
+          >
+            Текущий проект
+          </button>
+          <button
+            className={`explorer-auto-tab ${explorerMode === 'libraries' ? 'is-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={explorerMode === 'libraries'}
+            onFocus={() => setExplorerMode('libraries')}
+            onPointerEnter={() => setExplorerMode('libraries')}
+            onClick={() => setExplorerMode('libraries')}
+          >
+            Библиотеки ТЭБов
+          </button>
         </div>
       ) : null}
 
@@ -292,7 +343,7 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
               ................................
             </span>
             <button className="panel-caption__button" type="button" title="Сбросить поиск" aria-label="Сбросить поиск" onClick={() => setProjectSearchQuery('')}>
-              <span aria-hidden="true">▾</span>
+              <img src={arrowDownIcon} alt="" aria-hidden="true" />
             </button>
             <button
               className={`panel-caption__button panel-caption__button--pin ${autoHide ? 'is-auto-hide' : ''}`}
@@ -302,16 +353,17 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
               aria-pressed={autoHide}
               onClick={onToggleAutoHide}
             >
-              <span aria-hidden="true">⌖</span>
+              <img src={pinIcon} alt="" aria-hidden="true" />
             </button>
             <button className="panel-caption__button" type="button" title="Закрыть панель" aria-label="Закрыть панель" onClick={toggleExplorer}>
-              <span aria-hidden="true">×</span>
+              <img src={closeIcon} alt="" aria-hidden="true" />
             </button>
           </div>
         </div>
 
         <div className="project-search">
           <input
+            ref={searchInputRef}
             className="project-search__input"
             type="search"
             value={projectSearchQuery}

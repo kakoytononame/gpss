@@ -9,6 +9,7 @@
 
 .workbench {
   min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-columns: 424px 1fr;
   border-top: 1px solid #f7f9fb;
@@ -25,6 +26,8 @@
 .explorer-dock {
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  align-self: stretch;
   position: relative;
   z-index: 5;
 }
@@ -40,6 +43,8 @@
 
 .document-surface {
   min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   padding: 16px;
   overflow: auto;
 }
