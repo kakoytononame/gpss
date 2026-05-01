@@ -17,4 +17,6 @@ public interface ITebService
     Task SetParameterValueAsync(string libraryId, Guid classId, Guid instanceId, string parameterId, ParameterValueUpdateRequest request, CancellationToken cancellationToken);
     Task<TebClassResponse> PatchPropertyAsync(string libraryId, Guid classId, PropertyPatchRequest request, CancellationToken cancellationToken);
     Task<TebClassResponse> UpdateGpssModelAsync(string libraryId, Guid classId, GpssModelUpdateRequest request, CancellationToken cancellationToken);
+    Task<WorkspaceSnapshotResponse?> GetWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken);
+    Task<WorkspaceSnapshotResponse> SaveWorkspaceSnapshotAsync(string snapshotId, WorkspaceSnapshotUpsertRequest request, CancellationToken cancellationToken);
 }

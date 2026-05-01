@@ -33,6 +33,18 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<GpssStudioDbContext>();
+    dbContext.Database.ExecuteSqlRaw("""
+        create table if not exists workspace_snapshots (
+          id text primary key,
+          snapshot_json jsonb not null default '{{}}'::jsonb,
+          updated_at timestamptz not null default now()
+        );
+        """);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

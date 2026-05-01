@@ -92,3 +92,13 @@ public sealed class TebInstanceParameterValueEntity
     public TebInstanceEntity Instance { get; set; } = null!;
     public TebParameterEntity Parameter { get; set; } = null!;
 }
+
+/// <summary>
+/// EF Core entity for serialized frontend workspace state.
+/// </summary>
+public sealed class WorkspaceSnapshotEntity
+{
+    public string Id { get; set; } = string.Empty;
+    public string SnapshotJson { get; set; } = "{}";
+    public DateTimeOffset UpdatedAt { get; set; }
+}

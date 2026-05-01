@@ -1,0 +1,131 @@
+.issues-panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 24px 34px minmax(0, 1fr);
+  border-top: 1px solid #aebccd;
+  background: #fff;
+  overflow: hidden;
+}
+
+.issues-caption {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 18px 18px;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px 0 8px;
+  background: #f7f7f7;
+  color: #111;
+  font-size: 0.82rem;
+}
+
+.issues-caption__grip {
+  min-width: 0;
+  color: #8d96a2;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.issues-caption button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.issues-caption button:hover {
+  background: #dfefff;
+}
+
+.issues-caption img {
+  max-width: 13px;
+  max-height: 13px;
+}
+
+.issues-toolbar {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #d4dce6;
+  background: #f9fafb;
+  overflow-x: auto;
+}
+
+.issues-filter,
+.issues-go-source {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid #bfd8f6;
+  background: #eef6ff;
+  color: #3d4a5c;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.issues-filter.is-active {
+  border-color: #5aa7f2;
+  background: #dff0ff;
+}
+
+.issues-go-source {
+  border-color: transparent;
+  background: transparent;
+  color: #8a8f99;
+}
+
+.issues-filter img,
+.issues-go-source img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.issues-table {
+  min-width: 760px;
+  overflow: auto;
+  font-size: 0.78rem;
+}
+
+.issues-row {
+  width: 100%;
+  min-height: 28px;
+  display: grid;
+  grid-template-columns: minmax(240px, 1.7fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr);
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid #e8edf3;
+  background: #fff;
+  color: #243040;
+  text-align: left;
+}
+
+.issues-row:nth-child(odd):not(.issues-row--head) {
+  background: #f7f9fb;
+}
+
+.issues-row:hover:not(.issues-row--head) {
+  background: #e9f4ff;
+}
+
+.issues-row span {
+  min-width: 0;
+  padding: 4px 8px;
+  overflow-wrap: anywhere;
+}
+
+.issues-row--head {
+  min-height: 26px;
+  background: #f1f5f9;
+  color: #1f78d1;
+  font-weight: 400;
+}

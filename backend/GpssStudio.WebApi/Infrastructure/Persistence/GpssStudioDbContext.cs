@@ -19,6 +19,7 @@ public sealed class GpssStudioDbContext : DbContext
     public DbSet<TebStateEntity> TebStates => Set<TebStateEntity>();
     public DbSet<TebInstanceEntity> TebInstances => Set<TebInstanceEntity>();
     public DbSet<TebInstanceParameterValueEntity> TebInstanceParameterValues => Set<TebInstanceParameterValueEntity>();
+    public DbSet<WorkspaceSnapshotEntity> WorkspaceSnapshots => Set<WorkspaceSnapshotEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -111,6 +112,15 @@ public sealed class GpssStudioDbContext : DbContext
             entity.Property(item => item.Value).HasColumnName("value");
             entity.HasOne(item => item.Instance).WithMany(item => item.ParameterValues).HasForeignKey(item => item.InstanceId);
             entity.HasOne(item => item.Parameter).WithMany(item => item.InstanceValues).HasForeignKey(item => item.ParameterId);
+        });
+
+        modelBuilder.Entity<WorkspaceSnapshotEntity>(entity =>
+        {
+            entity.ToTable("workspace_snapshots");
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
+            entity.Property(item => item.SnapshotJson).HasColumnName("snapshot_json").HasColumnType("jsonb");
+            entity.Property(item => item.UpdatedAt).HasColumnName("updated_at");
         });
     }
 }

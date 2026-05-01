@@ -11,3 +11,4 @@ backend/dist/
 backend/.env
 backend/GpssStudio.WebApi/bin/
 backend/GpssStudio.WebApi/obj/
+/docs

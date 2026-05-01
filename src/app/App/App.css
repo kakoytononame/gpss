@@ -11,16 +11,28 @@
   min-height: 0;
   height: 100%;
   display: grid;
-  grid-template-columns: 252px 1fr;
+  grid-template-columns: 252px minmax(0, 1fr) 360px;
   border-top: 1px solid #f7f9fb;
 }
 
 .gpss-desktop--collapsed .workbench {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) 360px;
 }
 
 .gpss-desktop--explorer-auto-hide .workbench {
-  grid-template-columns: 34px 1fr;
+  grid-template-columns: 34px minmax(0, 1fr) 360px;
+}
+
+.gpss-desktop--right-collapsed .workbench {
+  grid-template-columns: 252px minmax(0, 1fr);
+}
+
+.gpss-desktop--collapsed.gpss-desktop--right-collapsed .workbench {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gpss-desktop--explorer-auto-hide.gpss-desktop--right-collapsed .workbench {
+  grid-template-columns: 34px minmax(0, 1fr);
 }
 
 .explorer-dock {
@@ -36,9 +48,13 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(26px, auto) 1fr;
+  grid-template-rows: minmax(26px, auto) minmax(0, 1fr);
   background: repeating-linear-gradient(45deg, #eef0f3 0 2px, #e2e5e9 2px 4px);
   overflow: hidden;
+}
+
+.document-host--with-issues {
+  grid-template-rows: minmax(26px, auto) minmax(0, 1fr) 118px;
 }
 
 .document-surface {
@@ -83,6 +99,14 @@
 
 @media (max-width: 860px) {
   .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .gpss-desktop--collapsed .workbench,
+  .gpss-desktop--explorer-auto-hide .workbench,
+  .gpss-desktop--right-collapsed .workbench,
+  .gpss-desktop--collapsed.gpss-desktop--right-collapsed .workbench,
+  .gpss-desktop--explorer-auto-hide.gpss-desktop--right-collapsed .workbench {
     grid-template-columns: 1fr;
   }
 

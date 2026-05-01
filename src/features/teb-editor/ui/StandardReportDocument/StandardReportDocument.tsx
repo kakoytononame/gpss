@@ -1,17 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
+import type { ReportSectionId } from '../../../../shared/types/teb';
 import './StandardReportDocument.css';
-
-type ReportSectionId =
-  | 'general'
-  | 'names'
-  | 'blocks'
-  | 'facilities'
-  | 'queues'
-  | 'storages'
-  | 'switches'
-  | 'savevalues'
-  | 'future';
 
 interface ReportSection {
   id: ReportSectionId;
@@ -162,9 +152,10 @@ const futureRows = [
 export function StandardReportDocument() {
   const teb = useTebEditorStore((state) => state.teb);
   const simulationState = useTebEditorStore((state) => state.simulationState);
+  const editedCells = useTebEditorStore((state) => state.reportCellEdits);
+  const setReportCellEdit = useTebEditorStore((state) => state.setReportCellEdit);
   const [activeSectionId, setActiveSectionId] = useState<ReportSectionId>('general');
   const [selectedRows, setSelectedRows] = useState<Partial<Record<ReportSectionId, number>>>({});
-  const [editedCells, setEditedCells] = useState<Record<string, string>>({});
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
 
   const modelName = teb?.header || teb?.nameInModel || 'Столовая';
@@ -292,10 +283,7 @@ export function StandardReportDocument() {
       return;
     }
 
-    setEditedCells((current) => ({
-      ...current,
-      [getCellKey(editingCell.sectionId, editingCell.rowIndex, editingCell.columnIndex)]: editingCell.draft,
-    }));
+    setReportCellEdit(editingCell.sectionId, editingCell.rowIndex, editingCell.columnIndex, editingCell.draft);
     setEditingCell(null);
   }
 

@@ -57,11 +57,14 @@ export function ModelLogDocument() {
   const teb = useTebEditorStore((state) => state.teb);
   const simulationState = useTebEditorStore((state) => state.simulationState);
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
+  const modelLogText = useTebEditorStore((state) => state.modelLogText);
+  const setModelLogText = useTebEditorStore((state) => state.setModelLogText);
   const activateDocument = useTebEditorStore((state) => state.activateDocument);
   const initialLog = useMemo(() => buildInitialLog(teb, simulationState), [teb, simulationState]);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
-  const [text, setText] = useState(initialLog);
-  const [history, setHistory] = useState([initialLog]);
+  const didInitializeLogRef = useRef(false);
+  const text = modelLogText;
+  const [history, setHistory] = useState([modelLogText || initialLog]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [replacement, setReplacement] = useState('');
@@ -71,17 +74,20 @@ export function ModelLogDocument() {
   const [dialogPosition, setDialogPosition] = useState({ x: Math.max(80, window.innerWidth / 2 - 230), y: 260 });
 
   useEffect(() => {
-    setText(initialLog);
-    setHistory([initialLog]);
-    setHistoryIndex(0);
-  }, [initialLog]);
+    if (!didInitializeLogRef.current && !modelLogText && initialLog) {
+      didInitializeLogRef.current = true;
+      setModelLogText(initialLog, 'Журнал моделирования загружен.');
+      setHistory([initialLog]);
+      setHistoryIndex(0);
+    }
+  }, [initialLog, modelLogText, setModelLogText]);
 
   function focusEditor() {
     editorRef.current?.focus();
   }
 
   function pushText(nextText: string, message?: string) {
-    setText(nextText);
+    setModelLogText(nextText, message);
     setHistory((current) => [...current.slice(0, historyIndex + 1), nextText].slice(-80));
     setHistoryIndex((current) => Math.min(current + 1, 79));
     if (message) {
@@ -145,7 +151,7 @@ export function ModelLogDocument() {
 
     const nextIndex = historyIndex - 1;
     setHistoryIndex(nextIndex);
-    setText(history[nextIndex]);
+    setModelLogText(history[nextIndex], 'Изменение журнала отменено.');
     setStatusMessage('Изменение журнала отменено.', 'saved');
     focusEditor();
   }
@@ -158,7 +164,7 @@ export function ModelLogDocument() {
 
     const nextIndex = historyIndex + 1;
     setHistoryIndex(nextIndex);
-    setText(history[nextIndex]);
+    setModelLogText(history[nextIndex], 'Изменение журнала возвращено.');
     setStatusMessage('Изменение журнала возвращено.', 'saved');
     focusEditor();
   }

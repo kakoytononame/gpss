@@ -49,6 +49,14 @@ public sealed class ParameterValueUpdateRequest
     public JsonElement Value { get; init; }
 }
 
+/// <summary>
+/// Serialized workspace state created by the web client.
+/// </summary>
+public sealed class WorkspaceSnapshotUpsertRequest
+{
+    public JsonElement Snapshot { get; init; }
+}
+
 public sealed class ImagePatchItem
 {
     public string? ImageName { get; init; }

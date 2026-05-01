@@ -228,6 +228,14 @@
   background: #eef5fc;
 }
 
+.tree-row.is-draggable {
+  cursor: grab;
+}
+
+.tree-row.is-draggable:active {
+  cursor: grabbing;
+}
+
 .tree-row.is-active {
   background: #0068b5;
   color: #fff;
@@ -313,6 +321,195 @@
   width: 16px;
   height: 16px;
   object-fit: contain;
+}
+
+.tree-row__teb-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  color: #5f8fbd;
+}
+
+.tree-row__teb-icon::before,
+.tree-row__teb-icon::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.tree-row__teb-icon--rect::before {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--diamond::before,
+.tree-row__teb-icon--test::before {
+  width: 12px;
+  height: 12px;
+  top: 2px;
+  left: 2px;
+  border: 2px solid currentColor;
+  transform: rotate(45deg) scale(0.78);
+}
+
+.tree-row__teb-icon--test::after {
+  width: 9px;
+  height: 2px;
+  top: 7px;
+  left: 3px;
+  background: currentColor;
+}
+
+.tree-row__teb-icon--loop::before {
+  inset: 3px 3px 3px 1px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--loop::after {
+  width: 5px;
+  height: 8px;
+  top: 4px;
+  left: 0;
+  border: 2px solid currentColor;
+  border-right: 0;
+}
+
+.tree-row__teb-icon--assemble::before {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+  clip-path: polygon(0 0, 50% 50%, 100% 0, 100% 100%, 0 100%);
+}
+
+.tree-row__teb-icon--assign::before,
+.tree-row__teb-icon--mark::before,
+.tree-row__teb-icon--priority::before {
+  inset: 5px 2px 3px 2px;
+  border: 2px solid currentColor;
+  border-radius: 5px;
+}
+
+.tree-row__teb-icon--assign::after,
+.tree-row__teb-icon--priority::after {
+  width: 8px;
+  height: 5px;
+  top: 1px;
+  left: 4px;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+}
+
+.tree-row__teb-icon--buffer::before,
+.tree-row__teb-icon--savevalue::before {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+  border-bottom-width: 4px;
+}
+
+.tree-row__teb-icon--depart::before,
+.tree-row__teb-icon--enter::before,
+.tree-row__teb-icon--leave::before,
+.tree-row__teb-icon--queue::before,
+.tree-row__teb-icon--release::before,
+.tree-row__teb-icon--select::before,
+.tree-row__teb-icon--seize::before,
+.tree-row__teb-icon--tabulate::before {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--depart::after,
+.tree-row__teb-icon--queue::after {
+  width: 6px;
+  height: 6px;
+  right: -1px;
+  top: 3px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.tree-row__teb-icon--enter::after,
+.tree-row__teb-icon--tabulate::after {
+  width: 7px;
+  height: 6px;
+  right: -1px;
+  bottom: 2px;
+  border: 2px solid currentColor;
+  border-left: 0;
+}
+
+.tree-row__teb-icon--generate::before,
+.tree-row__teb-icon--terminate::before {
+  width: 12px;
+  height: 12px;
+  left: 2px;
+  top: 2px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.tree-row__teb-icon--generate::after {
+  width: 7px;
+  height: 5px;
+  right: 1px;
+  bottom: 3px;
+  border: 2px solid currentColor;
+  border-left: 0;
+}
+
+.tree-row__teb-icon--gather::before {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--gather::after {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+  clip-path: polygon(0 0, 100% 100%, 100% 0, 0 100%);
+}
+
+.tree-row__teb-icon--link::before,
+.tree-row__teb-icon--unlink::before {
+  inset: 2px 4px;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+}
+
+.tree-row__teb-icon--logic::before {
+  inset: 5px 1px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--logic::after {
+  width: 5px;
+  height: 5px;
+  right: -1px;
+  top: 5px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--match::before,
+.tree-row__teb-icon--preempt::before,
+.tree-row__teb-icon--return::before {
+  inset: 4px 1px;
+  border: 2px solid currentColor;
+}
+
+.tree-row__teb-icon--match::after,
+.tree-row__teb-icon--preempt::after,
+.tree-row__teb-icon--return::after {
+  width: 8px;
+  height: 8px;
+  right: -1px;
+  top: 4px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.tree-row.is-active .tree-row__teb-icon {
+  color: #fff;
 }
 
 .tree-row__label {

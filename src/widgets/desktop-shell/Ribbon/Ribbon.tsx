@@ -103,9 +103,13 @@ export function Ribbon() {
   const setActiveTab = useTebEditorStore((state) => state.setActiveTab);
   const startSimulation = useTebEditorStore((state) => state.startSimulation);
   const stopSimulation = useTebEditorStore((state) => state.stopSimulation);
+  const runSimulationCommand = useTebEditorStore((state) => state.runSimulationCommand);
   const setProjectSearchQuery = useTebEditorStore((state) => state.setProjectSearchQuery);
+  const setExplorerMode = useTebEditorStore((state) => state.setExplorerMode);
   const toggleExplorer = useTebEditorStore((state) => state.toggleExplorer);
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
+  const openRightPanel = useTebEditorStore((state) => state.openRightPanel);
+  const openIssuesPanel = useTebEditorStore((state) => state.openIssuesPanel);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const appMenuRef = useRef<HTMLDivElement | null>(null);
   const previousActiveDocumentRef = useRef<string | null>(null);
@@ -362,46 +366,34 @@ export function Ribbon() {
         title: 'Команды',
         className: 'ribbon-group--commands',
         commands: [
-          { id: 'cmd-conduct', label: 'CONDUCT', icon: conductIcon, onClick: () => setStatusMessage('Команда CONDUCT подготовлена для текущей модели.', 'saved') },
-          { id: 'cmd-start', label: 'START', icon: cmdStartIcon, onClick: () => setStatusMessage('Команда START отправлена в демо-режиме.', 'saved') },
-          { id: 'cmd-step', label: 'STEP', icon: cmdStepIcon, onClick: () => setStatusMessage('Команда STEP выполнена в демо-режиме.', 'saved') },
+          { id: 'cmd-conduct', label: 'CONDUCT', icon: conductIcon, onClick: () => runSimulationCommand('conduct') },
+          { id: 'cmd-start', label: 'START', icon: cmdStartIcon, onClick: () => runSimulationCommand('start') },
+          { id: 'cmd-step', label: 'STEP', icon: cmdStepIcon, onClick: () => runSimulationCommand('step') },
           {
             id: 'cmd-halt',
             label: 'HALT',
             icon: cmdHaltIcon,
-            onClick: () => {
-              stopSimulation();
-              setStatusMessage('Команда HALT выполнена.', 'saved');
-            },
+            onClick: () => runSimulationCommand('halt'),
           },
           {
             id: 'cmd-continue',
             label: 'CONTINUE',
             icon: cmdContinueIcon,
-            onClick: () => {
-              startSimulation();
-              setStatusMessage('Команда CONTINUE выполнена.', 'saved');
-            },
+            onClick: () => runSimulationCommand('continue'),
           },
-          { id: 'cmd-clear', label: 'CLEAR', icon: cmdClearIcon, onClick: () => setStatusMessage('Команда CLEAR выполнена в демо-режиме.', 'saved') },
-          { id: 'cmd-reset', label: 'RESET', icon: cmdResetIcon, onClick: () => setStatusMessage('Команда RESET выполнена в демо-режиме.', 'saved') },
+          { id: 'cmd-clear', label: 'CLEAR', icon: cmdClearIcon, onClick: () => runSimulationCommand('clear') },
+          { id: 'cmd-reset', label: 'RESET', icon: cmdResetIcon, onClick: () => runSimulationCommand('reset') },
           {
             id: 'cmd-show',
             label: 'SHOW',
             icon: cmdShowIcon,
-            onClick: () => {
-              activateDocument('std-report');
-              setStatusMessage('Открыт стандартный отчёт по команде SHOW.', 'saved');
-            },
+            onClick: () => runSimulationCommand('show'),
           },
           {
             id: 'cmd-custom',
             label: 'Произвольная команда',
             icon: cmdCustomIcon,
-            onClick: () => {
-              activateDocument('model-log');
-              setStatusMessage('Открыт журнал моделирования для произвольной команды.', 'saved');
-            },
+            onClick: () => runSimulationCommand('custom'),
           },
         ],
       },
@@ -434,7 +426,11 @@ export function Ribbon() {
             label: 'Библиотеки ТЭБов',
             icon: windowTebLibsIcon,
             onClick: () => {
-              activateDocument('start');
+              if (!explorerVisible) {
+                toggleExplorer();
+              }
+              setExplorerMode('libraries');
+              focusProjectNode('project-tebs-library');
               setStatusMessage('Открыт обозреватель библиотек ТЭБов.', 'saved');
             },
           },
@@ -449,8 +445,7 @@ export function Ribbon() {
             label: 'Замечания и ошибки',
             icon: windowIssuesIcon,
             onClick: () => {
-              activateDocument('model-log');
-              setStatusMessage('Открыта панель замечаний и ошибок.', 'saved');
+              openIssuesPanel();
             },
           },
           {
@@ -470,9 +465,7 @@ export function Ribbon() {
             label: 'Свойства',
             icon: windowPropertiesIcon,
             onClick: () => {
-              activateDocument('editor');
-              setActiveTab('general');
-              setStatusMessage('Открыты свойства текущего документа.', 'saved');
+              openRightPanel('properties');
             },
           },
           {
@@ -480,9 +473,7 @@ export function Ribbon() {
             label: 'Свойства ТЭБа',
             icon: windowTebPropertiesIcon,
             onClick: () => {
-              activateDocument('editor');
-              setActiveTab('general');
-              setStatusMessage('Открыты свойства ТЭБа.', 'saved');
+              openRightPanel('properties');
             },
           },
           {
@@ -502,8 +493,7 @@ export function Ribbon() {
             label: 'Тесты ТЭБов',
             icon: windowPropertiesIcon,
             onClick: () => {
-              activateDocument('model-log');
-              setStatusMessage('Открыта панель тестов ТЭБов.', 'saved');
+              openRightPanel('teb-tests');
             },
           },
         ],
@@ -711,7 +701,7 @@ export function Ribbon() {
       <div className="title-row">
         <div className="quick-access" aria-label="Быстрый доступ">
           {visibleQuickAccess.map((command) => (
-            <button key={command.id} type="button" title={command.label} onClick={command.onClick}>
+            <button key={command.id} type="button" title={command.label} data-testid={`quick-command-${command.id}`} onClick={command.onClick}>
               <img src={command.icon} alt="" aria-hidden="true" />
             </button>
           ))}
@@ -808,7 +798,7 @@ export function Ribbon() {
           <section className={`ribbon-group ${group.className ?? ''}`.trim()} key={group.title}>
             <div className="ribbon-commands">
               {group.commands.map((command) => (
-                <button className="ribbon-command" key={command.id} type="button" onClick={command.onClick}>
+                <button className="ribbon-command" key={command.id} type="button" data-testid={`ribbon-command-${command.id}`} onClick={command.onClick}>
                   <img className="ribbon-command__icon-image" src={command.icon} alt="" aria-hidden="true" />
                   <span>{command.label}</span>
                 </button>

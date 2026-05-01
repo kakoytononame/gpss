@@ -2,6 +2,7 @@ using GpssStudio.WebApi.Application.Tebs.Interfaces;
 using GpssStudio.WebApi.Contracts.Requests;
 using GpssStudio.WebApi.Contracts.Responses;
 using GpssStudio.WebApi.Infrastructure.Persistence.Interfaces;
+using System.Text.Json;
 
 namespace GpssStudio.WebApi.Application.Tebs.Services;
 
@@ -67,5 +68,32 @@ public sealed class TebService : ITebService
     {
         var aggregate = await _repository.UpdateGpssModelAsync(libraryId, classId, request.Text, cancellationToken);
         return aggregate.ToClassResponse();
+    }
+
+    public async Task<WorkspaceSnapshotResponse?> GetWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken)
+    {
+        var entity = await _repository.GetWorkspaceSnapshotAsync(snapshotId, cancellationToken);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(entity.SnapshotJson);
+        return new WorkspaceSnapshotResponse
+        {
+            Snapshot = document.RootElement.Clone(),
+            UpdatedAt = entity.UpdatedAt,
+        };
+    }
+
+    public async Task<WorkspaceSnapshotResponse> SaveWorkspaceSnapshotAsync(string snapshotId, WorkspaceSnapshotUpsertRequest request, CancellationToken cancellationToken)
+    {
+        var entity = await _repository.SaveWorkspaceSnapshotAsync(snapshotId, request.Snapshot, cancellationToken);
+        using var document = JsonDocument.Parse(entity.SnapshotJson);
+        return new WorkspaceSnapshotResponse
+        {
+            Snapshot = document.RootElement.Clone(),
+            UpdatedAt = entity.UpdatedAt,
+        };
     }
 }

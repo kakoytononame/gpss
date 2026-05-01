@@ -18,4 +18,6 @@ public interface ITebRepository
     Task SetParameterValueAsync(string libraryId, Guid classId, Guid instanceId, string parameterId, JsonElement value, CancellationToken cancellationToken);
     Task<TebClassAggregate> PatchPropertyAsync(string libraryId, Guid classId, string path, JsonElement value, CancellationToken cancellationToken);
     Task<TebClassAggregate> UpdateGpssModelAsync(string libraryId, Guid classId, string text, CancellationToken cancellationToken);
+    Task<WorkspaceSnapshotEntity?> GetWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken);
+    Task<WorkspaceSnapshotEntity> SaveWorkspaceSnapshotAsync(string snapshotId, JsonElement snapshot, CancellationToken cancellationToken);
 }

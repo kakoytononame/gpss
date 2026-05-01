@@ -8,18 +8,28 @@ import type {
   Direction,
   EditorMode,
   EditorQuery,
+  ExplorerMode,
+  IssueItem,
+  ReportSectionId,
+  RightPanelTab,
+  SchemeLink,
+  SchemeNode,
+  SchemeSelection,
+  SimulationCommand,
   SimulationState,
   SourceKind,
   SyncStatus,
   TabId,
   TebDocument,
   TebParameter,
+  TebTestItem,
   WorkspaceSnapshot,
 } from '../../../shared/types/teb';
 import { EDITOR_TABS, visibleTabsForType } from '../model/constants';
 import { createBlankGpssEntity, createBlankParameter, createBlankPort, createBlankState } from '../model/factories';
 import { normalizeTebPayload } from '../model/normalizeTeb';
 import { SAMPLE_TEB_CLASS, SAMPLE_TEB_INSTANCE } from '../model/sampleData';
+import { INITIAL_ISSUES, INITIAL_SCHEME_LINKS, INITIAL_SCHEME_NODES, INITIAL_TEB_TESTS } from '../model/workspaceData';
 
 interface TebEditorState extends EditorQuery {
   teb: TebDocument | null;
@@ -32,11 +42,23 @@ interface TebEditorState extends EditorQuery {
   activeDocument: ActiveDocument | null;
   openDocuments: ActiveDocument[];
   explorerVisible: boolean;
+  rightPanelVisible: boolean;
+  rightPanelTab: RightPanelTab;
+  issuesPanelVisible: boolean;
+  explorerMode: ExplorerMode;
   selectedNodeId: string;
   collapsedNodeIds: string[];
   projectSearchQuery: string;
   modelFontSize: number;
   simulationState: SimulationState;
+  schemeNodes: SchemeNode[];
+  schemeLinks: SchemeLink[];
+  schemeSelection: SchemeSelection;
+  reportCellEdits: Record<string, string>;
+  modelLogText: string;
+  issues: IssueItem[];
+  issueFilter: 'all' | 'error' | 'warning' | 'info';
+  tebTests: TebTestItem[];
   history: TebDocument[];
   historyIndex: number;
 }
@@ -51,6 +73,12 @@ interface TebEditorActions {
   focusProjectNode: (nodeId: string) => void;
   selectProjectNode: (nodeId: string) => void;
   toggleExplorer: () => void;
+  toggleRightPanel: () => void;
+  openRightPanel: (tab?: RightPanelTab) => void;
+  setRightPanelTab: (tab: RightPanelTab) => void;
+  toggleIssuesPanel: () => void;
+  openIssuesPanel: () => void;
+  setExplorerMode: (mode: ExplorerMode) => void;
   toggleTreeNode: (nodeId: string) => void;
   setProjectSearchQuery: (query: string) => void;
   setStatusMessage: (message: string, status?: SyncStatus) => void;
@@ -59,6 +87,17 @@ interface TebEditorActions {
   loadWorkspaceSnapshot: () => void;
   startSimulation: () => void;
   stopSimulation: () => void;
+  runSimulationCommand: (command: SimulationCommand) => void;
+  setSchemeNodes: (updater: SchemeNode[] | ((nodes: SchemeNode[]) => SchemeNode[]), message?: string) => void;
+  setSchemeLinks: (updater: SchemeLink[] | ((links: SchemeLink[]) => SchemeLink[]), message?: string) => void;
+  setSchemeSelection: (selection: SchemeSelection) => void;
+  resetScheme: () => void;
+  setReportCellEdit: (sectionId: ReportSectionId, rowIndex: number, columnIndex: number, value: string) => void;
+  setModelLogText: (text: string, message?: string) => void;
+  appendModelLog: (line: string) => void;
+  clearModelLog: () => void;
+  setIssueFilter: (filter: TebEditorState['issueFilter']) => void;
+  setTebTestStatus: (id: string, status: TebTestItem['status'], message: string) => void;
   undo: () => void;
   redo: () => void;
   zoomInModel: () => void;
@@ -100,9 +139,20 @@ function snapshotFromState(state: TebEditorState): WorkspaceSnapshot {
     activeDocument: state.activeDocument,
     openDocuments: state.openDocuments,
     explorerVisible: state.explorerVisible,
+    rightPanelVisible: state.rightPanelVisible,
+    rightPanelTab: state.rightPanelTab,
+    issuesPanelVisible: state.issuesPanelVisible,
+    explorerMode: state.explorerMode,
     collapsedNodeIds: state.collapsedNodeIds,
     selectedNodeId: state.selectedNodeId,
     modelFontSize: state.modelFontSize,
+    simulationState: state.simulationState,
+    schemeNodes: deepClone(state.schemeNodes),
+    schemeLinks: deepClone(state.schemeLinks),
+    reportCellEdits: { ...state.reportCellEdits },
+    modelLogText: state.modelLogText,
+    issues: deepClone(state.issues),
+    tebTests: deepClone(state.tebTests),
   };
 }
 
@@ -224,6 +274,55 @@ function documentLabel(documentId: ActiveDocument): string {
   }
 }
 
+function buildInitialModelLog(teb: TebDocument | null, simulationState: SimulationState): string {
+  const commands =
+    teb?.gpssModel.text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 10) ?? [];
+
+  return [
+    `[08:59:12] Проект "${teb?.header || teb?.nameInModel || 'Столовая'}" открыт.`,
+    `[08:59:14] Загружено параметров: ${teb?.parameters.length ?? 0}.`,
+    `[08:59:18] Загружено GPSS-объектов: ${teb?.gpssEntities.length ?? 0}.`,
+    `[08:59:21] Состояние моделирования: ${simulationState}.`,
+    ...commands.map((command, index) => `[08:59:${String(24 + index).padStart(2, '0')}] GPSS: ${command}`),
+  ].join('\n');
+}
+
+function appendLogLine(text: string, line: string): string {
+  return text ? `${text}\n${line}` : line;
+}
+
+function stateFromWorkspaceSnapshot(snapshot: WorkspaceSnapshot, state: TebEditorState, syncMessage: string): Partial<TebEditorState> {
+  return {
+    teb: snapshot.teb ?? state.teb,
+    mode: snapshot.mode,
+    activeTab: snapshot.activeTab,
+    activeDocument: snapshot.activeDocument,
+    openDocuments: snapshot.openDocuments ?? state.openDocuments,
+    explorerVisible: snapshot.explorerVisible,
+    rightPanelVisible: snapshot.rightPanelVisible ?? state.rightPanelVisible,
+    rightPanelTab: snapshot.rightPanelTab ?? state.rightPanelTab,
+    issuesPanelVisible: snapshot.issuesPanelVisible ?? state.issuesPanelVisible,
+    explorerMode: snapshot.explorerMode ?? state.explorerMode,
+    selectedNodeId: snapshot.selectedNodeId ?? (snapshot.activeDocument ? nodeForDocument(snapshot.activeDocument) : state.selectedNodeId),
+    collapsedNodeIds: snapshot.collapsedNodeIds ?? state.collapsedNodeIds,
+    modelFontSize: snapshot.modelFontSize,
+    simulationState: snapshot.simulationState ?? state.simulationState,
+    schemeNodes: snapshot.schemeNodes ? deepClone(snapshot.schemeNodes) : state.schemeNodes,
+    schemeLinks: snapshot.schemeLinks ? deepClone(snapshot.schemeLinks) : state.schemeLinks,
+    reportCellEdits: snapshot.reportCellEdits ?? state.reportCellEdits,
+    modelLogText: snapshot.modelLogText ?? state.modelLogText,
+    issues: snapshot.issues ? deepClone(snapshot.issues) : state.issues,
+    tebTests: snapshot.tebTests ? deepClone(snapshot.tebTests) : state.tebTests,
+    syncStatus: 'saved',
+    syncMessage,
+    ...createHistory(snapshot.teb ?? state.teb),
+  };
+}
+
 export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
   ...initialQuery,
   teb: null,
@@ -236,11 +335,23 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
   activeDocument: 'editor',
   openDocuments: ['editor', 'scheme', 'start', 'model-text'],
   explorerVisible: true,
+  rightPanelVisible: true,
+  rightPanelTab: 'properties',
+  issuesPanelVisible: true,
+  explorerMode: 'project',
   selectedNodeId: 'library',
   collapsedNodeIds: [],
   projectSearchQuery: '',
   modelFontSize: 14,
   simulationState: 'idle',
+  schemeNodes: deepClone(INITIAL_SCHEME_NODES),
+  schemeLinks: deepClone(INITIAL_SCHEME_LINKS),
+  schemeSelection: { type: 'node', id: 'kitchen-choice' },
+  reportCellEdits: {},
+  modelLogText: '',
+  issues: deepClone(INITIAL_ISSUES),
+  issueFilter: 'all',
+  tebTests: deepClone(INITIAL_TEB_TESTS),
   history: [],
   historyIndex: -1,
 
@@ -265,6 +376,7 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
         source: 'api',
         mode: teb.mode,
         activeTab: safeTabForDocument(get().activeTab, teb.type),
+        modelLogText: get().modelLogText || buildInitialModelLog(teb, get().simulationState),
         ...createHistory(teb),
         syncMessage: 'Данные загружены с локального API.',
       });
@@ -277,6 +389,7 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
         loadError: 'Не удалось получить данные с локального API. Открыты демонстрационные данные.',
         syncStatus: 'offline',
         syncMessage: 'Работа в локальном режиме до восстановления API.',
+        modelLogText: get().modelLogText || buildInitialModelLog(fallback, get().simulationState),
         ...createHistory(fallback),
       });
     }
@@ -347,6 +460,56 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
     }));
   },
 
+  toggleRightPanel() {
+    set((state) => ({
+      rightPanelVisible: !state.rightPanelVisible,
+      syncMessage: state.rightPanelVisible ? 'Правая панель скрыта.' : 'Правая панель открыта.',
+    }));
+  },
+
+  openRightPanel(tab = 'properties') {
+    set({
+      rightPanelVisible: true,
+      rightPanelTab: tab,
+      syncStatus: 'saved',
+      syncMessage: tab === 'properties' ? 'Открыта панель свойств.' : 'Открыта панель тестов ТЭБов.',
+    });
+  },
+
+  setRightPanelTab(tab) {
+    set({
+      rightPanelTab: tab,
+      rightPanelVisible: true,
+      syncStatus: 'saved',
+      syncMessage: tab === 'properties' ? 'Активна вкладка свойств.' : 'Активна вкладка тестов ТЭБов.',
+    });
+  },
+
+  toggleIssuesPanel() {
+    set((state) => ({
+      issuesPanelVisible: !state.issuesPanelVisible,
+      syncStatus: 'saved',
+      syncMessage: state.issuesPanelVisible ? 'Панель замечаний и ошибок скрыта.' : 'Панель замечаний и ошибок открыта.',
+    }));
+  },
+
+  openIssuesPanel() {
+    set({
+      issuesPanelVisible: true,
+      syncStatus: 'saved',
+      syncMessage: 'Открыта панель замечаний и ошибок.',
+    });
+  },
+
+  setExplorerMode(mode) {
+    set({
+      explorerMode: mode,
+      projectSearchQuery: '',
+      syncStatus: 'saved',
+      syncMessage: mode === 'libraries' ? 'Открыта панель библиотек ТЭБов.' : 'Открыта панель текущего проекта.',
+    });
+  },
+
   toggleTreeNode(nodeId) {
     set((state) => {
       const collapsedNodeIds = state.collapsedNodeIds.includes(nodeId)
@@ -379,9 +542,22 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
       activeTab: safeTabForDocument('general', fallback.type),
       activeDocument: 'editor',
       openDocuments: ['editor', 'scheme', 'start', 'model-text'],
+      rightPanelVisible: true,
+      rightPanelTab: 'properties',
+      issuesPanelVisible: true,
+      explorerMode: 'project',
       selectedNodeId: 'library',
       collapsedNodeIds: [],
       projectSearchQuery: '',
+      simulationState: 'idle',
+      schemeNodes: deepClone(INITIAL_SCHEME_NODES),
+      schemeLinks: deepClone(INITIAL_SCHEME_LINKS),
+      schemeSelection: { type: 'node', id: 'kitchen-choice' },
+      reportCellEdits: {},
+      modelLogText: '',
+      issues: deepClone(INITIAL_ISSUES),
+      issueFilter: 'all',
+      tebTests: deepClone(INITIAL_TEB_TESTS),
       syncStatus: 'idle',
       syncMessage: 'Рабочая область сброшена к демонстрационному состоянию.',
       ...createHistory(fallback),
@@ -390,32 +566,47 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
 
   saveWorkspaceSnapshot() {
     const state = get();
-    writeWorkspaceSnapshot(snapshotFromState(state));
-    set({ syncStatus: 'saved', syncMessage: 'Снимок рабочей области сохранен в браузере.' });
+    const snapshot = snapshotFromState(state);
+    writeWorkspaceSnapshot(snapshot);
+    set({ syncStatus: 'syncing', syncMessage: 'Снимок рабочей области сохраняется в базе данных...' });
+
+    void getApi(state)
+      .saveWorkspaceSnapshot(snapshot)
+      .then(() => {
+        set({ syncStatus: 'saved', syncMessage: 'Снимок рабочей области сохранен в базе данных.' });
+      })
+      .catch((error) => {
+        set({ syncStatus: 'offline', syncMessage: syncFailureMessage(error) });
+      });
   },
 
   loadWorkspaceSnapshot() {
-    const snapshot = readWorkspaceSnapshot();
+    const localSnapshot = readWorkspaceSnapshot();
 
-    if (!snapshot) {
-      set({ syncStatus: 'offline', syncMessage: 'Сохраненный снимок рабочей области не найден.' });
-      return;
+    if (localSnapshot) {
+      set((state) => stateFromWorkspaceSnapshot(localSnapshot, state, 'Рабочая область восстановлена из локального снимка. Проверяется версия в базе данных...'));
+    } else {
+      set({ syncStatus: 'syncing', syncMessage: 'Загрузка снимка рабочей области из базы данных...' });
     }
 
-    set((state) => ({
-      teb: snapshot.teb,
-      mode: snapshot.mode,
-      activeTab: snapshot.activeTab,
-      activeDocument: snapshot.activeDocument,
-      openDocuments: snapshot.openDocuments ?? state.openDocuments,
-      explorerVisible: snapshot.explorerVisible,
-      selectedNodeId: snapshot.selectedNodeId ?? (snapshot.activeDocument ? nodeForDocument(snapshot.activeDocument) : state.selectedNodeId),
-      collapsedNodeIds: snapshot.collapsedNodeIds ?? state.collapsedNodeIds,
-      modelFontSize: snapshot.modelFontSize,
-      syncStatus: 'saved',
-      syncMessage: 'Рабочая область восстановлена из локального снимка.',
-      ...createHistory(snapshot.teb ?? state.teb),
-    }));
+    void getApi(get())
+      .getWorkspaceSnapshot()
+      .then((remoteSnapshot) => {
+        if (!remoteSnapshot) {
+          if (!localSnapshot) {
+            set({ syncStatus: 'offline', syncMessage: 'Сохраненный снимок рабочей области не найден.' });
+          }
+          return;
+        }
+
+        writeWorkspaceSnapshot(remoteSnapshot);
+        set((state) => stateFromWorkspaceSnapshot(remoteSnapshot, state, 'Рабочая область восстановлена из базы данных.'));
+      })
+      .catch((error) => {
+        if (!localSnapshot) {
+          set({ syncStatus: 'offline', syncMessage: syncFailureMessage(error) });
+        }
+      });
   },
 
   startSimulation() {
@@ -424,17 +615,159 @@ export const useTebEditorStore = create<TebEditorStore>((set, get) => ({
       activeDocument: 'scheme',
       openDocuments: state.openDocuments.includes('scheme') ? state.openDocuments : [...state.openDocuments, 'scheme'],
       selectedNodeId: 'scheme',
+      modelLogText: appendLogLine(state.modelLogText || buildInitialModelLog(state.teb, 'idle'), '[10:59:11] Model Translation Begun.'),
+      tebTests: state.tebTests.map((test) =>
+        test.id === 'test-gpss-model' ? { ...test, status: 'passed', message: 'Модель успешно подготовлена к запуску' } : test,
+      ),
+      issues: [
+        ...state.issues.filter((issue) => issue.id !== 'issue-simulation-running'),
+        {
+          id: 'issue-simulation-running',
+          type: 'info',
+          description: 'Моделирование запущено, журнал и отчет обновлены.',
+          library: 'Столовая',
+          className: 'Simulation',
+          instance: 'Моделирование от 10.08.2018 10:59',
+          documentId: 'model-log',
+        },
+      ],
       syncStatus: 'saved',
       syncMessage: 'Имитационное моделирование запущено.',
     }));
   },
 
   stopSimulation() {
-    set({
+    set((state) => ({
       simulationState: 'stopped',
+      modelLogText: appendLogLine(state.modelLogText || buildInitialModelLog(state.teb, 'running'), '[10:59:12] Simulation has ended. Clock is 1440.000000.'),
       syncStatus: 'saved',
       syncMessage: 'Имитационное моделирование остановлено.',
+    }));
+  },
+
+  runSimulationCommand(command) {
+    const commandNames: Record<SimulationCommand, string> = {
+      conduct: 'CONDUCT',
+      start: 'START',
+      step: 'STEP',
+      halt: 'HALT',
+      continue: 'CONTINUE',
+      clear: 'CLEAR',
+      reset: 'RESET',
+      show: 'SHOW',
+      custom: 'CUSTOM',
+    };
+
+    if (command === 'start' || command === 'continue') {
+      get().startSimulation();
+    }
+
+    if (command === 'halt') {
+      get().stopSimulation();
+    }
+
+    if (command === 'conduct' || command === 'step') {
+      set({
+        simulationState: 'running',
+        activeDocument: 'scheme',
+        syncStatus: 'saved',
+        syncMessage: command === 'conduct' ? 'Команда CONDUCT подготовила модель к выполнению.' : 'Выполнен один шаг моделирования.',
+      });
+    }
+
+    if (command === 'clear') {
+      set({ modelLogText: '', syncStatus: 'saved', syncMessage: 'Журнал моделирования очищен командой CLEAR.' });
+    }
+
+    if (command === 'reset') {
+      set({
+        simulationState: 'idle',
+        schemeSelection: { type: 'node', id: 'kitchen-choice' },
+        syncStatus: 'saved',
+        syncMessage: 'Состояние моделирования сброшено командой RESET.',
+      });
+    }
+
+    if (command === 'show') {
+      get().activateDocument('std-report');
+    }
+
+    if (command === 'custom') {
+      get().activateDocument('model-log');
+    }
+
+    set((state) => ({
+      modelLogText: appendLogLine(state.modelLogText || buildInitialModelLog(state.teb, state.simulationState), `[10:59:12] Command ${commandNames[command]} executed.`),
+      syncStatus: 'saved',
+      syncMessage: `Команда ${commandNames[command]} выполнена и записана в журнал.`,
+    }));
+  },
+
+  setSchemeNodes(updater, message = 'Структурная схема обновлена.') {
+    set((state) => ({
+      schemeNodes: typeof updater === 'function' ? updater(state.schemeNodes) : updater,
+      syncStatus: 'saved',
+      syncMessage: message,
+    }));
+  },
+
+  setSchemeLinks(updater, message = 'Связи структурной схемы обновлены.') {
+    set((state) => ({
+      schemeLinks: typeof updater === 'function' ? updater(state.schemeLinks) : updater,
+      syncStatus: 'saved',
+      syncMessage: message,
+    }));
+  },
+
+  setSchemeSelection(selection) {
+    set({ schemeSelection: selection });
+  },
+
+  resetScheme() {
+    set({
+      schemeNodes: deepClone(INITIAL_SCHEME_NODES),
+      schemeLinks: deepClone(INITIAL_SCHEME_LINKS),
+      schemeSelection: { type: 'node', id: 'kitchen-choice' },
+      syncStatus: 'saved',
+      syncMessage: 'Структурная схема восстановлена.',
     });
+  },
+
+  setReportCellEdit(sectionId, rowIndex, columnIndex, value) {
+    const key = `${sectionId}:${rowIndex}:${columnIndex}`;
+    set((state) => ({
+      reportCellEdits: { ...state.reportCellEdits, [key]: value },
+      syncStatus: 'saved',
+      syncMessage: 'Ячейка стандартного отчета изменена.',
+    }));
+  },
+
+  setModelLogText(text, message = 'Журнал моделирования изменен.') {
+    set({ modelLogText: text, syncStatus: 'saved', syncMessage: message });
+  },
+
+  appendModelLog(line) {
+    set((state) => ({
+      modelLogText: appendLogLine(state.modelLogText || buildInitialModelLog(state.teb, state.simulationState), line),
+      syncStatus: 'saved',
+      syncMessage: 'В журнал добавлена запись.',
+    }));
+  },
+
+  clearModelLog() {
+    set({ modelLogText: '', syncStatus: 'saved', syncMessage: 'Журнал моделирования очищен.' });
+  },
+
+  setIssueFilter(filter) {
+    set({ issueFilter: filter, syncStatus: 'saved', syncMessage: 'Фильтр замечаний и ошибок изменен.' });
+  },
+
+  setTebTestStatus(id, status, message) {
+    set((state) => ({
+      tebTests: state.tebTests.map((test) => (test.id === id ? { ...test, status, message } : test)),
+      syncStatus: status === 'failed' ? 'offline' : 'saved',
+      syncMessage: message,
+    }));
   },
 
   undo() {

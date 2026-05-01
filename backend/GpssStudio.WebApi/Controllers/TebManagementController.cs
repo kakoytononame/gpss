@@ -107,4 +107,24 @@ public sealed class TebManagementController : ControllerBase
         var result = await _tebService.UpdateGpssModelAsync(libraryId, classId, request, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Returns the last saved web workspace snapshot.
+    /// </summary>
+    [HttpGet("workspace")]
+    public async Task<IActionResult> GetWorkspaceSnapshot(CancellationToken cancellationToken)
+    {
+        var result = await _tebService.GetWorkspaceSnapshotAsync("default", cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>
+    /// Saves the web workspace snapshot in the database.
+    /// </summary>
+    [HttpPut("workspace")]
+    public async Task<IActionResult> SaveWorkspaceSnapshot([FromBody] WorkspaceSnapshotUpsertRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _tebService.SaveWorkspaceSnapshotAsync("default", request, cancellationToken);
+        return Ok(result);
+    }
 }

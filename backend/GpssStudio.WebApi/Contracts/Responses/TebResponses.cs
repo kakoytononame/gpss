@@ -84,3 +84,12 @@ public sealed class TebParameterValueResponse
     public string NameInModel { get; init; } = string.Empty;
     public string Value { get; init; } = string.Empty;
 }
+
+/// <summary>
+/// Serialized workspace state restored by the web client.
+/// </summary>
+public sealed class WorkspaceSnapshotResponse
+{
+    public JsonElement Snapshot { get; init; }
+    public DateTimeOffset UpdatedAt { get; init; }
+}

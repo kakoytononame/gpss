@@ -243,6 +243,40 @@ public sealed class TebRepository : ITebRepository
         return await RequireAggregateAsync(libraryId, classId, cancellationToken);
     }
 
+    public async Task<WorkspaceSnapshotEntity?> GetWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.WorkspaceSnapshots
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == snapshotId, cancellationToken);
+    }
+
+    public async Task<WorkspaceSnapshotEntity> SaveWorkspaceSnapshotAsync(string snapshotId, JsonElement snapshot, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var snapshotJson = snapshot.GetRawText();
+        var entity = await _dbContext.WorkspaceSnapshots
+            .SingleOrDefaultAsync(item => item.Id == snapshotId, cancellationToken);
+
+        if (entity is null)
+        {
+            entity = new WorkspaceSnapshotEntity
+            {
+                Id = snapshotId,
+                SnapshotJson = snapshotJson,
+                UpdatedAt = now,
+            };
+            _dbContext.WorkspaceSnapshots.Add(entity);
+        }
+        else
+        {
+            entity.SnapshotJson = snapshotJson;
+            entity.UpdatedAt = now;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return entity;
+    }
+
     private async Task PatchIndexedCollectionAsync(Guid classId, string path, JsonElement value, CancellationToken cancellationToken)
     {
         var match = System.Text.RegularExpressions.Regex.Match(path, @"^(gpssEntities|inputs|outputs|states)\[(\d+)\]$");

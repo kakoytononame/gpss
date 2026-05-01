@@ -1,4 +1,4 @@
-import type { EditorMode, EditorQuery, TebApi, TebParameter } from '../types/teb';
+import type { EditorMode, EditorQuery, TebApi, TebParameter, WorkspaceSnapshot } from '../types/teb';
 
 const DEFAULT_API_BASE_URL = '';
 const API_ROOT = '/api/alina-gpss/studio/tebs';
@@ -92,6 +92,31 @@ export function createTebApi(query: EditorQuery): TebApi {
   return {
     getClass: () => request(classPath(query.libraryId, effectiveClassId)),
     getInstance: () => request(`${classPath(query.libraryId, effectiveInstanceClassId)}/instances/${encodeURIComponent(query.instanceId)}`),
+    getWorkspaceSnapshot: async () => {
+      try {
+        const payload = await request(`${API_ROOT}/workspace`);
+        if (payload && typeof payload === 'object' && 'Snapshot' in payload) {
+          return (payload as { Snapshot: WorkspaceSnapshot }).Snapshot;
+        }
+
+        if (payload && typeof payload === 'object' && 'snapshot' in payload) {
+          return (payload as { snapshot: WorkspaceSnapshot }).snapshot;
+        }
+
+        return null;
+      } catch (error) {
+        if (error instanceof TebApiError && error.status === 404) {
+          return null;
+        }
+
+        throw error;
+      }
+    },
+    saveWorkspaceSnapshot: (snapshot: WorkspaceSnapshot) =>
+      request(`${API_ROOT}/workspace`, {
+        method: 'PUT',
+        body: JSON.stringify({ snapshot }),
+      }),
     addParameter: (parameter: TebParameter) =>
       request(`${classPath(query.libraryId, effectiveClassId)}/parameters`, {
         method: 'POST',

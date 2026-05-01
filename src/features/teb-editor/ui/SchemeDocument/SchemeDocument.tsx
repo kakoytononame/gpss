@@ -1,35 +1,55 @@
-import { useMemo, useRef, useState } from 'react';
-import arrowDownIcon from '../../../../shared/assets/icons/gpss-native/arrowdown_16.png';
-import closeIcon from '../../../../shared/assets/icons/gpss-native/closeblack_13.png';
-import copyIcon from '../../../../shared/assets/icons/gpss-native/copy16.png';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import deleteIcon from '../../../../shared/assets/icons/gpss-native/delete_16.png';
 import folderIcon from '../../../../shared/assets/icons/gpss-native/folderopened_16.png';
-import listIcon from '../../../../shared/assets/icons/gpss-native/list16.png';
 import pasteIcon from '../../../../shared/assets/icons/gpss-native/paste16.png';
-import pinIcon from '../../../../shared/assets/icons/gpss-native/ribbonpin.png';
-import resetIcon from '../../../../shared/assets/icons/gpss-native/zoomreset16.png';
+import { GPSS_BLOCK_ICON_SHAPES, GPSS_GALLERY_BLOCKS, getGpssBlockIconShape } from '../../../../shared/lib/gpssBlockShapes';
 import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import '../BaseDocument/BaseDocument.css';
 import './SchemeDocument.css';
 
 type SchemeNodeKind = 'teb' | 'data' | 'time';
-type Selection = { type: 'node'; id: string } | { type: 'link'; id: string } | null;
-type RightPanelTab = 'properties' | 'tests';
 type SchemeDialog = 'shape-gallery' | 'color-picker' | null;
+type SchemePort = 'top' | 'right' | 'bottom' | 'left';
+
+const SCHEME_WIDTH = 1300;
+const SCHEME_HEIGHT = 640;
+const MIN_SCHEME_ZOOM = 0.55;
+const MAX_SCHEME_ZOOM = 2.4;
+const SCHEME_ZOOM_STEP = 0.08;
+
+interface LibraryDropPayload {
+  id: string;
+  label: string;
+  icon?: string;
+  iconShape?: string;
+  kind?: string;
+}
 
 interface SchemeNode {
   id: string;
   label: string;
   kind: SchemeNodeKind;
+  iconShape?: string;
+  nameInModel?: string;
   x: number;
   y: number;
   width: number;
   height: number;
+  description?: string;
+  className?: string;
+  classId?: string;
+  isLibraryClass?: boolean;
+  instanceCount?: number;
   backgroundColor?: string;
   borderColor?: string;
+  borderWidth?: number;
+  cornerRadius?: number;
   textColor?: string;
   fontFamily?: string;
+  fontSize?: number;
+  fontBold?: boolean;
+  fontItalic?: boolean;
   imageMode?: string;
   moveMode?: string;
   shape?: string;
@@ -43,35 +63,19 @@ interface SchemeLink {
   hidden?: boolean;
 }
 
-const initialNodes: SchemeNode[] = [
-  { id: 'source-data', label: 'Исходные данные моделирования', kind: 'data', x: 56, y: 48, width: 250, height: 110 },
-  { id: 'time-control', label: 'Управление временем моделирования', kind: 'time', x: 36, y: 210, width: 300, height: 96 },
-  { id: 'arrival', label: 'Прибытие посетителей', kind: 'teb', x: 677, y: 58, width: 166, height: 68 },
-  { id: 'kitchen-choice', label: 'Выбор кухни', kind: 'teb', x: 685, y: 206, width: 150, height: 52 },
-  { id: 'cashier-1', label: 'Обслуживание посетителя Касса 1', kind: 'teb', x: 377, y: 348, width: 166, height: 68 },
-  { id: 'cashier-2', label: 'Обслуживание посетителя Касса 2', kind: 'teb', x: 517, y: 378, width: 166, height: 68 },
-  { id: 'cashier-3', label: 'Обслуживание посетителя Касса 3', kind: 'teb', x: 677, y: 378, width: 166, height: 68 },
-  { id: 'cashier-4', label: 'Обслуживание посетителя Касса 4', kind: 'teb', x: 837, y: 378, width: 166, height: 68 },
-  { id: 'cashier-5', label: 'Обслуживание посетителя Касса 5', kind: 'teb', x: 977, y: 348, width: 166, height: 68 },
-  { id: 'free-seat', label: 'Выбор свободного места', kind: 'teb', x: 677, y: 556, width: 166, height: 68 },
-];
-
-const initialLinks: SchemeLink[] = [
-  { id: 'arrival-to-choice', from: 'arrival', to: 'kitchen-choice' },
-  { id: 'choice-to-cashier-1', from: 'kitchen-choice', to: 'cashier-1' },
-  { id: 'choice-to-cashier-2', from: 'kitchen-choice', to: 'cashier-2' },
-  { id: 'choice-to-cashier-3', from: 'kitchen-choice', to: 'cashier-3' },
-  { id: 'choice-to-cashier-4', from: 'kitchen-choice', to: 'cashier-4' },
-  { id: 'choice-to-cashier-5', from: 'kitchen-choice', to: 'cashier-5' },
-  { id: 'cashier-1-to-free-choice', from: 'cashier-1', to: 'free-seat' },
-  { id: 'cashier-2-to-free-choice', from: 'cashier-2', to: 'free-seat' },
-  { id: 'cashier-3-to-free-choice', from: 'cashier-3', to: 'free-seat' },
-  { id: 'cashier-4-to-free-choice', from: 'cashier-4', to: 'free-seat' },
-  { id: 'cashier-5-to-free-choice', from: 'cashier-5', to: 'free-seat' },
-];
+interface ConnectionDrag {
+  fromId: string;
+  port: SchemePort;
+  start: { x: number; y: number };
+  current: { x: number; y: number };
+}
 
 function center(node: SchemeNode) {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function linkPath(from: SchemeNode, to: SchemeNode) {
@@ -87,6 +91,66 @@ function linkPath(from: SchemeNode, to: SchemeNode) {
     : { x: toCenter.x, y: toCenter.y - Math.sign(dy) * to.height / 2 };
 
   return `M ${fromPoint.x} ${fromPoint.y} L ${toPoint.x} ${toPoint.y}`;
+}
+
+function pointForPort(node: SchemeNode, port: SchemePort) {
+  if (port === 'top') {
+    return { x: node.x + node.width / 2, y: node.y };
+  }
+
+  if (port === 'right') {
+    return { x: node.x + node.width, y: node.y + node.height / 2 };
+  }
+
+  if (port === 'bottom') {
+    return { x: node.x + node.width / 2, y: node.y + node.height };
+  }
+
+  return { x: node.x, y: node.y + node.height / 2 };
+}
+
+function containsPoint(node: SchemeNode, point: { x: number; y: number }) {
+  return point.x >= node.x && point.x <= node.x + node.width && point.y >= node.y && point.y <= node.y + node.height;
+}
+
+function getNodeTextMetrics(node: SchemeNode) {
+  const baseFontSize = node.fontSize ?? (node.kind === 'data' ? 16 : 17);
+  const availableWidth = Math.max(20, node.width - 24);
+  const availableHeight = Math.max(16, node.height - 18);
+  const longestWordLength = Math.max(...node.label.split(/\s+/).map((word) => word.length), 1);
+  const maxByWordWidth = availableWidth / (longestWordLength * 0.56);
+  const charsPerLineAtBase = Math.max(1, Math.floor(availableWidth / (baseFontSize * 0.56)));
+  const lineCountAtBase = Math.max(1, Math.ceil(node.label.length / charsPerLineAtBase));
+  const maxByHeight = availableHeight / (lineCountAtBase * 1.16);
+  const fontSize = clamp(Math.min(baseFontSize, maxByWordWidth, maxByHeight), 5, baseFontSize);
+
+  return {
+    fontSize,
+    paddingY: clamp(fontSize * 0.55, 2, 10),
+    paddingX: clamp(fontSize * 0.72, 3, 12),
+  };
+}
+
+function buildLinkId(fromId: string, toId: string) {
+  return `${fromId}-to-${toId}-${Date.now()}`;
+}
+
+function buildNodeId(label: string) {
+  return `library-${label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-').replace(/^-|-$/g, '')}-${Date.now()}`;
+}
+
+function readLibraryPayload(dataTransfer: DataTransfer): LibraryDropPayload | null {
+  const rawPayload = dataTransfer.getData('application/x-gpss-teb');
+
+  if (!rawPayload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawPayload) as LibraryDropPayload;
+  } catch {
+    return null;
+  }
 }
 
 function nodeTypeLabel(kind: SchemeNodeKind) {
@@ -121,14 +185,18 @@ export function SchemeDocument() {
   const stopSimulation = useTebEditorStore((state) => state.stopSimulation);
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
   const simulationState = useTebEditorStore((state) => state.simulationState);
+  const nodes = useTebEditorStore((state) => state.schemeNodes);
+  const links = useTebEditorStore((state) => state.schemeLinks);
+  const selection = useTebEditorStore((state) => state.schemeSelection);
+  const setNodes = useTebEditorStore((state) => state.setSchemeNodes);
+  const setLinks = useTebEditorStore((state) => state.setSchemeLinks);
+  const setSelection = useTebEditorStore((state) => state.setSchemeSelection);
+  const resetScheme = useTebEditorStore((state) => state.resetScheme);
+  const openRightPanel = useTebEditorStore((state) => state.openRightPanel);
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const [nodes, setNodes] = useState<SchemeNode[]>(initialNodes);
-  const [links, setLinks] = useState<SchemeLink[]>(initialLinks);
-  const [selection, setSelection] = useState<Selection>({ type: 'node', id: 'kitchen-choice' });
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('properties');
-  const [propertiesSearch, setPropertiesSearch] = useState('');
-  const [testsSearch, setTestsSearch] = useState('');
+  const [connectionDrag, setConnectionDrag] = useState<ConnectionDrag | null>(null);
+  const [schemeZoom, setSchemeZoom] = useState(1);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dialog, setDialog] = useState<SchemeDialog>(null);
   const [colorTarget, setColorTarget] = useState<'backgroundColor' | 'borderColor' | 'textColor'>('backgroundColor');
@@ -138,26 +206,47 @@ export function SchemeDocument() {
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const selectedNode = selection?.type === 'node' ? nodeById.get(selection.id) ?? null : null;
   const selectedLink = selection?.type === 'link' ? links.find((link) => link.id === selection.id) ?? null : null;
+  const connectionTarget = connectionDrag
+    ? visibleNodes.find((node) => node.id !== connectionDrag.fromId && containsPoint(node, connectionDrag.current)) ?? null
+    : null;
 
   function readCanvasPoint(clientX: number, clientY: number) {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) {
+    const canvas = canvasRef.current;
+    const rect = canvas?.getBoundingClientRect();
+    if (!canvas || !rect) {
       return { x: 0, y: 0 };
     }
 
     return {
-      x: ((clientX - rect.left) / rect.width) * 1300,
-      y: ((clientY - rect.top) / rect.height) * 640,
+      x: clamp((canvas.scrollLeft + clientX - rect.left) / schemeZoom, 0, SCHEME_WIDTH),
+      y: clamp((canvas.scrollTop + clientY - rect.top) / schemeZoom, 0, SCHEME_HEIGHT),
     };
   }
 
   function handlePointerDown(node: SchemeNode, clientX: number, clientY: number) {
     const point = readCanvasPoint(clientX, clientY);
     setSelection({ type: 'node', id: node.id });
+    openRightPanel('properties');
     setDragging({ id: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y });
   }
 
+  function handleConnectionStart(node: SchemeNode, port: SchemePort, clientX: number, clientY: number) {
+    const start = pointForPort(node, port);
+    const current = readCanvasPoint(clientX, clientY);
+    setSelection({ type: 'node', id: node.id });
+    openRightPanel('properties');
+    setDragging(null);
+    setConnectionDrag({ fromId: node.id, port, start, current });
+    setStatusMessage('Выберите входной блок для создания связи.', 'saved');
+  }
+
   function handlePointerMove(clientX: number, clientY: number) {
+    if (connectionDrag) {
+      const current = readCanvasPoint(clientX, clientY);
+      setConnectionDrag((drag) => (drag ? { ...drag, current } : null));
+      return;
+    }
+
     if (!dragging) {
       return;
     }
@@ -168,12 +257,120 @@ export function SchemeDocument() {
         node.id === dragging.id
           ? {
               ...node,
-              x: Math.max(8, Math.min(1300 - node.width - 8, point.x - dragging.offsetX)),
-              y: Math.max(8, Math.min(640 - node.height - 8, point.y - dragging.offsetY)),
+              x: clamp(point.x - dragging.offsetX, 8, SCHEME_WIDTH - node.width - 8),
+              y: clamp(point.y - dragging.offsetY, 8, SCHEME_HEIGHT - node.height - 8),
             }
           : node,
       ),
     );
+  }
+
+  function finishConnection() {
+    if (!connectionDrag) {
+      return;
+    }
+
+    const target = visibleNodes.find((node) => node.id !== connectionDrag.fromId && containsPoint(node, connectionDrag.current));
+
+    if (!target) {
+      setConnectionDrag(null);
+      setStatusMessage('Создание связи отменено: входной блок не выбран.', 'saved');
+      return;
+    }
+
+    const existingLink = links.find((link) => !link.hidden && link.from === connectionDrag.fromId && link.to === target.id);
+    const linkId = existingLink?.id ?? buildLinkId(connectionDrag.fromId, target.id);
+
+    if (!existingLink) {
+      setLinks((currentLinks) => [...currentLinks, { id: linkId, from: connectionDrag.fromId, to: target.id }], 'Связь структурной схемы создана.');
+    }
+
+    setSelection({ type: 'link', id: linkId });
+    setConnectionDrag(null);
+    setStatusMessage(existingLink ? 'Такая связь уже существует.' : 'Выход блока связан со входом выбранного блока.', 'saved');
+  }
+
+  function handleCanvasPointerUp() {
+    if (connectionDrag) {
+      finishConnection();
+      return;
+    }
+
+    setDragging(null);
+  }
+
+  function handleCanvasPointerLeave() {
+    if (connectionDrag) {
+      setConnectionDrag(null);
+      setStatusMessage('Создание связи отменено.', 'saved');
+    }
+
+    setDragging(null);
+  }
+
+  function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (!event.ctrlKey && Math.abs(event.deltaY) < Math.abs(event.deltaX)) {
+      return;
+    }
+
+    event.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const pointerX = event.clientX - rect.left;
+    const pointerY = event.clientY - rect.top;
+    const logicalX = (canvas.scrollLeft + pointerX) / schemeZoom;
+    const logicalY = (canvas.scrollTop + pointerY) / schemeZoom;
+    const direction = event.deltaY > 0 ? -SCHEME_ZOOM_STEP : SCHEME_ZOOM_STEP;
+    const nextZoom = clamp(Number((schemeZoom + direction).toFixed(2)), MIN_SCHEME_ZOOM, MAX_SCHEME_ZOOM);
+
+    if (nextZoom === schemeZoom) {
+      return;
+    }
+
+    setSchemeZoom(nextZoom);
+    window.requestAnimationFrame(() => {
+      canvas.scrollLeft = Math.max(0, logicalX * nextZoom - pointerX);
+      canvas.scrollTop = Math.max(0, logicalY * nextZoom - pointerY);
+    });
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const payload = readLibraryPayload(event.dataTransfer);
+
+    if (!payload) {
+      return;
+    }
+
+    const point = readCanvasPoint(event.clientX, event.clientY);
+    const width = payload.label.length > 18 ? 178 : 150;
+    const height = payload.kind === 'entity' ? 58 : 64;
+    const node: SchemeNode = {
+      id: buildNodeId(payload.label),
+      label: payload.label,
+      iconShape: payload.iconShape,
+      nameInModel: payload.label.replace(/[^A-Za-zА-Яа-яЁё0-9_]+/g, '_').replace(/^_|_$/g, ''),
+      kind: payload.kind === 'entity' ? 'data' : 'teb',
+      x: clamp(point.x - width / 2, 8, SCHEME_WIDTH - width - 8),
+      y: clamp(point.y - height / 2, 8, SCHEME_HEIGHT - height - 8),
+      width,
+      height,
+      className: payload.kind === 'entity' ? 'GpssEntityTebClass' : 'SimpleTebClass',
+      backgroundColor: payload.kind === 'entity' ? '#dddddd' : '#80c7ee',
+      borderColor: payload.kind === 'entity' ? '#b4b4b4' : '#3f9fcd',
+      textColor: '#1d2d3a',
+      fontFamily: 'Arial',
+      fontSize: 12,
+      shape: payload.label,
+    };
+
+    setNodes((currentNodes) => [...currentNodes, node], `ТЭБ "${payload.label}" добавлен на структурную схему.`);
+    setSelection({ type: 'node', id: node.id });
+    openRightPanel('properties');
   }
 
   function handleDeleteSelection() {
@@ -194,11 +391,33 @@ export function SchemeDocument() {
     setStatusMessage('Связь схемы удалена.', 'saved');
   }
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const activeElement = document.activeElement;
+      const isTextInput =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement instanceof HTMLSelectElement ||
+        activeElement?.getAttribute('contenteditable') === 'true';
+
+      if (isTextInput || event.key !== 'Delete') {
+        return;
+      }
+
+      if (!selection) {
+        return;
+      }
+
+      event.preventDefault();
+      handleDeleteSelection();
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selection, nodes, links]);
+
   function handleResetScheme() {
-    setNodes(initialNodes);
-    setLinks(initialLinks);
-    setSelection({ type: 'node', id: 'kitchen-choice' });
-    setStatusMessage('Структурная схема восстановлена.', 'saved');
+    resetScheme();
   }
 
   function updateSelectedNodeField<K extends keyof SchemeNode>(field: K, value: SchemeNode[K]) {
@@ -221,7 +440,22 @@ export function SchemeDocument() {
   }
 
   function applyShape(shape: string) {
-    updateSelectedNodeField('shape', shape);
+    if (!selectedNode) {
+      return;
+    }
+
+    const iconShape = GPSS_BLOCK_ICON_SHAPES[shape.toUpperCase()];
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        node.id === selectedNode.id
+          ? {
+              ...node,
+              shape,
+              iconShape,
+            }
+          : node,
+      ),
+    );
     setDialog(null);
   }
 
@@ -316,16 +550,6 @@ export function SchemeDocument() {
         ]
       : [];
 
-  const normalizedPropertiesSearch = propertiesSearch.trim().toLowerCase();
-  const visiblePropertySections = normalizedPropertiesSearch
-    ? propertySections
-        .map((section) => ({
-          ...section,
-          rows: section.rows.filter((row) => `${row.name} ${row.value}`.toLowerCase().includes(normalizedPropertiesSearch)),
-        }))
-        .filter((section) => section.rows.length)
-    : propertySections;
-
   return (
     <section className="placeholder-document">
       <div className="placeholder-document__header">
@@ -344,13 +568,20 @@ export function SchemeDocument() {
           className="scheme-canvas"
           ref={canvasRef}
           onPointerMove={(event) => handlePointerMove(event.clientX, event.clientY)}
-          onPointerUp={() => setDragging(null)}
-          onPointerLeave={() => setDragging(null)}
+          onPointerUp={handleCanvasPointerUp}
+          onPointerLeave={handleCanvasPointerLeave}
           onPointerDown={() => setSelection(null)}
+          onWheel={handleWheel}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={handleDrop}
         >
-          <svg className="scheme-links" viewBox="0 0 1300 640" preserveAspectRatio="none" role="img" aria-label="Связи структурной схемы">
+          <div className="scheme-surface" style={{ width: `${SCHEME_WIDTH * schemeZoom}px`, height: `${SCHEME_HEIGHT * schemeZoom}px` }}>
+          <svg className="scheme-links" viewBox={`0 0 ${SCHEME_WIDTH} ${SCHEME_HEIGHT}`} preserveAspectRatio="none" role="img" aria-label="Связи структурной схемы">
             <defs>
               <marker id="scheme-arrow" viewBox="0 0 10 10" refX="8.8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" />
+              </marker>
+              <marker id="scheme-arrow-draft" viewBox="0 0 10 10" refX="8.8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
                 <path d="M 0 0 L 10 5 L 0 10 z" />
               </marker>
             </defs>
@@ -374,179 +605,84 @@ export function SchemeDocument() {
                 />
               );
             })}
+            {connectionDrag ? (
+              <path
+                className={`scheme-link-draft ${connectionTarget ? 'is-connectable' : ''}`}
+                d={`M ${connectionDrag.start.x} ${connectionDrag.start.y} L ${connectionDrag.current.x} ${connectionDrag.current.y}`}
+                markerEnd="url(#scheme-arrow-draft)"
+              />
+            ) : null}
           </svg>
 
-          {visibleNodes.map((node) => (
-            <button
-              className={`scheme-node scheme-node--${node.kind} ${selection?.type === 'node' && selection.id === node.id ? 'is-selected' : ''}`}
-              key={node.id}
+          {visibleNodes.map((node) => {
+            const textMetrics = getNodeTextMetrics(node);
+
+            return (
+              <div
+                className={`scheme-node scheme-node--${node.kind} ${selection?.type === 'node' && selection.id === node.id ? 'is-selected' : ''} ${connectionTarget?.id === node.id ? 'is-connection-target' : ''}`}
+                key={node.id}
                   style={{
-                    left: `${(node.x / 1300) * 100}%`,
-                    top: `${(node.y / 640) * 100}%`,
-                    width: `${(node.width / 1300) * 100}%`,
-                    minHeight: `${node.height}px`,
+                    left: `${node.x * schemeZoom}px`,
+                    top: `${node.y * schemeZoom}px`,
+                    width: `${node.width * schemeZoom}px`,
+                    height: `${node.height * schemeZoom}px`,
+                    padding: `${textMetrics.paddingY * schemeZoom}px ${textMetrics.paddingX * schemeZoom}px`,
                     backgroundColor: node.backgroundColor,
                     borderColor: node.borderColor,
+                    borderWidth: node.borderWidth !== undefined ? `${node.borderWidth}px` : undefined,
+                    borderRadius: node.cornerRadius !== undefined ? `${node.cornerRadius}px` : undefined,
                     color: node.textColor,
                     fontFamily: node.fontFamily,
+                    fontSize: `${textMetrics.fontSize * schemeZoom}px`,
+                    fontWeight: node.fontBold ? 700 : undefined,
+                    fontStyle: node.fontItalic ? 'italic' : undefined,
                   }}
-              type="button"
-              onDoubleClick={() => activateDocument('editor')}
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                handlePointerDown(node, event.clientX, event.clientY);
+                role="button"
+                tabIndex={0}
+                onDoubleClick={() => activateDocument('editor')}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  handlePointerDown(node, event.clientX, event.clientY);
+                }}
+              >
+                {node.iconShape ? <span className={`scheme-node__type-icon tree-row__teb-icon--${node.iconShape}`} aria-hidden="true" /> : null}
+                <span className="scheme-node__label">{node.label}</span>
+                {(selection?.type === 'node' && selection.id === node.id) || connectionDrag ? (
+                  <span className="scheme-node__ports" aria-hidden="true">
+                    {(['top', 'right', 'bottom', 'left'] as SchemePort[]).map((port) => (
+                      <span
+                        className={`scheme-node-port scheme-node-port--${port}`}
+                        key={port}
+                        onPointerDown={(event) => {
+                          event.stopPropagation();
+                          handleConnectionStart(node, port, event.clientX, event.clientY);
+                        }}
+                      />
+                    ))}
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+
+          {connectionDrag && connectionTarget ? (
+            <div
+              className="scheme-connection-tooltip"
+              style={{
+                left: `${Math.min(1240 * schemeZoom, connectionDrag.current.x * schemeZoom + 18)}px`,
+                top: `${Math.max(8, connectionDrag.current.y * schemeZoom - 8)}px`,
               }}
             >
-              {node.label}
-            </button>
-          ))}
+              <strong>Элементарный ТЭБ: {connectionTarget.label}</strong>
+              <span>Класс: {connectionTarget.className || connectionTarget.label}</span>
+            </div>
+          ) : null}
 
           <div className="scheme-caption">Состояние моделирования: {simulationState}</div>
+          </div>
         </div>
 
-        <aside className="scheme-dock" aria-label="Свойства и тесты ТЭБов">
-          <div className={`scheme-dock__caption ${rightPanelTab === 'tests' ? 'scheme-dock__caption--active' : ''}`}>
-            <span>{rightPanelTab === 'properties' ? 'Свойства' : 'Тесты ТЭБов'}</span>
-            <span className="scheme-dock__grip">................................................</span>
-            <button type="button" title="Меню панели" aria-label="Меню панели"><img src={arrowDownIcon} alt="" /></button>
-            <button type="button" title="Закрепить" aria-label="Закрепить"><img src={pinIcon} alt="" /></button>
-            <button type="button" title="Закрыть" aria-label="Закрыть"><img src={closeIcon} alt="" /></button>
-          </div>
-
-          {rightPanelTab === 'properties' ? (
-            <div className="scheme-properties">
-              <div className="scheme-dock-toolbar">
-                <button className="scheme-dock-tool is-active" type="button" title="По категориям" aria-label="По категориям"><img src={listIcon} alt="" /></button>
-                <button className="scheme-dock-tool" type="button" title="По алфавиту" aria-label="По алфавиту">A↓</button>
-                <button className="scheme-dock-tool" type="button" title="Сбросить значение" aria-label="Сбросить значение"><img src={resetIcon} alt="" /></button>
-                <input value={propertiesSearch} placeholder="Поиск свойств" onChange={(event) => setPropertiesSearch(event.target.value)} />
-              </div>
-              <div className="scheme-property-grid">
-                {visiblePropertySections.length ? (
-                  visiblePropertySections.map((section) => (
-                    <div className="scheme-property-section" key={section.title}>
-                      <div className="scheme-property-section__title">▸ {section.title}</div>
-                      {section.rows.map((row) => (
-                        <div className="scheme-property-row" key={`${section.title}-${row.name}`}>
-                          <div className="scheme-property-row__name">{row.name}</div>
-                          <div className={`scheme-property-row__value ${row.muted ? 'is-muted' : ''} ${row.action ? 'is-action' : ''}`}>
-                            {row.name === 'Заголовок класса' && selectedNode ? (
-                              <input
-                                value={selectedNode.label}
-                                onChange={(event) =>
-                                  setNodes((currentNodes) => currentNodes.map((node) => (node.id === selectedNode.id ? { ...node, label: event.target.value } : node)))
-                                }
-                              />
-                            ) : row.swatch ? (
-                              <button
-                                className="scheme-property-swatch"
-                                style={{ backgroundColor: row.swatch }}
-                                type="button"
-                                onClick={() =>
-                                  openColorPicker(
-                                    (row.colorTarget as 'backgroundColor' | 'borderColor' | 'textColor') ?? 'backgroundColor',
-                                    row.swatch as string,
-                                  )
-                                }
-                              />
-                            ) : row.action === 'shape' ? (
-                              <button className="scheme-property-gallery-button" type="button" onClick={() => setDialog('shape-gallery')}>
-                                ▦ <span>↶</span>
-                              </button>
-                            ) : row.action === 'image' ? (
-                              <div className="scheme-property-image-actions">
-                                <button type="button"><img src={folderIcon} alt="" /></button>
-                                <button type="button"><img src={pasteIcon} alt="" /></button>
-                                <button type="button"><img src={deleteIcon} alt="" /></button>
-                              </div>
-                            ) : row.control ? (
-                              <div className="scheme-combo">
-                                <button className="scheme-combo__button" type="button" onClick={() => setOpenDropdown(openDropdown === row.name ? null : row.name)}>
-                                  <span>{row.value}</span>
-                                  <span>⌄</span>
-                                </button>
-                                {openDropdown === row.name ? (
-                                  <div className={`scheme-combo__menu scheme-combo__menu--${row.control}`}>
-                                    {(row.control === 'moveMode'
-                                      ? ['Прямой переход или копирование', 'Переход к первому доступному блоку', 'Случайный переход к любому из блоков']
-                                      : row.control === 'fontFamily'
-                                        ? [
-                                            'Arial',
-                                            'Arial Black',
-                                            'Arial Narrow',
-                                            'Bahnschrift',
-                                            'Bahnschrift Condensed',
-                                            'Bahnschrift Light',
-                                            'Bahnschrift Light Condensed',
-                                            'Bahnschrift SemiBold',
-                                            'Bahnschrift SemiCondensed',
-                                            'Calibri',
-                                            'Cambria',
-                                            'Consolas',
-                                            'Segoe UI',
-                                            'Times New Roman',
-                                          ]
-                                        : ['По умолчанию', 'Масштабировать', 'Заполнить', 'Масштабировать и заполнить']
-                                    ).map((option) => (
-                                      <button
-                                        className={option === row.value ? 'is-selected' : ''}
-                                        key={option}
-                                        type="button"
-                                        onClick={() => {
-                                          if (row.control === 'moveMode') updateSelectedNodeField('moveMode', option);
-                                          if (row.control === 'fontFamily') updateSelectedNodeField('fontFamily', option);
-                                          if (row.control === 'imageMode') updateSelectedNodeField('imageMode', option);
-                                          setOpenDropdown(null);
-                                        }}
-                                      >
-                                        {option}
-                                      </button>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                            ) : (
-                              row.value
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))
-                ) : (
-                  <div className="scheme-properties__empty">Выберите элемент или стрелку на схеме.</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="scheme-tests">
-              <div className="scheme-dock-toolbar">
-                <button className="scheme-dock-tool" type="button" title="Запустить тесты" aria-label="Запустить тесты">▶</button>
-                <button className="scheme-dock-tool" type="button" title="Редактировать" aria-label="Редактировать"><img src={listIcon} alt="" /></button>
-                <select value="По тэбам" onChange={() => undefined}>
-                  <option>По тэбам</option>
-                  <option>По результату</option>
-                </select>
-                <button className="scheme-dock-tool" type="button" title="Копировать" aria-label="Копировать"><img src={copyIcon} alt="" /></button>
-                <button className="scheme-dock-tool" type="button" title="Вставить" aria-label="Вставить"><img src={pasteIcon} alt="" /></button>
-                <button className="scheme-dock-tool" type="button" title="Удалить" aria-label="Удалить"><img src={deleteIcon} alt="" /></button>
-              </div>
-              <input className="scheme-tests__search" value={testsSearch} placeholder="Поиск тестов (F3)" onChange={(event) => setTestsSearch(event.target.value)} />
-              <div className="scheme-tests__body">
-                <div className="scheme-tests__empty">
-                  <img src={folderIcon} alt="" />
-                  <span>Тесты для выбранного ТЭБа не заданы.</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="scheme-dock-tabs">
-            <button className={rightPanelTab === 'properties' ? 'is-active' : ''} type="button" onClick={() => setRightPanelTab('properties')}>Свойства</button>
-            <button className={rightPanelTab === 'tests' ? 'is-active' : ''} type="button" onClick={() => setRightPanelTab('tests')}>Тесты ТЭБов</button>
-          </div>
-        </aside>
       </div>
 
       {dialog === 'shape-gallery' ? (
@@ -586,43 +722,18 @@ export function SchemeDocument() {
                 </button>
               ))}
               <div className="scheme-shape-group"><span />GPSS<span /></div>
-              {[
-                'ADVANCE',
-                'ASSEMBLE',
-                'ASSIGN',
-                'BUFFER',
-                'DEPART',
-                'ENTER',
-                'GATE',
-                'GATHER',
-                'GENERATE',
-                'LEAVE',
-                'LINK',
-                'LOGIC',
-                'LOOP',
-                'MARK',
-                'MATCH',
-                'MSAVEVALUE',
-                'PREEMPT',
-                'PRIORITY',
-                'QUEUE',
-                'RELEASE',
-                'RETURN',
-                'SAVEVALUE',
-                'SEIZE',
-                'SELECT',
-                'SPLIT',
-                'TABULATE',
-                'TERMINATE',
-                'TEST',
-                'TRANSFER',
-                'UNLINK',
-              ].map((shape) => (
-                <button className={`scheme-shape-card ${selectedNode?.shape === shape ? 'is-selected' : ''}`} key={shape} type="button" onClick={() => applyShape(shape)}>
-                  <span className={`scheme-shape-preview scheme-shape-preview--gpss scheme-shape-preview--${shape.toLowerCase()}`} />
-                  <span>{shape}</span>
-                </button>
-              ))}
+              {GPSS_GALLERY_BLOCKS.map((shape) => {
+                const iconShape = getGpssBlockIconShape(shape);
+
+                return (
+                  <button className={`scheme-shape-card ${selectedNode?.shape === shape ? 'is-selected' : ''}`} key={shape} type="button" onClick={() => applyShape(shape)}>
+                    <span className="scheme-shape-preview scheme-shape-preview--gpss-symbol">
+                      <span className={`scheme-node__type-icon tree-row__teb-icon--${iconShape}`} aria-hidden="true" />
+                    </span>
+                    <span>{shape}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="scheme-modal-actions"><button type="button" onClick={() => setDialog(null)}>OK</button><button type="button" onClick={() => setDialog(null)}>Отмена</button></div>
           </div>

@@ -78,6 +78,12 @@ create table if not exists teb_instance_parameter_values (
   primary key (instance_id, parameter_id)
 );
 
+create table if not exists workspace_snapshots (
+  id text primary key,
+  snapshot_json jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 insert into teb_classes (
   id, library_id, class_type, name_in_model, header, description, gpss_model_text, gpss_model_metadata
 )

@@ -1,24 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTebEditorStore } from '../../../features/teb-editor/store/useTebEditorStore';
 import type { ActiveDocument } from '../../../shared/types/teb';
 import arrowDownIcon from '../../../shared/assets/icons/gpss-native/arrowdown_16.png';
 import closeIcon from '../../../shared/assets/icons/gpss-native/closeblack_13.png';
 import csProjectIcon from '../../../shared/assets/icons/gpss-native/csproject_16.png';
+import entityIcon from '../../../shared/assets/icons/gpss-native/entity_16.png';
 import folderIcon from '../../../shared/assets/icons/gpss-native/folder_16.png';
 import folderOpenedIcon from '../../../shared/assets/icons/gpss-native/folderopened_16.png';
 import formCollectionIcon from '../../../shared/assets/icons/gpss-native/formcollection_16.png';
 import formIcon from '../../../shared/assets/icons/gpss-native/form_16.png';
+import gpssLogicSwitchIcon from '../../../shared/assets/icons/gpss-native/gpsslogicswitch_16.png';
+import gpssMatrixIcon from '../../../shared/assets/icons/gpss-native/gpssmatrix_16.png';
+import gpssObjectTableIcon from '../../../shared/assets/icons/gpss-native/gpssobjstable_16.png';
+import gpssQueueIcon from '../../../shared/assets/icons/gpss-native/gpssequ_16.png';
+import gpssSaveValueIcon from '../../../shared/assets/icons/gpss-native/gpsssavevalue_16.png';
 import modelTextIcon from '../../../shared/assets/icons/gpss-native/simmodeltext_16.png';
 import pinIcon from '../../../shared/assets/icons/gpss-native/ribbonpin.png';
 import projectModelsIcon from '../../../shared/assets/icons/gpss-native/simmodelscollection_16.png';
 import schemeIcon from '../../../shared/assets/icons/gpss-native/simmodeldiagram_16.png';
 import simModelCurrentIcon from '../../../shared/assets/icons/gpss-native/simmodelcur_16.png';
 import simulationIcon from '../../../shared/assets/icons/gpss-native/simmodeltasks_16.png';
+import timelineIcon from '../../../shared/assets/icons/gpss-native/timeline_16.png';
 import stdJournalIcon from '../../../shared/assets/icons/gpss-native/stdjournal_16.png';
 import stdReportIcon from '../../../shared/assets/icons/gpss-native/stdreport_16.png';
 import simpleTebIcon from '../../../shared/assets/icons/gpss-native/simpleteb16.png';
 import tebsLibraryCollectionIcon from '../../../shared/assets/icons/gpss-native/tebslibrarycollection_16.png';
 import tebsLibraryIcon from '../../../shared/assets/icons/gpss-native/tebslibrary_16.png';
+import { getGpssBlockIconShape } from '../../../shared/lib/gpssBlockShapes';
 import './ProjectExplorer.css';
 
 interface TreeNode {
@@ -26,6 +34,7 @@ interface TreeNode {
   label: string;
   icon?: string;
   iconAsset?: string;
+  tebIconShape?: string;
   documentId?: ActiveDocument;
   children?: TreeNode[];
 }
@@ -42,58 +51,6 @@ interface ProjectExplorerProps {
   autoHide: boolean;
   onToggleAutoHide: () => void;
 }
-
-const standardGpssBlocks = [
-  'ADOPT',
-  'ADVANCE',
-  'ALTER',
-  'ASSEMBLE',
-  'ASSIGN',
-  'BUFFER',
-  'CLOSE',
-  'COUNT',
-  'DEPART',
-  'DISPLACE',
-  'ENTER',
-  'EXAMINE',
-  'EXECUTE',
-  'FAVAIL',
-  'FUNAVAIL',
-  'GATE',
-  'GATHER',
-  'GENERATE',
-  'INDEX',
-  'JOIN',
-  'LEAVE',
-  'LINK',
-  'LOGIC',
-  'LOOP',
-  'MARK',
-  'MATCH',
-  'MSAVEVALUE',
-  'OPEN',
-  'PREEMPT',
-  'PRIORITY',
-  'QUEUE',
-  'READ',
-  'RELEASE',
-  'REMOVE',
-  'RETURN',
-  'SAVAIL',
-  'SAVEVALUE',
-  'SCAN',
-  'SEEK',
-  'SEIZE',
-  'SELECT',
-  'SPLIT',
-  'SUNAVAIL',
-  'TABULATE',
-  'TERMINATE',
-  'TEST',
-  'TRANSFER',
-  'UNLINK',
-  'WRITE',
-];
 
 const standardGpssEntities = [
   'Устройство',
@@ -112,15 +69,75 @@ const standardAdditionalTebs = [
   'Окончание события временной шкалы',
 ];
 
-function createLibraryItems(prefix: string, labels: string[], iconAsset = simpleTebIcon): TreeNode[] {
-  return labels.map((label) => ({
+interface LibraryCategory {
+  id: string;
+  label: string;
+  children: TreeNode[];
+}
+
+type IconAssetResolver = string | ((label: string, index: number) => string);
+
+const gpssEntityIconAssets = [
+  entityIcon,
+  gpssQueueIcon,
+  gpssObjectTableIcon,
+  gpssLogicSwitchIcon,
+  gpssSaveValueIcon,
+  gpssMatrixIcon,
+];
+
+function createLibraryItems(prefix: string, labels: string[], iconAsset: IconAssetResolver = simpleTebIcon): TreeNode[] {
+  return labels.map((label, index) => ({
     id: `${prefix}-${label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-')}`,
     label,
     icon: 'library',
-    iconAsset,
+    iconAsset: typeof iconAsset === 'function' ? iconAsset(label, index) : iconAsset,
+    tebIconShape: prefix === 'standard-block' ? getGpssBlockIconShape(label) : undefined,
     documentId: 'editor',
   }));
 }
+
+function createLibraryFolder(id: string, label: string, children: TreeNode[]): TreeNode {
+  return {
+    id,
+    label,
+    icon: 'folder',
+    iconAsset: folderOpenedIcon,
+    children,
+  };
+}
+
+const transactionCategories: LibraryCategory[] = [
+  { id: 'generation', label: 'Генерация', children: createLibraryItems('standard-block-generation', ['GENERATE', 'SPLIT', 'Поток транзактов']) },
+  { id: 'modification', label: 'Изменение', children: createLibraryItems('standard-block-modification', ['ADOPT', 'ASSIGN', 'COUNT', 'INDEX', 'MARK', 'PRIORITY', 'SELECT']) },
+  { id: 'waiting', label: 'Ожидание', children: createLibraryItems('standard-block-waiting', ['ASSEMBLE', 'GATHER']) },
+  { id: 'movement', label: 'Перемещение', children: createLibraryItems('standard-block-movement', ['DISPLACE', 'GATE', 'LOOP', 'TEST', 'TRANSFER']) },
+  { id: 'removal', label: 'Удаление', children: createLibraryItems('standard-block-removal', ['TERMINATE']) },
+];
+
+const standardTebCategoryFolders: TreeNode[] = [
+  createLibraryFolder(
+    'standard-category-transactions',
+    'Транзакты',
+    transactionCategories.map((category) => createLibraryFolder(`standard-transactions-${category.id}`, category.label, category.children)),
+  ),
+  createLibraryFolder('standard-category-time-control', 'Управление временем', createLibraryItems('standard-block-time', ['ADVANCE', 'BUFFER'])),
+  createLibraryFolder('standard-category-queues', 'Очереди', createLibraryItems('standard-block-queues', ['DEPART', 'QUEUE'])),
+  createLibraryFolder('standard-category-user-lists', 'Списки пользователя', createLibraryItems('standard-block-user-lists', ['LINK', 'UNLINK'])),
+  createLibraryFolder('standard-category-memory', 'Памяти', createLibraryItems('standard-block-memory', ['ENTER', 'LEAVE', 'SAVAIL', 'SUNAVAIL'])),
+  createLibraryFolder('standard-category-facilities', 'Устройства', createLibraryItems('standard-block-facilities', ['FAVAIL', 'FUNAVAIL', 'PREEMPT', 'RELEASE', 'RETURN', 'SEIZE'])),
+  createLibraryFolder('standard-category-cells', 'Ячейки', createLibraryItems('standard-block-cells', ['SAVEVALUE'])),
+  createLibraryFolder('standard-category-logic', 'Логические ключи', createLibraryItems('standard-block-logic', ['LOGIC'])),
+  createLibraryFolder('standard-category-matrices', 'Матрицы', [
+    ...createLibraryItems('standard-block-matrices', ['MSAVEVALUE']),
+    ...createLibraryItems('standard-entity-matrix', ['Матрица'], gpssMatrixIcon),
+  ]),
+  createLibraryFolder('standard-category-groups', 'Группы', createLibraryItems('standard-block-groups', ['ALTER', 'EXAMINE', 'JOIN', 'REMOVE', 'SCAN'])),
+  createLibraryFolder('standard-category-tables', 'Таблицы', createLibraryItems('standard-block-tables', ['TABULATE'])),
+  createLibraryFolder('standard-category-files', 'Файлы', createLibraryItems('standard-block-files', ['CLOSE', 'OPEN', 'READ', 'SEEK', 'WRITE'])),
+  createLibraryFolder('standard-category-external-animation', 'Внешняя анимация', createLibraryItems('standard-additional-external-animation', ['API внешней анимации'], simpleTebIcon)),
+  createLibraryFolder('standard-category-timeline', 'Временная диаграмма', createLibraryItems('standard-additional-timeline', ['Завершение задачи', 'Начало задачи'], timelineIcon)),
+];
 
 const librariesTree: TreeNode[] = [
   {
@@ -148,27 +165,9 @@ const librariesTree: TreeNode[] = [
             icon: 'library',
             iconAsset: tebsLibraryIcon,
             children: [
-              {
-                id: 'standard-gpss-blocks',
-                label: 'Блоки',
-                icon: 'folder',
-                iconAsset: folderOpenedIcon,
-                children: createLibraryItems('standard-block', standardGpssBlocks),
-              },
-              {
-                id: 'standard-gpss-entities',
-                label: 'Объекты GPSS',
-                icon: 'folder',
-                iconAsset: folderOpenedIcon,
-                children: createLibraryItems('standard-entity', standardGpssEntities, tebsLibraryIcon),
-              },
-              {
-                id: 'standard-gpss-additional',
-                label: 'Дополнительные ТЭБы',
-                icon: 'folder',
-                iconAsset: folderOpenedIcon,
-                children: createLibraryItems('standard-additional', standardAdditionalTebs),
-              },
+              ...standardTebCategoryFolders,
+              createLibraryFolder('standard-gpss-entities', 'Объекты GPSS', createLibraryItems('standard-entity', standardGpssEntities, (_label, index) => gpssEntityIconAssets[index] ?? entityIcon)),
+              createLibraryFolder('standard-gpss-additional', 'Дополнительные ТЭБы', createLibraryItems('standard-additional', standardAdditionalTebs)),
             ],
           },
         ],
@@ -310,9 +309,19 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
   const hasChildren = Boolean(node.children?.length);
   const isCollapsed = hasChildren && !forceExpanded && collapsedNodeIds.includes(node.id);
   const isActive = selectedNodeId === node.id;
+  const isLibraryDraggable =
+    node.id.startsWith('standard-block-') ||
+    node.id.startsWith('standard-entity-') ||
+    node.id.startsWith('standard-additional-') ||
+    node.id === 'mine-field-block' ||
+    node.id === 'standard-mine-field-block';
 
   function handleRowClick() {
     onFocus(node.id);
+
+    if (isLibraryDraggable) {
+      return;
+    }
 
     if (hasChildren && !forceExpanded) {
       onToggle(node.id);
@@ -322,9 +331,36 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
     onOpen(node.id);
   }
 
+  function handleDragStart(event: React.DragEvent<HTMLButtonElement>) {
+    if (!isLibraryDraggable) {
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = 'copy';
+    event.dataTransfer.setData(
+      'application/x-gpss-teb',
+      JSON.stringify({
+        id: node.id,
+        label: node.label,
+        icon: node.iconAsset,
+        iconShape: node.tebIconShape,
+        kind: node.id.startsWith('standard-entity-') ? 'entity' : 'block',
+      }),
+    );
+    event.dataTransfer.setData('text/plain', node.label);
+  }
+
   return (
     <div>
-      <button className={`tree-row ${isActive ? 'is-active' : ''}`} style={{ ['--level' as string]: level }} type="button" onClick={handleRowClick}>
+      <button
+        className={`tree-row ${isActive ? 'is-active' : ''} ${isLibraryDraggable ? 'is-draggable' : ''}`}
+        style={{ ['--level' as string]: level }}
+        type="button"
+        draggable={isLibraryDraggable}
+        title={isLibraryDraggable ? 'Перетащите элемент на структурную схему' : node.label}
+        onClick={handleRowClick}
+        onDragStart={handleDragStart}
+      >
         <span
           className={`tree-row__chevron ${hasChildren ? 'is-clickable' : ''} ${isCollapsed ? 'is-collapsed' : 'is-expanded'}`}
           aria-hidden="true"
@@ -338,7 +374,13 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
             onToggle(node.id);
           }}
         />
-        {node.iconAsset ? <img className="tree-row__img" src={node.iconAsset} alt="" aria-hidden="true" /> : <span className={`tree-row__icon tree-row__icon--${node.icon}`} />}
+        {node.tebIconShape ? (
+          <span className={`tree-row__teb-icon tree-row__teb-icon--${node.tebIconShape}`} aria-hidden="true" />
+        ) : node.iconAsset ? (
+          <img className="tree-row__img" src={node.iconAsset} alt="" aria-hidden="true" />
+        ) : (
+          <span className={`tree-row__icon tree-row__icon--${node.icon}`} />
+        )}
         <span className="tree-row__label" title={node.label}>
           {node.label}
         </span>
@@ -367,12 +409,13 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   const selectedNodeId = useTebEditorStore((state) => state.selectedNodeId);
   const collapsedNodeIds = useTebEditorStore((state) => state.collapsedNodeIds);
   const projectSearchQuery = useTebEditorStore((state) => state.projectSearchQuery);
+  const explorerMode = useTebEditorStore((state) => state.explorerMode);
   const activateDocument = useTebEditorStore((state) => state.activateDocument);
   const focusProjectNode = useTebEditorStore((state) => state.focusProjectNode);
   const toggleExplorer = useTebEditorStore((state) => state.toggleExplorer);
   const toggleTreeNode = useTebEditorStore((state) => state.toggleTreeNode);
   const setProjectSearchQuery = useTebEditorStore((state) => state.setProjectSearchQuery);
-  const [explorerMode, setExplorerMode] = useState<ExplorerMode>('project');
+  const setExplorerMode = useTebEditorStore((state) => state.setExplorerMode);
 
   const explorerConfig = useMemo<ExplorerConfig>(() => {
     if (explorerMode === 'libraries') {
