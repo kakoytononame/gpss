@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+*.local
+vite-dev.*.log
+artifacts/
+.tmp/
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/GpssStudio.WebApi/bin/
+backend/GpssStudio.WebApi/obj/
+/docs

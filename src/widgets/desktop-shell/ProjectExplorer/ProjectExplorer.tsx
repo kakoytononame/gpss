@@ -1,0 +1,603 @@
+import { useEffect, useMemo, useRef } from 'react';
+import { useTebEditorStore } from '../../../features/teb-editor/store/useTebEditorStore';
+import type { ActiveDocument } from '../../../shared/types/teb';
+import arrowDownIcon from '../../../shared/assets/icons/gpss-native/arrowdown_16.png';
+import closeIcon from '../../../shared/assets/icons/gpss-native/closeblack_13.png';
+import csProjectIcon from '../../../shared/assets/icons/gpss-native/csproject_16.png';
+import entityIcon from '../../../shared/assets/icons/gpss-native/entity_16.png';
+import folderIcon from '../../../shared/assets/icons/gpss-native/folder_16.png';
+import folderOpenedIcon from '../../../shared/assets/icons/gpss-native/folderopened_16.png';
+import formCollectionIcon from '../../../shared/assets/icons/gpss-native/formcollection_16.png';
+import formIcon from '../../../shared/assets/icons/gpss-native/form_16.png';
+import gpssLogicSwitchIcon from '../../../shared/assets/icons/gpss-native/gpsslogicswitch_16.png';
+import gpssMatrixIcon from '../../../shared/assets/icons/gpss-native/gpssmatrix_16.png';
+import gpssObjectTableIcon from '../../../shared/assets/icons/gpss-native/gpssobjstable_16.png';
+import gpssQueueIcon from '../../../shared/assets/icons/gpss-native/gpssequ_16.png';
+import gpssSaveValueIcon from '../../../shared/assets/icons/gpss-native/gpsssavevalue_16.png';
+import modelTextIcon from '../../../shared/assets/icons/gpss-native/simmodeltext_16.png';
+import pinIcon from '../../../shared/assets/icons/gpss-native/ribbonpin.png';
+import projectModelsIcon from '../../../shared/assets/icons/gpss-native/simmodelscollection_16.png';
+import schemeIcon from '../../../shared/assets/icons/gpss-native/simmodeldiagram_16.png';
+import simModelCurrentIcon from '../../../shared/assets/icons/gpss-native/simmodelcur_16.png';
+import simulationIcon from '../../../shared/assets/icons/gpss-native/simmodeltasks_16.png';
+import timelineIcon from '../../../shared/assets/icons/gpss-native/timeline_16.png';
+import stdJournalIcon from '../../../shared/assets/icons/gpss-native/stdjournal_16.png';
+import stdReportIcon from '../../../shared/assets/icons/gpss-native/stdreport_16.png';
+import simpleTebIcon from '../../../shared/assets/icons/gpss-native/simpleteb16.png';
+import tebsLibraryCollectionIcon from '../../../shared/assets/icons/gpss-native/tebslibrarycollection_16.png';
+import tebsLibraryIcon from '../../../shared/assets/icons/gpss-native/tebslibrary_16.png';
+import { getGpssBlockIconShape } from '../../../shared/lib/gpssBlockShapes';
+import './ProjectExplorer.css';
+
+interface TreeNode {
+  id: string;
+  label: string;
+  icon?: string;
+  iconAsset?: string;
+  tebIconShape?: string;
+  documentId?: ActiveDocument;
+  children?: TreeNode[];
+}
+
+type ExplorerMode = 'project' | 'libraries';
+
+interface ExplorerConfig {
+  title: string;
+  searchPlaceholder: string;
+  tree: TreeNode[];
+}
+
+interface ProjectExplorerProps {
+  autoHide: boolean;
+  onToggleAutoHide: () => void;
+}
+
+const standardGpssEntities = [
+  'Устройство',
+  'Очередь',
+  'Многоканальное устройство',
+  'Логический ключ',
+  'Сохраняемая величина',
+  'Матрица',
+];
+
+const standardAdditionalTebs = [
+  'Внешняя анимация',
+  'Генератор XN-потоков',
+  'Начало события временной шкалы',
+  'Событие временной шкалы',
+  'Окончание события временной шкалы',
+];
+
+interface LibraryCategory {
+  id: string;
+  label: string;
+  children: TreeNode[];
+}
+
+type IconAssetResolver = string | ((label: string, index: number) => string);
+
+const gpssEntityIconAssets = [
+  entityIcon,
+  gpssQueueIcon,
+  gpssObjectTableIcon,
+  gpssLogicSwitchIcon,
+  gpssSaveValueIcon,
+  gpssMatrixIcon,
+];
+
+function createLibraryItems(prefix: string, labels: string[], iconAsset: IconAssetResolver = simpleTebIcon): TreeNode[] {
+  return labels.map((label, index) => ({
+    id: `${prefix}-${label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-')}`,
+    label,
+    icon: 'library',
+    iconAsset: typeof iconAsset === 'function' ? iconAsset(label, index) : iconAsset,
+    tebIconShape: prefix === 'standard-block' ? getGpssBlockIconShape(label) : undefined,
+    documentId: 'editor',
+  }));
+}
+
+function createLibraryFolder(id: string, label: string, children: TreeNode[]): TreeNode {
+  return {
+    id,
+    label,
+    icon: 'folder',
+    iconAsset: folderOpenedIcon,
+    children,
+  };
+}
+
+const transactionCategories: LibraryCategory[] = [
+  { id: 'generation', label: 'Генерация', children: createLibraryItems('standard-block-generation', ['GENERATE', 'SPLIT', 'Поток транзактов']) },
+  { id: 'modification', label: 'Изменение', children: createLibraryItems('standard-block-modification', ['ADOPT', 'ASSIGN', 'COUNT', 'INDEX', 'MARK', 'PRIORITY', 'SELECT']) },
+  { id: 'waiting', label: 'Ожидание', children: createLibraryItems('standard-block-waiting', ['ASSEMBLE', 'GATHER']) },
+  { id: 'movement', label: 'Перемещение', children: createLibraryItems('standard-block-movement', ['DISPLACE', 'GATE', 'LOOP', 'TEST', 'TRANSFER']) },
+  { id: 'removal', label: 'Удаление', children: createLibraryItems('standard-block-removal', ['TERMINATE']) },
+];
+
+const standardTebCategoryFolders: TreeNode[] = [
+  createLibraryFolder(
+    'standard-category-transactions',
+    'Транзакты',
+    transactionCategories.map((category) => createLibraryFolder(`standard-transactions-${category.id}`, category.label, category.children)),
+  ),
+  createLibraryFolder('standard-category-time-control', 'Управление временем', createLibraryItems('standard-block-time', ['ADVANCE', 'BUFFER'])),
+  createLibraryFolder('standard-category-queues', 'Очереди', createLibraryItems('standard-block-queues', ['DEPART', 'QUEUE'])),
+  createLibraryFolder('standard-category-user-lists', 'Списки пользователя', createLibraryItems('standard-block-user-lists', ['LINK', 'UNLINK'])),
+  createLibraryFolder('standard-category-memory', 'Памяти', createLibraryItems('standard-block-memory', ['ENTER', 'LEAVE', 'SAVAIL', 'SUNAVAIL'])),
+  createLibraryFolder('standard-category-facilities', 'Устройства', createLibraryItems('standard-block-facilities', ['FAVAIL', 'FUNAVAIL', 'PREEMPT', 'RELEASE', 'RETURN', 'SEIZE'])),
+  createLibraryFolder('standard-category-cells', 'Ячейки', createLibraryItems('standard-block-cells', ['SAVEVALUE'])),
+  createLibraryFolder('standard-category-logic', 'Логические ключи', createLibraryItems('standard-block-logic', ['LOGIC'])),
+  createLibraryFolder('standard-category-matrices', 'Матрицы', [
+    ...createLibraryItems('standard-block-matrices', ['MSAVEVALUE']),
+    ...createLibraryItems('standard-entity-matrix', ['Матрица'], gpssMatrixIcon),
+  ]),
+  createLibraryFolder('standard-category-groups', 'Группы', createLibraryItems('standard-block-groups', ['ALTER', 'EXAMINE', 'JOIN', 'REMOVE', 'SCAN'])),
+  createLibraryFolder('standard-category-tables', 'Таблицы', createLibraryItems('standard-block-tables', ['TABULATE'])),
+  createLibraryFolder('standard-category-files', 'Файлы', createLibraryItems('standard-block-files', ['CLOSE', 'OPEN', 'READ', 'SEEK', 'WRITE'])),
+  createLibraryFolder('standard-category-external-animation', 'Внешняя анимация', createLibraryItems('standard-additional-external-animation', ['API внешней анимации'], simpleTebIcon)),
+  createLibraryFolder('standard-category-timeline', 'Временная диаграмма', createLibraryItems('standard-additional-timeline', ['Завершение задачи', 'Начало задачи'], timelineIcon)),
+];
+
+const librariesTree: TreeNode[] = [
+  {
+    id: 'teb-libraries-root',
+    label: 'Библиотеки ТЭБов',
+    icon: 'library',
+    iconAsset: tebsLibraryCollectionIcon,
+    children: [
+      {
+        id: 'standard-libraries',
+        label: 'Стандартные',
+        icon: 'folder',
+        iconAsset: folderOpenedIcon,
+        children: [
+          {
+            id: 'standard-mining-library',
+            label: 'Горнодобывающее пр-во',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [{ id: 'standard-mine-field-block', label: 'Блок шахтного поля', icon: 'library', iconAsset: simpleTebIcon, documentId: 'editor' }],
+          },
+          {
+            id: 'standard-tebs',
+            label: 'Стандартные ТЭБы',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [
+              ...standardTebCategoryFolders,
+              createLibraryFolder('standard-gpss-entities', 'Объекты GPSS', createLibraryItems('standard-entity', standardGpssEntities, (_label, index) => gpssEntityIconAssets[index] ?? entityIcon)),
+              createLibraryFolder('standard-gpss-additional', 'Дополнительные ТЭБы', createLibraryItems('standard-additional', standardAdditionalTebs)),
+            ],
+          },
+        ],
+      },
+      {
+        id: 'current-project-library',
+        label: 'Текущий проект',
+        icon: 'folder',
+        iconAsset: folderOpenedIcon,
+        children: [
+          {
+            id: 'project-tebs-library',
+            label: 'Библиотека ТЭБов',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [
+              { id: 'project-transactions', label: 'Транзакты', icon: 'folder', iconAsset: folderOpenedIcon },
+              { id: 'project-canteen-library', label: 'Столовая', icon: 'folder', iconAsset: folderIcon },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'user-libraries',
+        label: 'Пользовательские',
+        icon: 'folder',
+        iconAsset: folderOpenedIcon,
+        children: [
+          {
+            id: 'user-mining-library',
+            label: 'Горнодобывающее пр-во',
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: [{ id: 'mine-field-block', label: 'Блок шахтного поля', icon: 'library', iconAsset: simpleTebIcon, documentId: 'editor' }],
+          },
+        ],
+      },
+    ],
+  },
+];
+
+const projectTree: TreeNode[] = [
+  {
+    id: 'project-home',
+    label: 'Столовая',
+    icon: 'none',
+    documentId: 'start',
+    children: [
+      {
+        id: 'models-root',
+        label: 'Модели',
+        icon: 'model',
+        iconAsset: projectModelsIcon,
+        children: [
+          {
+            id: 'current-model',
+            label: 'Столовая (текущая модель)',
+            icon: 'model',
+            iconAsset: simModelCurrentIcon,
+            children: [
+              { id: 'scheme', label: 'Структурная схема', icon: 'scheme', iconAsset: schemeIcon, documentId: 'scheme' },
+              { id: 'model-text', label: 'Текст модели', icon: 'text', iconAsset: modelTextIcon, documentId: 'model-text' },
+              { id: 'data-files', label: 'Файлы с данными', icon: 'folder', iconAsset: folderIcon },
+            ],
+          },
+          {
+            id: 'model-run',
+            label: 'Моделирование от 10.08.2018 10:59',
+            icon: 'run',
+            iconAsset: simulationIcon,
+            children: [
+              { id: 'std-report', label: 'Стандартный отчёт', icon: 'table', iconAsset: stdReportIcon, documentId: 'std-report' },
+              { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: stdJournalIcon, documentId: 'model-log' },
+            ],
+          },
+          {
+            id: 'forms-root',
+            label: 'Формы',
+            icon: 'form',
+            iconAsset: formCollectionIcon,
+            children: [
+              {
+                id: 'forms-canteen',
+                label: 'Столовая',
+                icon: 'form',
+                iconAsset: formIcon,
+                children: [
+                  { id: 'input-form', label: 'Форма ввода данных', icon: 'form', iconAsset: formIcon },
+                  { id: 'report-templates', label: 'Шаблоны отчётов', icon: 'form', iconAsset: formCollectionIcon },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'libraries-root',
+        label: 'Библиотеки ТЭБов проекта',
+        icon: 'library',
+        iconAsset: tebsLibraryCollectionIcon,
+        children: [{ id: 'library', label: 'Библиотека ТЭБов', icon: 'library', iconAsset: tebsLibraryIcon }],
+      },
+      { id: 'csharp-libraries', label: 'Библиотеки C#', icon: 'code', iconAsset: csProjectIcon },
+    ],
+  },
+];
+
+function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
+  if (!query.trim()) {
+    return nodes;
+  }
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  return nodes.flatMap((node) => {
+    const children = filterTree(node.children ?? [], query);
+    const isMatch = node.label.toLowerCase().includes(normalizedQuery);
+
+    if (!isMatch && !children.length) {
+      return [];
+    }
+
+    return [{ ...node, children }];
+  });
+}
+
+interface TreeBranchProps {
+  node: TreeNode;
+  level: number;
+  selectedNodeId: string;
+  collapsedNodeIds: string[];
+  forceExpanded: boolean;
+  onFocus: (nodeId: string) => void;
+  onOpen: (nodeId: string) => void;
+  onToggle: (nodeId: string) => void;
+}
+
+function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpanded, onFocus, onOpen, onToggle }: TreeBranchProps) {
+  const hasChildren = Boolean(node.children?.length);
+  const isCollapsed = hasChildren && !forceExpanded && collapsedNodeIds.includes(node.id);
+  const isActive = selectedNodeId === node.id;
+  const isLibraryDraggable =
+    node.id.startsWith('standard-block-') ||
+    node.id.startsWith('standard-entity-') ||
+    node.id.startsWith('standard-additional-') ||
+    node.id === 'mine-field-block' ||
+    node.id === 'standard-mine-field-block';
+
+  function handleRowClick() {
+    onFocus(node.id);
+
+    if (isLibraryDraggable) {
+      return;
+    }
+
+    if (hasChildren && !forceExpanded) {
+      onToggle(node.id);
+      return;
+    }
+
+    onOpen(node.id);
+  }
+
+  function handleDragStart(event: React.DragEvent<HTMLButtonElement>) {
+    if (!isLibraryDraggable) {
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = 'copy';
+    event.dataTransfer.setData(
+      'application/x-gpss-teb',
+      JSON.stringify({
+        id: node.id,
+        label: node.label,
+        icon: node.iconAsset,
+        iconShape: node.tebIconShape,
+        kind: node.id.startsWith('standard-entity-') ? 'entity' : 'block',
+      }),
+    );
+    event.dataTransfer.setData('text/plain', node.label);
+  }
+
+  return (
+    <div>
+      <button
+        className={`tree-row ${isActive ? 'is-active' : ''} ${isLibraryDraggable ? 'is-draggable' : ''}`}
+        style={{ ['--level' as string]: level }}
+        type="button"
+        draggable={isLibraryDraggable}
+        title={isLibraryDraggable ? 'Перетащите элемент на структурную схему' : node.label}
+        onClick={handleRowClick}
+        onDragStart={handleDragStart}
+      >
+        <span
+          className={`tree-row__chevron ${hasChildren ? 'is-clickable' : ''} ${isCollapsed ? 'is-collapsed' : 'is-expanded'}`}
+          aria-hidden="true"
+          onClick={(event) => {
+            if (!hasChildren) {
+              return;
+            }
+
+            event.stopPropagation();
+            onFocus(node.id);
+            onToggle(node.id);
+          }}
+        />
+        {node.tebIconShape ? (
+          <span className={`tree-row__teb-icon tree-row__teb-icon--${node.tebIconShape}`} aria-hidden="true" />
+        ) : node.iconAsset ? (
+          <img className="tree-row__img" src={node.iconAsset} alt="" aria-hidden="true" />
+        ) : (
+          <span className={`tree-row__icon tree-row__icon--${node.icon}`} />
+        )}
+        <span className="tree-row__label" title={node.label}>
+          {node.label}
+        </span>
+      </button>
+
+      {!isCollapsed &&
+        node.children?.map((child) => (
+          <TreeBranch
+            key={child.id}
+            node={child}
+            level={level + 1}
+            selectedNodeId={selectedNodeId}
+            collapsedNodeIds={collapsedNodeIds}
+            forceExpanded={forceExpanded}
+            onFocus={onFocus}
+            onOpen={onOpen}
+            onToggle={onToggle}
+          />
+        ))}
+    </div>
+  );
+}
+
+export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerProps) {
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const selectedNodeId = useTebEditorStore((state) => state.selectedNodeId);
+  const collapsedNodeIds = useTebEditorStore((state) => state.collapsedNodeIds);
+  const projectSearchQuery = useTebEditorStore((state) => state.projectSearchQuery);
+  const explorerMode = useTebEditorStore((state) => state.explorerMode);
+  const activateDocument = useTebEditorStore((state) => state.activateDocument);
+  const focusProjectNode = useTebEditorStore((state) => state.focusProjectNode);
+  const toggleExplorer = useTebEditorStore((state) => state.toggleExplorer);
+  const toggleTreeNode = useTebEditorStore((state) => state.toggleTreeNode);
+  const setProjectSearchQuery = useTebEditorStore((state) => state.setProjectSearchQuery);
+  const setExplorerMode = useTebEditorStore((state) => state.setExplorerMode);
+
+  const explorerConfig = useMemo<ExplorerConfig>(() => {
+    if (explorerMode === 'libraries') {
+      return {
+        title: 'Библиотеки ТЭБов',
+        searchPlaceholder: 'Поиск по библиотекам ТЭБов (F3)',
+        tree: librariesTree,
+      };
+    }
+
+    return {
+      title: 'Текущий проект',
+      searchPlaceholder: 'Поиск в проекте (F3)',
+      tree: projectTree,
+    };
+  }, [explorerMode]);
+
+  const filteredTree = useMemo(() => filterTree(explorerConfig.tree, projectSearchQuery), [explorerConfig.tree, projectSearchQuery]);
+  const forceExpanded = projectSearchQuery.trim().length > 0;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'F3') {
+        return;
+      }
+
+      event.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  function handleOpenNode(nodeId: string) {
+    if (nodeId === 'library') {
+      setExplorerMode('libraries');
+      setProjectSearchQuery('');
+      focusProjectNode('project-tebs-library');
+      ['teb-libraries-root', 'current-project-library', 'project-tebs-library'].forEach((expandedNodeId) => {
+        if (collapsedNodeIds.includes(expandedNodeId)) {
+          toggleTreeNode(expandedNodeId);
+        }
+      });
+      return;
+    }
+
+    const documentId =
+      nodeId === 'scheme'
+        ? 'scheme'
+        : nodeId === 'model-text'
+          ? 'model-text'
+          : nodeId === 'std-report'
+            ? 'std-report'
+            : nodeId === 'model-log'
+              ? 'model-log'
+              : nodeId === 'library-item-cashier-1' ||
+                  nodeId === 'mine-field-block' ||
+                  nodeId === 'standard-mine-field-block' ||
+                  nodeId.startsWith('standard-block-') ||
+                  nodeId.startsWith('standard-entity-') ||
+                  nodeId.startsWith('standard-additional-')
+                ? 'editor'
+                : nodeId === 'project-home'
+                  ? 'start'
+                  : null;
+
+    if (documentId) {
+      activateDocument(documentId);
+    }
+  }
+
+  return (
+    <aside className={`project-explorer ${autoHide ? 'project-explorer--auto-hide' : ''}`}>
+      {autoHide ? (
+        <div className="explorer-auto-tabs" role="tablist" aria-label="Скрытые панели проекта">
+          <button
+            className={`explorer-auto-tab ${explorerMode === 'project' ? 'is-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={explorerMode === 'project'}
+            onFocus={() => setExplorerMode('project')}
+            onPointerEnter={() => setExplorerMode('project')}
+            onClick={() => setExplorerMode('project')}
+          >
+            Текущий проект
+          </button>
+          <button
+            className={`explorer-auto-tab ${explorerMode === 'libraries' ? 'is-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={explorerMode === 'libraries'}
+            onFocus={() => setExplorerMode('libraries')}
+            onPointerEnter={() => setExplorerMode('libraries')}
+            onClick={() => setExplorerMode('libraries')}
+          >
+            Библиотеки ТЭБов
+          </button>
+        </div>
+      ) : null}
+
+      <div className="project-explorer__panel">
+        <div className="panel-caption">
+          <span className="panel-caption__title">{explorerConfig.title}</span>
+          <div className="panel-caption__tools">
+            <span className="panel-caption__grip" aria-hidden="true">
+              ................................
+            </span>
+            <button className="panel-caption__button" type="button" title="Сбросить поиск" aria-label="Сбросить поиск" onClick={() => setProjectSearchQuery('')}>
+              <img src={arrowDownIcon} alt="" aria-hidden="true" />
+            </button>
+            <button
+              className={`panel-caption__button panel-caption__button--pin ${autoHide ? 'is-auto-hide' : ''}`}
+              type="button"
+              title={autoHide ? 'Закрепить панель' : 'Скрывать автоматически'}
+              aria-label={autoHide ? 'Закрепить панель' : 'Скрывать автоматически'}
+              aria-pressed={autoHide}
+              onClick={onToggleAutoHide}
+            >
+              <img src={pinIcon} alt="" aria-hidden="true" />
+            </button>
+            <button className="panel-caption__button" type="button" title="Закрыть панель" aria-label="Закрыть панель" onClick={toggleExplorer}>
+              <img src={closeIcon} alt="" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div className="project-search">
+          <input
+            ref={searchInputRef}
+            className="project-search__input"
+            type="search"
+            value={projectSearchQuery}
+            placeholder={explorerConfig.searchPlaceholder}
+            aria-label={explorerConfig.searchPlaceholder}
+            onChange={(event) => setProjectSearchQuery(event.target.value)}
+          />
+        </div>
+
+        <div className="tree-view">
+          <div className="tree-view__content">
+            {filteredTree.length ? (
+              filteredTree.map((node) => (
+                <TreeBranch
+                  key={node.id}
+                  node={node}
+                  level={0}
+                  selectedNodeId={selectedNodeId}
+                  collapsedNodeIds={collapsedNodeIds}
+                  forceExpanded={forceExpanded}
+                  onFocus={focusProjectNode}
+                  onOpen={handleOpenNode}
+                  onToggle={toggleTreeNode}
+                />
+              ))
+            ) : (
+              <div className="tree-empty">Совпадений не найдено.</div>
+            )}
+          </div>
+          <div className="tree-view__scrollbar" aria-hidden="true">
+            <span className="tree-view__scroll-arrow">‹</span>
+            <span className="tree-view__scroll-thumb" />
+            <span className="tree-view__scroll-arrow">›</span>
+          </div>
+        </div>
+
+        <div className="explorer-tabs" role="tablist" aria-label="Разделы панели проекта">
+          <button className={`explorer-tab ${explorerMode === 'project' ? 'is-active' : ''}`} type="button" role="tab" aria-selected={explorerMode === 'project'} onClick={() => setExplorerMode('project')}>
+            Текущий проект
+          </button>
+          <button
+            className={`explorer-tab ${explorerMode === 'libraries' ? 'is-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={explorerMode === 'libraries'}
+            onClick={() => setExplorerMode('libraries')}
+          >
+            Библиотеки ТЭБов
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}

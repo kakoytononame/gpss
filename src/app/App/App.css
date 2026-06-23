@@ -1,0 +1,124 @@
+.gpss-desktop {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: #dfe2e6;
+  overflow: hidden;
+}
+
+.workbench {
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 252px minmax(0, 1fr) 360px;
+  border-top: 1px solid #f7f9fb;
+}
+
+.gpss-desktop--collapsed .workbench {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.gpss-desktop--explorer-auto-hide .workbench {
+  grid-template-columns: 34px minmax(0, 1fr) 360px;
+}
+
+.gpss-desktop--right-collapsed .workbench {
+  grid-template-columns: 252px minmax(0, 1fr);
+}
+
+.gpss-desktop--collapsed.gpss-desktop--right-collapsed .workbench {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gpss-desktop--explorer-auto-hide.gpss-desktop--right-collapsed .workbench {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+
+.explorer-dock {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+  position: relative;
+  z-index: 5;
+}
+
+.document-host {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(26px, auto) minmax(0, 1fr);
+  background: repeating-linear-gradient(45deg, #eef0f3 0 2px, #e2e5e9 2px 4px);
+  overflow: hidden;
+}
+
+.document-host--with-issues {
+  grid-template-rows: minmax(26px, auto) minmax(0, 1fr) 118px;
+}
+
+.document-surface {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  padding: 4px;
+  overflow: auto;
+}
+
+.empty-document-surface {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c9d0d8;
+  background: rgba(255, 255, 255, 0.76);
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.global-status {
+  min-height: 22px;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #b8c1ce;
+  background: #eef1f5;
+  color: #4b5563;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.global-status span {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 860px) {
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .gpss-desktop--collapsed .workbench,
+  .gpss-desktop--explorer-auto-hide .workbench,
+  .gpss-desktop--right-collapsed .workbench,
+  .gpss-desktop--collapsed.gpss-desktop--right-collapsed .workbench,
+  .gpss-desktop--explorer-auto-hide.gpss-desktop--right-collapsed .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .global-status {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 6px 10px;
+  }
+
+  .global-status span {
+    white-space: normal;
+    text-overflow: clip;
+  }
+}

@@ -1,0 +1,221 @@
+.model-log-document {
+  min-height: 0;
+  height: 100%;
+  position: relative;
+  display: grid;
+  grid-template-rows: 28px minmax(0, 1fr);
+  border: 1px solid #c5cad3;
+  background: #f4f6f9;
+  overflow: hidden;
+}
+
+.model-log-document__titlebar {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 7px;
+  border-bottom: 1px solid #c9d0d8;
+  background: linear-gradient(#f4f5f8, #dee2ea);
+  color: #2f3540;
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.model-log-document__titlebar span {
+  min-width: 0;
+  padding: 1px 2px;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.model-log-document__actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.model-log-document__actions .icon-button {
+  min-height: 22px;
+  padding: 2px 8px;
+}
+
+.log-editor {
+  min-width: 0;
+  min-height: 0;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  margin: 4px;
+  padding: 8px 10px;
+  border: 1px solid #b9c7d8;
+  outline: 0;
+  resize: none;
+  background: #ffffff;
+  color: #1f2933;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.5;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+}
+
+.log-editor::selection {
+  background: #0b67b2;
+  color: #fff;
+}
+
+.find-replace-dialog {
+  position: fixed;
+  z-index: 12;
+  width: 460px;
+  min-height: 440px;
+  border: 1px solid #aeb4bd;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(31, 41, 55, 0.28);
+  overflow: hidden;
+}
+
+.find-replace-dialog__titlebar {
+  height: 44px;
+  display: grid;
+  grid-template-columns: 24px 1fr 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: #f4ede9;
+  color: #111;
+  font-size: 1rem;
+  line-height: 1.2;
+  cursor: move;
+  user-select: none;
+}
+
+.find-replace-dialog__titlebar img {
+  width: 20px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.find-replace-dialog__titlebar button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.find-replace-dialog__titlebar button:hover {
+  background: #f7d9d5;
+}
+
+.find-replace-dialog__titlebar button img {
+  width: 13px;
+  height: 13px;
+}
+
+.find-replace-dialog__tabs {
+  height: 38px;
+  display: flex;
+  align-items: end;
+  border-bottom: 1px solid #c7c7c7;
+  background: #f8f8f8;
+}
+
+.find-replace-dialog__tabs button {
+  width: 126px;
+  height: 37px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: transparent;
+  color: #111;
+  font-size: 1rem;
+}
+
+.find-replace-dialog__tabs button.is-active {
+  border-color: #c7c7c7;
+  background: #fff;
+}
+
+.find-replace-dialog__body {
+  display: grid;
+  gap: 14px;
+  padding: 16px 13px 12px;
+}
+
+.find-replace-dialog__body label {
+  display: grid;
+  gap: 5px;
+}
+
+.find-replace-dialog__body label > span,
+.find-replace-dialog__options > span {
+  color: #0064d9;
+  font-size: 1.05rem;
+}
+
+.find-replace-dialog__body input[type="text"],
+.find-replace-dialog__body label > input:not([type]) {
+  height: 32px;
+  padding: 0 7px;
+  border: 2px solid #4194ff;
+  background: #fff;
+  color: #111;
+  font-size: 1rem;
+}
+
+.find-replace-dialog__body label:nth-of-type(2) > input {
+  border-color: #aeb4bd;
+}
+
+.find-replace-dialog__options {
+  display: grid;
+  gap: 5px;
+}
+
+.find-replace-dialog__options label {
+  width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #111;
+  font-size: 1rem;
+}
+
+.find-replace-dialog__options input {
+  width: 22px;
+  height: 22px;
+}
+
+.find-replace-dialog__actions {
+  display: grid;
+  justify-content: end;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.find-replace-dialog__actions button {
+  width: 166px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 2px solid #2786ff;
+  background: #fff;
+  color: #222;
+  font-size: 1rem;
+}
+
+.find-replace-dialog__actions button:hover {
+  background: #eef6ff;
+}
+
+@media (max-width: 860px) {
+  .find-replace-dialog {
+    width: min(460px, calc(100vw - 24px));
+  }
+}
