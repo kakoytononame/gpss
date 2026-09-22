@@ -92,7 +92,10 @@ function createLibraryItems(prefix: string, labels: string[], iconAsset: IconAss
     label,
     icon: 'library',
     iconAsset: typeof iconAsset === 'function' ? iconAsset(label, index) : iconAsset,
-    tebIconShape: prefix === 'standard-block' ? getGpssBlockIconShape(label) : undefined,
+    tebIconShape:
+      prefix.startsWith('standard-block') || prefix.startsWith('standard-additional')
+        ? getGpssBlockIconShape(label)
+        : undefined,
     documentId: 'editor',
   }));
 }
@@ -343,7 +346,7 @@ function TreeBranch({ node, level, selectedNodeId, collapsedNodeIds, forceExpand
         id: node.id,
         label: node.label,
         icon: node.iconAsset,
-        iconShape: node.tebIconShape,
+        iconShape: node.tebIconShape ?? (node.id.startsWith('standard-entity-') ? undefined : 'rect'),
         kind: node.id.startsWith('standard-entity-') ? 'entity' : 'block',
       }),
     );

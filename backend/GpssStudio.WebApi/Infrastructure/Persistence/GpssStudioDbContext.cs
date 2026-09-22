@@ -27,6 +27,7 @@ public sealed class GpssStudioDbContext : DbContext
         {
             entity.ToTable("teb_classes");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
             entity.Property(item => item.LibraryId).HasColumnName("library_id");
             entity.Property(item => item.ClassType).HasColumnName("class_type");
             entity.Property(item => item.NameInModel).HasColumnName("name_in_model");
@@ -42,6 +43,7 @@ public sealed class GpssStudioDbContext : DbContext
         {
             entity.ToTable("teb_gpss_entities");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
             entity.Property(item => item.ClassId).HasColumnName("class_id");
             entity.Property(item => item.SortOrder).HasColumnName("sort_order");
             entity.Property(item => item.Type).HasColumnName("type");
@@ -55,6 +57,7 @@ public sealed class GpssStudioDbContext : DbContext
         {
             entity.ToTable("teb_ports");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
             entity.Property(item => item.ClassId).HasColumnName("class_id");
             entity.Property(item => item.Direction).HasColumnName("direction");
             entity.Property(item => item.SortOrder).HasColumnName("sort_order");
@@ -70,6 +73,7 @@ public sealed class GpssStudioDbContext : DbContext
         {
             entity.ToTable("teb_parameters");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
             entity.Property(item => item.ClassId).HasColumnName("class_id");
             entity.Property(item => item.SortOrder).HasColumnName("sort_order");
             entity.Property(item => item.Type).HasColumnName("type");
@@ -85,6 +89,7 @@ public sealed class GpssStudioDbContext : DbContext
         {
             entity.ToTable("teb_states");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
             entity.Property(item => item.ClassId).HasColumnName("class_id");
             entity.Property(item => item.SortOrder).HasColumnName("sort_order");
             entity.Property(item => item.Name).HasColumnName("name");
@@ -97,6 +102,7 @@ public sealed class GpssStudioDbContext : DbContext
         {
             entity.ToTable("teb_instances");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
             entity.Property(item => item.ClassId).HasColumnName("class_id");
             entity.Property(item => item.NameInModel).HasColumnName("name_in_model");
             entity.Property(item => item.Text).HasColumnName("text");

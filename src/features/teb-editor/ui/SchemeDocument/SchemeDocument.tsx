@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import deleteIcon from '../../../../shared/assets/icons/gpss-native/delete_16.png';
 import folderIcon from '../../../../shared/assets/icons/gpss-native/folderopened_16.png';
 import pasteIcon from '../../../../shared/assets/icons/gpss-native/paste16.png';
-import { GPSS_BLOCK_ICON_SHAPES, GPSS_GALLERY_BLOCKS, getGpssBlockIconShape } from '../../../../shared/lib/gpssBlockShapes';
+import { GPSS_GALLERY_BLOCKS, getGpssBlockIconShape } from '../../../../shared/lib/gpssBlockShapes';
 import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import '../BaseDocument/BaseDocument.css';
@@ -83,14 +84,104 @@ function linkPath(from: SchemeNode, to: SchemeNode) {
   const toCenter = center(to);
   const dx = toCenter.x - fromCenter.x;
   const dy = toCenter.y - fromCenter.y;
-  const fromPoint = Math.abs(dx) > Math.abs(dy)
-    ? { x: fromCenter.x + Math.sign(dx) * from.width / 2, y: fromCenter.y }
-    : { x: fromCenter.x, y: fromCenter.y + Math.sign(dy) * from.height / 2 };
-  const toPoint = Math.abs(dx) > Math.abs(dy)
-    ? { x: toCenter.x - Math.sign(dx) * to.width / 2, y: toCenter.y }
-    : { x: toCenter.x, y: toCenter.y - Math.sign(dy) * to.height / 2 };
+
+  function boundaryPoint(node: SchemeNode, directionX: number, directionY: number) {
+    const nodeCenter = center(node);
+    const horizontalScale = directionX === 0 ? Number.POSITIVE_INFINITY : node.width / 2 / Math.abs(directionX);
+    const verticalScale = directionY === 0 ? Number.POSITIVE_INFINITY : node.height / 2 / Math.abs(directionY);
+    const scale = Math.min(horizontalScale, verticalScale);
+
+    return {
+      x: nodeCenter.x + directionX * scale,
+      y: nodeCenter.y + directionY * scale,
+    };
+  }
+
+  if (dx === 0 && dy === 0) {
+    return `M ${fromCenter.x} ${from.y + from.height} L ${toCenter.x} ${to.y}`;
+  }
+
+  const fromPoint = boundaryPoint(from, dx, dy);
+  const toPoint = boundaryPoint(to, -dx, -dy);
 
   return `M ${fromPoint.x} ${fromPoint.y} L ${toPoint.x} ${toPoint.y}`;
+}
+
+interface GpssNodeShapeProps {
+  shape: string;
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+}
+
+function GpssNodeShape({ shape, backgroundColor, borderColor, borderWidth }: GpssNodeShapeProps) {
+  const normalizedShape = shape.toLowerCase();
+  const strokeWidth = Math.max(1, borderWidth);
+  const common = {
+    fill: backgroundColor,
+    stroke: borderColor,
+    strokeWidth,
+    vectorEffect: 'non-scaling-stroke' as const,
+  };
+  const lineCommon = {
+    fill: 'none',
+    stroke: borderColor,
+    strokeWidth,
+    vectorEffect: 'non-scaling-stroke' as const,
+  };
+
+  let body: ReactNode = <rect x="5" y="8" width="150" height="60" rx="2" {...common} />;
+  let decoration: ReactNode = null;
+
+  if (normalizedShape === 'diamond' || normalizedShape === 'test') {
+    body = <path d="M 80 5 L 155 38 L 80 71 L 5 38 Z" {...common} />;
+    decoration = normalizedShape === 'test' ? <path d="M 36 38 H 124" {...lineCommon} /> : null;
+  } else if (normalizedShape === 'generate') {
+    body = <path d="M 42 7 A 31 31 0 1 0 42 69 H 139 V 53 H 155 V 69 H 42" {...common} />;
+  } else if (normalizedShape === 'terminate') {
+    body = <ellipse cx="80" cy="38" rx="73" ry="32" {...common} />;
+  } else if (normalizedShape === 'loop') {
+    body = <path d="M 30 7 H 155 V 69 H 30 L 5 38 Z" {...common} />;
+  } else if (normalizedShape === 'link' || normalizedShape === 'unlink') {
+    body = <rect x="12" y="8" width="136" height="60" rx="20" {...common} />;
+    decoration = normalizedShape === 'link'
+      ? <rect x="136" y="18" width="19" height="40" rx="9" {...common} />
+      : <rect x="5" y="10" width="23" height="56" rx="11" {...common} />;
+  } else if (normalizedShape === 'select') {
+    body = <path d="M 23 8 H 130 L 155 38 L 130 68 H 23 Z" {...common} />;
+    decoration = <circle cx="11" cy="38" r="10" {...common} />;
+  } else if (normalizedShape === 'mark') {
+    body = <rect x="7" y="8" width="146" height="60" rx="18" {...common} />;
+  }
+
+  if (normalizedShape === 'assemble') {
+    decoration = <path d="M 6 9 L 80 42 L 154 9" {...lineCommon} />;
+  } else if (normalizedShape === 'gather') {
+    decoration = <path d="M 6 9 L 154 67 M 154 9 L 6 67" {...lineCommon} />;
+  } else if (normalizedShape === 'assign' || normalizedShape === 'priority') {
+    decoration = <rect x="58" y="1" width="44" height="16" {...common} />;
+  } else if (normalizedShape === 'buffer' || normalizedShape === 'savevalue') {
+    decoration = <path d="M 5 59 H 155 M 5 65 H 155" {...lineCommon} />;
+  } else if (normalizedShape === 'depart' || normalizedShape === 'queue') {
+    decoration = <circle cx="151" cy="16" r="10" {...common} />;
+  } else if (normalizedShape === 'enter' || normalizedShape === 'tabulate') {
+    decoration = <path d="M 139 68 V 53 H 155 V 68" {...lineCommon} />;
+  } else if (normalizedShape === 'leave' || normalizedShape === 'release' || normalizedShape === 'return') {
+    decoration = <path d="M 130 8 L 145 23 L 155 8" {...lineCommon} />;
+  } else if (normalizedShape === 'logic') {
+    decoration = <rect x="145" y="27" width="12" height="22" {...common} />;
+  } else if (normalizedShape === 'match') {
+    decoration = <path d="M 155 8 L 132 38 L 155 68" {...lineCommon} />;
+  } else if (normalizedShape === 'preempt' || normalizedShape === 'seize') {
+    decoration = <path d="M 128 68 L 143 48 L 158 68 Z" {...common} />;
+  }
+
+  return (
+    <svg className="scheme-node__shape" viewBox="0 0 160 76" preserveAspectRatio="none" aria-hidden="true">
+      {body}
+      {decoration}
+    </svg>
+  );
 }
 
 function pointForPort(node: SchemeNode, port: SchemePort) {
@@ -347,12 +438,12 @@ export function SchemeDocument() {
     }
 
     const point = readCanvasPoint(event.clientX, event.clientY);
-    const width = payload.label.length > 18 ? 178 : 150;
-    const height = payload.kind === 'entity' ? 58 : 64;
+    const width = payload.kind === 'entity' ? 150 : payload.label.length > 18 ? 190 : 160;
+    const height = payload.kind === 'entity' ? 58 : 76;
     const node: SchemeNode = {
       id: buildNodeId(payload.label),
       label: payload.label,
-      iconShape: payload.iconShape,
+      iconShape: payload.kind === 'entity' ? undefined : payload.iconShape ?? getGpssBlockIconShape(payload.label),
       nameInModel: payload.label.replace(/[^A-Za-zА-Яа-яЁё0-9_]+/g, '_').replace(/^_|_$/g, ''),
       kind: payload.kind === 'entity' ? 'data' : 'teb',
       x: clamp(point.x - width / 2, 8, SCHEME_WIDTH - width - 8),
@@ -444,7 +535,7 @@ export function SchemeDocument() {
       return;
     }
 
-    const iconShape = GPSS_BLOCK_ICON_SHAPES[shape.toUpperCase()];
+    const iconShape = getGpssBlockIconShape(shape);
     setNodes((currentNodes) =>
       currentNodes.map((node) =>
         node.id === selectedNode.id
@@ -578,10 +669,10 @@ export function SchemeDocument() {
           <div className="scheme-surface" style={{ width: `${SCHEME_WIDTH * schemeZoom}px`, height: `${SCHEME_HEIGHT * schemeZoom}px` }}>
           <svg className="scheme-links" viewBox={`0 0 ${SCHEME_WIDTH} ${SCHEME_HEIGHT}`} preserveAspectRatio="none" role="img" aria-label="Связи структурной схемы">
             <defs>
-              <marker id="scheme-arrow" viewBox="0 0 10 10" refX="8.8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+              <marker id="scheme-arrow" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
                 <path d="M 0 0 L 10 5 L 0 10 z" />
               </marker>
-              <marker id="scheme-arrow-draft" viewBox="0 0 10 10" refX="8.8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+              <marker id="scheme-arrow-draft" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
                 <path d="M 0 0 L 10 5 L 0 10 z" />
               </marker>
             </defs>
@@ -619,7 +710,7 @@ export function SchemeDocument() {
 
             return (
               <div
-                className={`scheme-node scheme-node--${node.kind} ${selection?.type === 'node' && selection.id === node.id ? 'is-selected' : ''} ${connectionTarget?.id === node.id ? 'is-connection-target' : ''}`}
+                className={`scheme-node scheme-node--${node.kind} ${node.iconShape ? 'scheme-node--gpss-icon' : ''} ${selection?.type === 'node' && selection.id === node.id ? 'is-selected' : ''} ${connectionTarget?.id === node.id ? 'is-connection-target' : ''}`}
                 key={node.id}
                   style={{
                     left: `${node.x * schemeZoom}px`,
@@ -627,8 +718,8 @@ export function SchemeDocument() {
                     width: `${node.width * schemeZoom}px`,
                     height: `${node.height * schemeZoom}px`,
                     padding: `${textMetrics.paddingY * schemeZoom}px ${textMetrics.paddingX * schemeZoom}px`,
-                    backgroundColor: node.backgroundColor,
-                    borderColor: node.borderColor,
+                    backgroundColor: node.iconShape ? 'transparent' : node.backgroundColor,
+                    borderColor: node.iconShape ? 'transparent' : node.borderColor,
                     borderWidth: node.borderWidth !== undefined ? `${node.borderWidth}px` : undefined,
                     borderRadius: node.cornerRadius !== undefined ? `${node.cornerRadius}px` : undefined,
                     color: node.textColor,
@@ -646,7 +737,14 @@ export function SchemeDocument() {
                   handlePointerDown(node, event.clientX, event.clientY);
                 }}
               >
-                {node.iconShape ? <span className={`scheme-node__type-icon tree-row__teb-icon--${node.iconShape}`} aria-hidden="true" /> : null}
+                {node.iconShape ? (
+                  <GpssNodeShape
+                    shape={node.iconShape}
+                    backgroundColor={node.backgroundColor ?? '#80c7ee'}
+                    borderColor={node.borderColor ?? '#3f9fcd'}
+                    borderWidth={node.borderWidth ?? 2}
+                  />
+                ) : null}
                 <span className="scheme-node__label">{node.label}</span>
                 {(selection?.type === 'node' && selection.id === node.id) || connectionDrag ? (
                   <span className="scheme-node__ports" aria-hidden="true">

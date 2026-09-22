@@ -12,3 +12,4 @@ backend/.env
 backend/GpssStudio.WebApi/bin/
 backend/GpssStudio.WebApi/obj/
 /docs
+diploma_sequence_diagram.svg

@@ -1,0 +1,7 @@
+[2m18:38:50[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/alina-gpss/studio/tebs/libraries/0/classes/3ef71b95-07f7-41c6-b532-03d83d8a3973[39m
+Error: connect ECONNREFUSED 127.0.0.1:3001
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)
+[2m18:38:50[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/alina-gpss/studio/tebs/libraries/0/classes/3ef71b95-07f7-41c6-b532-03d83d8a3973[39m
+Error: connect ECONNREFUSED 127.0.0.1:3001
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)
+^C^C

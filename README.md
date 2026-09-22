@@ -1,95 +1,75 @@
-# GPSS TEB Editor
+# GPSS Studio Web
 
-Веб-проект состоит из трех частей:
+Веб-версия GPSS Studio состоит из React + TypeScript frontend, ASP.NET Core + EF Core backend и PostgreSQL. Для переноса и запуска все компоненты упакованы в Docker Compose.
 
-- `frontend` на Vite + React + TypeScript в корне репозитория;
-- `backend` на ASP.NET Core + EF Core в папке [`backend/GpssStudio.WebApi`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi);
-- `PostgreSQL`, которая поднимается через Docker Compose и инициализируется SQL-скриптом.
+## Запуск одной кнопкой на Windows
 
-## Быстрый запуск через Docker
+На новом ноутбуке один раз установите [Docker Desktop](https://www.docker.com/products/docker-desktop/) с поддержкой WSL 2. Node.js, .NET SDK и PostgreSQL отдельно устанавливать не нужно.
 
-1. Установить Docker Desktop.
-2. В корне проекта выполнить:
+1. Скопируйте и распакуйте папку проекта.
+2. Запустите `START_GPSS_STUDIO.cmd` двойным щелчком.
+3. Дождитесь сборки. При первом запуске Docker загрузит базовые образы, поэтому потребуется интернет и несколько минут.
+4. После проверки сервисов браузер автоматически откроет `http://127.0.0.1:8080`.
 
-```bash
-npm run docker:up
+Лаунчер выполняет следующие действия:
+
+- проверяет наличие Docker и Docker Compose;
+- при необходимости запускает Docker Desktop и ожидает его готовности;
+- собирает и запускает frontend, backend и PostgreSQL;
+- проверяет API, соединение с базой данных и веб-интерфейс;
+- открывает приложение в браузере только после успешного запуска.
+
+Для остановки используйте `STOP_GPSS_STUDIO.cmd`. Контейнеры будут остановлены, но данные PostgreSQL сохранятся в Docker volume.
+
+## Подготовка архива для переноса
+
+Запустите `CREATE_TRANSFER_PACKAGE.cmd`. В папке `artifacts` появится архив `GPSS-Studio-portable-ДАТА-ВРЕМЯ.zip` без локальных зависимостей, Git-истории, логов и результатов сборки.
+
+Архив содержит исходный код, Docker-конфигурацию и кнопки запуска. Его можно перенести на другой Windows-компьютер, распаковать и запустить через `START_GPSS_STUDIO.cmd`.
+
+## Адреса сервисов
+
+- веб-интерфейс: `http://127.0.0.1:8080`;
+- backend API: `http://127.0.0.1:3001/api/health`;
+- PostgreSQL: `127.0.0.1:55432`;
+- база данных: `gpss`;
+- пользователь: `gpss`;
+- пароль: `gpss`.
+
+Порты `8080`, `3001` и `55432` должны быть свободны. Если запуск завершился ошибкой, окно не закроется и покажет последние сообщения контейнеров.
+
+При необходимости внешний порт PostgreSQL можно изменить перед запуском, задав переменную окружения `GPSS_DB_PORT`. Внутри Docker backend всегда подключается к базе на стандартном порту `5432`.
+
+## Ручной запуск
+
+```powershell
+docker compose --project-name gpss up --detach --build
 ```
 
-После старта сервисы будут доступны по адресам:
+Остановка:
 
-- веб-интерфейс: `http://localhost:8080`
-- backend API: `http://localhost:3001/api/health`
-- PostgreSQL: `localhost:5432`
-
-Остановить окружение:
-
-```bash
-npm run docker:down
+```powershell
+docker compose --project-name gpss down
 ```
 
-Логи контейнеров:
+Просмотр логов:
 
-```bash
-npm run docker:logs
+```powershell
+docker compose --project-name gpss logs --follow
 ```
-
-## Локальный запуск без Docker
-
-### Frontend
-
-```bash
-npm install
-npm run dev
-```
-
-Vite поднимется на `http://127.0.0.1:5173`.
-
-### Backend
-
-```bash
-dotnet run --project backend/GpssStudio.WebApi/GpssStudio.WebApi.csproj --urls http://127.0.0.1:3001
-```
-
-По умолчанию backend ожидает PostgreSQL на `Host=localhost;Port=5432;Database=gpss;Username=gpss;Password=gpss`.
 
 ## Структура проекта
 
-### Корень
+- `src/app` — сборка приложения и композиция основной оболочки;
+- `src/features/teb-editor` — состояние, модель данных и интерфейс редактора ТЭБ;
+- `src/widgets` — крупные панели интерфейса GPSS Studio;
+- `src/shared` — общие типы, API-клиент, компоненты и графические ресурсы;
+- `backend/GpssStudio.WebApi` — ASP.NET Core Web API, сервисы, EF Core и DI;
+- `backend/database/init` — начальная схема и данные PostgreSQL;
+- `docker` — конфигурация nginx;
+- `scripts/windows` — переносимый запуск и упаковка проекта;
+- `docker-compose.yml` — единая конфигурация frontend, backend и PostgreSQL.
 
-- [`src/app`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\app) — точка сборки приложения.
-- [`src/features/teb-editor`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\features\teb-editor) — бизнес-логика редактора ТЭБ.
-- [`src/widgets`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\widgets) — крупные элементы оболочки GPSS Studio.
-- [`src/shared`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\src\shared) — общие типы, API-клиент, UI-кирпичики и ассеты.
-- [`docker`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\docker) — nginx-конфигурация для контейнера с фронтом.
+## Хранение данных
 
-### Backend
-
-- [`backend/GpssStudio.WebApi/Controllers`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Controllers) — HTTP endpoints.
-- [`backend/GpssStudio.WebApi/Application/Tebs/Interfaces`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Application\Tebs\Interfaces) — интерфейсы сервисного слоя.
-- [`backend/GpssStudio.WebApi/Application/Tebs/Services`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Application\Tebs\Services) — реализации сервисов.
-- [`backend/GpssStudio.WebApi/Application/Tebs`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Application\Tebs) — модели и маппинг ответов.
-- [`backend/GpssStudio.WebApi/Infrastructure/Persistence/Interfaces`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Infrastructure\Persistence\Interfaces) — интерфейсы слоя доступа к данным.
-- [`backend/GpssStudio.WebApi/Infrastructure/Persistence/Repositories`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Infrastructure\Persistence\Repositories) — реализации repository на EF Core.
-- [`backend/GpssStudio.WebApi/Infrastructure/Persistence`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Infrastructure\Persistence) — `DbContext` и EF Core entities.
-- [`backend/GpssStudio.WebApi/Contracts`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\Contracts) — request/response DTO.
-- [`backend/database/init`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\database\init) — SQL-инициализация схемы и тестовых данных.
-
-## Что делает backend
-
-Backend хранит и обслуживает:
-
-- классы ТЭБ;
-- экземпляры ТЭБ;
-- GPSS-модель;
-- GPSS-объекты;
-- входы и выходы;
-- параметры и их значения;
-- состояния;
-- обновления свойств и табличных коллекций.
-
-## Основные файлы
-
-- [`docker-compose.yml`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\docker-compose.yml) — общий запуск всех сервисов.
-- [`Dockerfile`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\Dockerfile) — production-сборка фронта.
-- [`backend/Dockerfile`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\Dockerfile) — production-сборка backend.
-- [`backend/GpssStudio.WebApi/appsettings.json`](C:\Users\timur\OneDrive\Документы\GitHub\gpss\backend\GpssStudio.WebApi\appsettings.json) — connection string и CORS-настройки API.
+PostgreSQL использует именованный Docker volume `gpss_postgres_data`. Обычная остановка или обновление контейнеров данные не удаляет. Не запускайте `docker compose down --volumes`, если требуется сохранить проекты и результаты моделирования.
