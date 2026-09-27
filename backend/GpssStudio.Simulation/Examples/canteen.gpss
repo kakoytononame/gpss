@@ -1,0 +1,105 @@
+; ==========================================================
+;  Модель столовой (GPSS World)
+;  Посетители приходят в зал, выбирают одну из пяти касс,
+;  оплачивают заказ, получают его на раздаче и занимают столик.
+;  Время моделирования - одни сутки (1440 минут).
+; ==========================================================
+
+HOLL      STORAGE   300          ; вместимость зала
+STOLIKI   STORAGE   20           ; число столиков
+
+          INITIAL   X$WALK,4     ; время прохода к кассе, мин
+          INITIAL   X$WALK1,0.4
+          INITIAL   X$KS,6       ; время обслуживания на кассе
+          INITIAL   X$KS1,0.5
+          INITIAL   X$VD,6       ; время выдачи заказа
+          INITIAL   X$VD1,0.5
+          INITIAL   X$EDA,14     ; время приёма пищи
+          INITIAL   X$EDA1,6
+
+T_EDA     TABLE     M1,20,5,10   ; время пребывания посетителя в столовой
+
+; ---------- посетители ----------
+          GENERATE  (Exponential(1,0,4))
+          ENTER     HOLL
+          ADVANCE   X$WALK,X$WALK1
+          TRANSFER  PICK,K1,K5   ; выбор кассы
+K1        TRANSFER  ,PERV
+K2        TRANSFER  ,VTOR
+K3        TRANSFER  ,TRET
+K4        TRANSFER  ,CHET
+K5        TRANSFER  ,PYAT
+
+PERV      QUEUE     BUF1
+          SEIZE     KASSA1
+          DEPART    BUF1
+          ADVANCE   X$KS,X$KS1
+          RELEASE   KASSA1
+          QUEUE     BUF1_1
+          SEIZE     VIDACHA1
+          DEPART    BUF1_1
+          ADVANCE   X$VD,X$VD1
+          RELEASE   VIDACHA1
+          TRANSFER  ,EDA
+
+VTOR      QUEUE     BUF2
+          SEIZE     KASSA2
+          DEPART    BUF2
+          ADVANCE   X$KS,X$KS1
+          RELEASE   KASSA2
+          QUEUE     BUF2_1
+          SEIZE     VIDACHA2
+          DEPART    BUF2_1
+          ADVANCE   X$VD,X$VD1
+          RELEASE   VIDACHA2
+          TRANSFER  ,EDA
+
+TRET      QUEUE     BUF3
+          SEIZE     KASSA3
+          DEPART    BUF3
+          ADVANCE   X$KS,X$KS1
+          RELEASE   KASSA3
+          QUEUE     BUF3_1
+          SEIZE     VIDACHA3
+          DEPART    BUF3_1
+          ADVANCE   X$VD,X$VD1
+          RELEASE   VIDACHA3
+          TRANSFER  ,EDA
+
+CHET      QUEUE     BUF4
+          SEIZE     KASSA4
+          DEPART    BUF4
+          ADVANCE   X$KS,X$KS1
+          RELEASE   KASSA4
+          QUEUE     BUF4_1
+          SEIZE     VIDACHA4
+          DEPART    BUF4_1
+          ADVANCE   X$VD,X$VD1
+          RELEASE   VIDACHA4
+          TRANSFER  ,EDA
+
+PYAT      QUEUE     BUF5
+          SEIZE     KASSA5
+          DEPART    BUF5
+          ADVANCE   X$KS,X$KS1
+          RELEASE   KASSA5
+          QUEUE     BUF5_1
+          SEIZE     VIDACHA5
+          DEPART    BUF5_1
+          ADVANCE   X$VD,X$VD1
+          RELEASE   VIDACHA5
+
+EDA       QUEUE     STOL_Q       ; ожидание свободного столика
+          ENTER     STOLIKI
+          DEPART    STOL_Q
+          ADVANCE   X$EDA,X$EDA1
+          LEAVE     STOLIKI
+          LEAVE     HOLL
+          TABULATE  T_EDA
+          TERMINATE
+
+; ---------- таймер: одни сутки ----------
+          GENERATE  1440
+          TERMINATE 1
+
+          START     1

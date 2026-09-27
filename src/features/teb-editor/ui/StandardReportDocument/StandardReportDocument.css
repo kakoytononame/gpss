@@ -171,3 +171,8 @@
     font-size: 0.9rem;
   }
 }
+
+.standard-report-table td.standard-report-empty {
+  color: #5d6775;
+  text-align: center;
+}

@@ -16,3 +16,6 @@ diploma_sequence_diagram.svg
 .logs/
 test-results/
 playwright-report/
+*.tsbuildinfo
+backend/**/bin/
+backend/**/obj/

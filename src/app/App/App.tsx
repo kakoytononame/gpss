@@ -2,9 +2,11 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ModelLogDocument } from '../../features/teb-editor/ui/ModelLogDocument/ModelLogDocument';
 import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
 import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
+import { SimulationChartsDocument } from '../../features/teb-editor/ui/SimulationChartsDocument/SimulationChartsDocument';
 import { StandardReportDocument } from '../../features/teb-editor/ui/StandardReportDocument/StandardReportDocument';
 import { StartPageDocument } from '../../features/teb-editor/ui/StartPageDocument/StartPageDocument';
 import { TebEditorDocument } from '../../features/teb-editor/ui/TebEditorDocument/TebEditorDocument';
+import { SIMULATION_STATE_LABELS } from '../../features/teb-editor/model/simulationLabels';
 import { useTebEditorStore } from '../../features/teb-editor/store/useTebEditorStore';
 import { classNames } from '../../shared/lib/utils';
 import type { ActiveDocument } from '../../shared/types/teb';
@@ -22,6 +24,7 @@ const DOCUMENT_VIEWS: Record<ActiveDocument, () => ReactNode> = {
   'model-text': () => <ModelTextDocument />,
   'std-report': () => <StandardReportDocument />,
   'model-log': () => <ModelLogDocument />,
+  charts: () => <SimulationChartsDocument />,
 };
 
 function ActiveDocumentView() {
@@ -42,20 +45,19 @@ function ActiveDocumentView() {
 function useInitialLoad() {
   const load = useTebEditorStore((state) => state.load);
   const loadWorkspaceSnapshot = useTebEditorStore((state) => state.loadWorkspaceSnapshot);
+  const loadExampleModel = useTebEditorStore((state) => state.loadExampleModel);
 
   useEffect(() => {
     let cancelled = false;
 
-    void load().then(() => {
-      if (!cancelled) {
-        void loadWorkspaceSnapshot({ quiet: true });
-      }
-    });
+    void load()
+      .then(() => (cancelled ? undefined : loadWorkspaceSnapshot({ quiet: true })))
+      .then(() => (cancelled ? undefined : loadExampleModel()));
 
     return () => {
       cancelled = true;
     };
-  }, [load, loadWorkspaceSnapshot]);
+  }, [load, loadWorkspaceSnapshot, loadExampleModel]);
 }
 
 export default function App() {
@@ -110,7 +112,7 @@ export default function App() {
       <footer className="global-status" role="status">
         <span>Приложение готово к работе</span>
         <span>
-          {simulationState !== 'idle' ? `Моделирование: ${simulationState}. ` : ''}
+          {simulationState !== 'idle' ? `Моделирование: ${SIMULATION_STATE_LABELS[simulationState]}. ` : ''}
           {syncMessage}
         </span>
       </footer>

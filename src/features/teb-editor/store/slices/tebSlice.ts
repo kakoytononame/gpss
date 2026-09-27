@@ -67,7 +67,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
           source: 'api',
           mode: teb.mode,
           activeTab: safeTabForDocument(get().activeTab, teb.type),
-          modelLogText: get().modelLogText || buildInitialModelLog(teb, get().simulationState),
+          modelLogText: get().modelLogText || buildInitialModelLog(teb),
           ...createHistory(teb),
           syncMessage: 'Данные загружены с локального API.',
         });
@@ -80,7 +80,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
           loadError: 'Не удалось получить данные с локального API. Открыты демонстрационные данные.',
           syncStatus: 'offline',
           syncMessage: 'Работа в локальном режиме до восстановления API.',
-          modelLogText: get().modelLogText || buildInitialModelLog(fallback, get().simulationState),
+          modelLogText: get().modelLogText || buildInitialModelLog(fallback),
           ...createHistory(fallback),
         });
       }

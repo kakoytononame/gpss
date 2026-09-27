@@ -5,6 +5,7 @@ import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { subscribeToJournalCommands, type JournalCommand } from '../../model/journalCommands';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import { FindReplaceDialog, type SearchDialogMode } from './FindReplaceDialog';
+import { JournalCommandLine } from './JournalCommandLine';
 import { ERROR_PATTERN, findWrapped, indentLines, lineRange, outdentLines, replaceAllIgnoreCase } from './journalText';
 import '../BaseDocument/BaseDocument.css';
 import './ModelLogDocument.css';
@@ -264,6 +265,8 @@ export function ModelLogDocument() {
         }}
         aria-label="Редактор журнала моделирования"
       />
+
+      <JournalCommandLine />
 
       {searchDialogMode ? (
         <FindReplaceDialog

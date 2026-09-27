@@ -17,6 +17,7 @@ import simModelCurrentIcon from '../../../shared/assets/icons/gpss-native/simmod
 import simulationIcon from '../../../shared/assets/icons/gpss-native/simmodeltasks_16.png';
 import timelineIcon from '../../../shared/assets/icons/gpss-native/timeline_16.png';
 import stdJournalIcon from '../../../shared/assets/icons/gpss-native/stdjournal_16.png';
+import resultsChartIcon from '../../../shared/assets/icons/gpss-native/formresults_16.png';
 import stdReportIcon from '../../../shared/assets/icons/gpss-native/stdreport_16.png';
 import simpleTebIcon from '../../../shared/assets/icons/gpss-native/simpleteb16.png';
 import tebsLibraryCollectionIcon from '../../../shared/assets/icons/gpss-native/tebslibrarycollection_16.png';
@@ -228,6 +229,7 @@ export const PROJECT_TREE: TreeNode[] = [
             children: [
               { id: 'std-report', label: 'Стандартный отчёт', icon: 'table', iconAsset: stdReportIcon, documentId: 'std-report' },
               { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: stdJournalIcon, documentId: 'model-log' },
+              { id: 'charts', label: 'Графики результатов', icon: 'table', iconAsset: resultsChartIcon, documentId: 'charts' },
             ],
           },
           {

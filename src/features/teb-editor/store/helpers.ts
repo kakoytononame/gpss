@@ -73,15 +73,26 @@ export function syncFailureMessage(error: unknown): string {
   return 'Сервер недоступен. Изменение сохранено локально.';
 }
 
-export async function runRemoteMutation(set: SetState, mutation: () => Promise<unknown>, successMessage = 'Изменение отправлено на сервер.'): Promise<void> {
+let mutationQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Sends a change to the server. Mutations are queued so the server applies them in the order they
+ * were made (e.g. "add row" must finish before "edit that row", otherwise the row does not exist yet).
+ */
+export function runRemoteMutation(set: SetState, mutation: () => Promise<unknown>, successMessage = 'Изменение отправлено на сервер.'): Promise<void> {
   set({ syncStatus: 'syncing', syncMessage: 'Отправка изменения...' });
 
-  try {
-    await mutation();
-    set({ syncStatus: 'saved', syncMessage: successMessage });
-  } catch (error) {
-    set({ syncStatus: 'offline', syncMessage: syncFailureMessage(error) });
-  }
+  const result = mutationQueue.then(async () => {
+    try {
+      await mutation();
+      set({ syncStatus: 'saved', syncMessage: successMessage });
+    } catch (error) {
+      set({ syncStatus: 'offline', syncMessage: syncFailureMessage(error) });
+    }
+  });
+
+  mutationQueue = result;
+  return result;
 }
 
 export function safeTabForDocument(tabId: TabId, type?: string): TabId {
@@ -111,6 +122,8 @@ export function snapshotFromState(state: TebEditorState): WorkspaceSnapshot {
     modelLogText: state.modelLogText,
     issues: deepClone(state.issues),
     tebTests: deepClone(state.tebTests),
+    modelText: state.modelText,
+    simulationReport: state.simulationReport,
   };
 }
 
@@ -127,7 +140,8 @@ export function stateFromWorkspaceSnapshot(snapshot: WorkspaceSnapshot, state: T
     teb,
     mode,
     activeTab: safeTabForDocument(snapshot.activeTab ?? state.activeTab, teb?.type),
-    activeDocument: snapshot.activeDocument,
+    // null means "all documents closed"; a missing field keeps the current document.
+    activeDocument: snapshot.activeDocument === undefined ? state.activeDocument : snapshot.activeDocument,
     openDocuments: snapshot.openDocuments ?? state.openDocuments,
     explorerVisible: snapshot.explorerVisible ?? state.explorerVisible,
     rightPanelVisible: snapshot.rightPanelVisible ?? state.rightPanelVisible,
@@ -137,13 +151,18 @@ export function stateFromWorkspaceSnapshot(snapshot: WorkspaceSnapshot, state: T
     selectedNodeId: snapshot.selectedNodeId ?? (snapshot.activeDocument ? nodeForDocument(snapshot.activeDocument) : state.selectedNodeId),
     collapsedNodeIds: snapshot.collapsedNodeIds ?? state.collapsedNodeIds,
     modelFontSize: snapshot.modelFontSize ?? state.modelFontSize,
-    simulationState: snapshot.simulationState ?? state.simulationState,
+    // Sessions live in server memory; a restored workspace starts without one.
+    simulationState:
+      snapshot.simulationState === 'running' || snapshot.simulationState === 'paused' ? 'idle' : (snapshot.simulationState ?? state.simulationState),
     schemeNodes: snapshot.schemeNodes ? deepClone(snapshot.schemeNodes) : state.schemeNodes,
     schemeLinks: snapshot.schemeLinks ? deepClone(snapshot.schemeLinks) : state.schemeLinks,
     reportCellEdits: snapshot.reportCellEdits ?? state.reportCellEdits,
     modelLogText: snapshot.modelLogText ?? state.modelLogText,
     issues: snapshot.issues ? deepClone(snapshot.issues) : state.issues,
     tebTests: snapshot.tebTests ? deepClone(snapshot.tebTests) : state.tebTests,
+    modelText: snapshot.modelText || state.modelText,
+    simulationSessionId: snapshot.modelText && snapshot.modelText !== state.modelText ? null : state.simulationSessionId,
+    simulationReport: snapshot.simulationReport ?? state.simulationReport,
     syncStatus: 'saved',
     syncMessage,
     ...(teb === state.teb ? {} : createHistory(teb)),

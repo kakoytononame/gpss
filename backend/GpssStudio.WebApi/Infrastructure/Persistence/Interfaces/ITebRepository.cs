@@ -19,5 +19,6 @@ public interface ITebRepository
     Task<TebClassAggregate> PatchPropertyAsync(string libraryId, Guid classId, string path, JsonElement value, CancellationToken cancellationToken);
     Task<TebClassAggregate> UpdateGpssModelAsync(string libraryId, Guid classId, string text, CancellationToken cancellationToken);
     Task<WorkspaceSnapshotEntity?> GetWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken);
+    Task DeleteWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken);
     Task<WorkspaceSnapshotEntity> SaveWorkspaceSnapshotAsync(string snapshotId, JsonElement snapshot, CancellationToken cancellationToken);
 }

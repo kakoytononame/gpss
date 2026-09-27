@@ -1,3 +1,5 @@
+import type { SimulationReport } from './simulation';
+
 export type EditorMode = 'class' | 'instance';
 export type TabId = 'general' | 'gpss-model' | 'gpss-objects' | 'inputs' | 'outputs' | 'parameters' | 'states';
 export type CollectionKey = 'gpssEntities' | 'inputs' | 'outputs' | 'states';
@@ -5,8 +7,8 @@ export type Direction = 'up' | 'down';
 export type SourceKind = 'idle' | 'api' | 'sample';
 /** `offline` is reserved for failed server synchronisation; `warning` is a local, non-blocking notice. */
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'warning' | 'offline';
-export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log';
-export type SimulationState = 'idle' | 'running' | 'stopped';
+export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts';
+export type SimulationState = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';
 export type RightPanelTab = 'properties' | 'teb-tests';
 export type ExplorerMode = 'project' | 'libraries';
 export type SchemeNodeKind = 'teb' | 'data' | 'time';
@@ -171,6 +173,8 @@ export interface WorkspaceSnapshot {
   modelLogText?: string;
   issues?: IssueItem[];
   tebTests?: TebTestItem[];
+  modelText?: string;
+  simulationReport?: SimulationReport | null;
 }
 
 export type CollectionRow<K extends CollectionKey = CollectionKey> = TebDocument[K][number];

@@ -20,6 +20,8 @@ export const createPersistenceSlice: StateCreator<TebEditorStore, [], [], Persis
       teb: fallback,
       activeTab: safeTabForDocument('general', fallback.type),
       simulationState: 'idle',
+      simulationSessionId: null,
+      simulationReport: null,
       syncStatus: 'idle',
       syncMessage: 'Рабочая область сброшена к демонстрационному состоянию.',
       ...createHistory(fallback),

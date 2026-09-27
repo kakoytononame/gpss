@@ -261,6 +261,11 @@ public sealed class TebRepository : ITebRepository
             .SingleOrDefaultAsync(item => item.Id == snapshotId, cancellationToken);
     }
 
+    public async Task DeleteWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken)
+    {
+        await _dbContext.WorkspaceSnapshots.Where(item => item.Id == snapshotId).ExecuteDeleteAsync(cancellationToken);
+    }
+
     public async Task<WorkspaceSnapshotEntity> SaveWorkspaceSnapshotAsync(string snapshotId, JsonElement snapshot, CancellationToken cancellationToken)
     {
         var now = DateTimeOffset.UtcNow;

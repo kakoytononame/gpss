@@ -58,17 +58,71 @@ docker compose --project-name gpss down
 docker compose --project-name gpss logs --follow
 ```
 
+## Моделирование GPSS
+
+Сервер содержит собственный интерпретатор GPSS World (`backend/GpssStudio.Simulation`): транслятор модели, цепи текущих и будущих событий, генераторы случайных чисел (потоки RN1…RNn, воспроизводимые), стандартный отчёт и данные для графиков.
+
+Как пользоваться:
+
+1. Откройте документ «Текст модели». При первом запуске в него загружается пример «Столовая» (5 касс, 5 раздач, зал на 300 мест, 20 столиков, сутки работы).
+2. «Проверить» — трансляция без запуска; ошибки с номерами строк попадают в панель «Замечания и ошибки».
+3. «Запустить моделирование» (панель быстрого доступа, лента, схема или документ «Текст модели») — модель транслируется и выполняются её управляющие операторы (`START` и др.; если `START` нет, выполняется `START 1`). После завершения открывается «Стандартный отчёт».
+4. «Графики результатов» (дерево проекта или кнопка «Показать графики таблиц» на вкладке отчёта): загрузка устройств, длины и времена очередей, динамика очередей и памяти во времени, гистограммы таблиц, входы в блоки.
+5. «Журнал моделирования» — журнал и командная строка GPSS: `START n`, `STEP n` (пошаговое выполнение с трассировкой), `HALT`, `CONTINUE`, `RESET`, `CLEAR`, `SHOW выражение`, `INITIAL`, `RMULT`. Те же команды доступны на вкладке ленты «Моделирование».
+
+Поддерживаемые блоки: `GENERATE, TERMINATE, ADVANCE, SEIZE, RELEASE, PREEMPT, RETURN, FAVAIL, FUNAVAIL, QUEUE, DEPART, ENTER, LEAVE, SAVAIL, SUNAVAIL, TRANSFER` (безусловный, вероятностный, `BOTH`, `ALL`, `PICK`, `SBR`, `P`), `TEST, GATE, LOGIC, SAVEVALUE, ASSIGN, MARK, PRIORITY, SPLIT, ASSEMBLE, GATHER, LOOP, BUFFER, TABULATE, LINK, UNLINK, ADOPT, INDEX`.
+
+Операторы: `STORAGE, TABLE, QTABLE, VARIABLE, FVARIABLE, BVARIABLE, FUNCTION` (D, C, L, E), `EQU, INITIAL, START, RESET, CLEAR, SHOW, RMULT`. Выражения поддерживают арифметику, сравнения, СЧА (`Q$, QA$, QM$, QT$, F$, FC$, FR$, S$, R$, SR$, X$, P$/Pn, FN$, V$, N$, W$, LS$, TB$, RNn, AC1, C1, M1, XN1, PR, TG1` и др.) и процедуры `Exponential, Uniform, Normal, Triangular, Poisson, Duniform, Lognormal`, а также математические функции.
+
+Блоки `COUNT, SELECT, MSAVEVALUE, MATCH`, файловые операции и матрицы транслятор распознаёт и сообщает, что они не поддерживаются. Бесконечные циклы и накопление транзактов останавливаются защитными пределами с сообщением в журнале.
+
+## API
+
+Swagger UI: `http://127.0.0.1:3001/swagger`.
+
+- `GET/PATCH/PUT/POST/DELETE /api/alina-gpss/studio/tebs/...` — классы и экземпляры ТЭБов, параметры, коллекции, текст GPSS-модели;
+- `GET/PUT/DELETE /api/alina-gpss/studio/tebs/workspace` — снимок рабочей области;
+- `POST /api/alina-gpss/studio/simulation/translate` — трансляция модели;
+- `POST /api/alina-gpss/studio/simulation/sessions` — создать сеанс моделирования (трансляция + управляющие операторы модели);
+- `POST /api/alina-gpss/studio/simulation/sessions/{id}/commands` — команда GPSS в сеансе;
+- `GET /api/alina-gpss/studio/simulation/examples/{id}` — примеры моделей;
+- `GET /api/health` — состояние API и соединения с PostgreSQL.
+
+Ошибки возвращаются в формате RFC 7807 (`application/problem+json`): 400 для неверных данных, 404 для отсутствующих объектов.
+
+## Тестирование
+
+Всё запускается в Docker, локально ничего кроме Docker не требуется:
+
+```powershell
+docker compose --project-name gpss up --detach --build
+docker compose --project-name gpss --profile test run --rm api-tests   # 36 тестов симулятора + 50 интеграционных тестов API на PostgreSQL
+docker compose --project-name gpss --profile test run --rm e2e         # 8 сквозных тестов в браузере (Playwright)
+```
+
+Для разработки фронтенда (нужен Node.js 20+):
+
+```powershell
+npm ci
+npm run typecheck   # TypeScript
+npm run lint        # ESLint
+npm test            # 62 модульных и компонентных теста (Vitest + Testing Library)
+npm run test:e2e    # Playwright против запущенного стека
+```
+
 ## Структура проекта
 
 - `src/app` — сборка приложения и композиция основной оболочки;
-- `src/features/teb-editor` — состояние, модель данных и интерфейс редактора ТЭБ;
-- `src/widgets` — крупные панели интерфейса GPSS Studio;
-- `src/shared` — общие типы, API-клиент, компоненты и графические ресурсы;
-- `backend/GpssStudio.WebApi` — ASP.NET Core Web API, сервисы, EF Core и DI;
-- `backend/database/init` — начальная схема и данные PostgreSQL;
+- `src/features/teb-editor` — модель данных, хранилище состояния (срезы Zustand) и документы редактора: ТЭБ, схема, текст модели, отчёт, журнал, графики;
+- `src/widgets` — крупные панели интерфейса GPSS Studio (лента, дерево проекта, свойства, замечания);
+- `src/shared` — общие типы, API-клиенты, компоненты и графические ресурсы;
+- `backend/GpssStudio.Simulation` — интерпретатор GPSS: транслятор, блоки, движок, стандартный отчёт, примеры моделей;
+- `backend/GpssStudio.WebApi` — ASP.NET Core Web API, сервисы, EF Core, схема БД (создаётся при старте API);
+- `backend/*.Tests` — тесты симулятора и интеграционные тесты API;
+- `e2e` — сквозные тесты Playwright;
 - `docker` — конфигурация nginx;
 - `scripts/windows` — переносимый запуск и упаковка проекта;
-- `docker-compose.yml` — единая конфигурация frontend, backend и PostgreSQL.
+- `docker-compose.yml` — frontend, backend, PostgreSQL и тестовые сервисы (профиль `test`).
 
 ## Хранение данных
 

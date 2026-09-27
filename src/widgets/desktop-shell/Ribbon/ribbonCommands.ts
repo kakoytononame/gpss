@@ -81,11 +81,12 @@ function createRibbonCommands(): RibbonCommands {
     notify('Открыт режим отладки внешних процедур.');
   };
   const startDebugging = () => {
-    store().startSimulation();
-    notify('Запущен режим отладки моделирования.');
+    // Debugging = step-by-step execution with a trace in the journal.
+    activate('model-log');
+    void store().runSimulationCommand('step');
   };
-  const startSimulation = () => store().startSimulation();
-  const stopSimulation = () => store().stopSimulation();
+  const startSimulation = () => void store().startSimulation();
+  const stopSimulation = () => void store().stopSimulation();
 
   const quickAccess: RibbonCommand[] = [
     { id: 'home', label: 'Стартовая страница', icon: appLogoIcon, onClick: () => activate('start') },
@@ -194,7 +195,7 @@ function createRibbonCommands(): RibbonCommands {
             ['show', 'SHOW', cmdShowIcon],
             ['custom', 'Произвольная команда', cmdCustomIcon],
           ] as const
-        ).map(([command, label, icon]) => ({ id: `cmd-${command}`, label, icon, onClick: () => store().runSimulationCommand(command) })),
+        ).map(([command, label, icon]) => ({ id: `cmd-${command}`, label, icon, onClick: () => void store().runSimulationCommand(command) })),
       },
       {
         title: 'GPSS World Core',

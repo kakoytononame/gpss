@@ -130,4 +130,14 @@ public sealed class TebManagementController : ControllerBase
         var result = await _tebService.SaveWorkspaceSnapshotAsync("default", request, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Deletes the saved workspace snapshot (the next start opens the default layout).
+    /// </summary>
+    [HttpDelete("workspace")]
+    public async Task<IActionResult> DeleteWorkspaceSnapshot(CancellationToken cancellationToken)
+    {
+        await _tebService.DeleteWorkspaceSnapshotAsync("default", cancellationToken);
+        return NoContent();
+    }
 }

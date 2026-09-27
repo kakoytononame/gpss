@@ -108,4 +108,9 @@ public sealed class TebService : ITebService
             UpdatedAt = entity.UpdatedAt,
         };
     }
+
+    public Task DeleteWorkspaceSnapshotAsync(string snapshotId, CancellationToken cancellationToken)
+    {
+        return _repository.DeleteWorkspaceSnapshotAsync(snapshotId, cancellationToken);
+    }
 }

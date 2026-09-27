@@ -7,7 +7,7 @@ $artifactsDirectory = Join-Path $projectRoot 'artifacts'
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $archivePath = Join-Path $artifactsDirectory "GPSS-Studio-portable-$timestamp.zip"
 $excludedDirectoryNames = [System.Collections.Generic.HashSet[string]]::new(
-    [string[]]@('.git', '.logs', '.tmp', '.vs', 'artifacts', 'bin', 'dist', 'docs', 'node_modules', 'obj'),
+    [string[]]@('.git', '.logs', '.tmp', '.vs', 'artifacts', 'bin', 'dist', 'docs', 'node_modules', 'obj', 'test-results', 'playwright-report'),
     [System.StringComparer]::OrdinalIgnoreCase
 )
 $excludedFileNames = [System.Collections.Generic.HashSet[string]]::new(

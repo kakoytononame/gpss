@@ -1,7 +1,5 @@
-import type { ReportSectionId } from '../../../../shared/types/teb';
-
 export interface ReportSection {
-  id: ReportSectionId;
+  id: string;
   label: string;
   columns: string[];
   rows: string[][];
@@ -14,7 +12,7 @@ export interface ReportSection {
  * They are replaced by real data once the simulation core is connected.
  */
 
-export const REPORT_SECTION_LINKS: Array<{ id: ReportSectionId; label: string }> = [
+const REPORT_SECTION_LINKS: Array<{ id: string; label: string }> = [
   { id: 'general', label: 'Общая информация' },
   { id: 'names', label: 'Имена' },
   { id: 'blocks', label: 'Блоки' },
@@ -145,7 +143,7 @@ const futureRows = [
   ['386', '0', '2761', '386', '0', '2', '', ''],
 ];
 
-export const REPORT_SECTIONS: Record<ReportSectionId, ReportSection> = {
+const REPORT_SECTIONS: Record<string, ReportSection> = {
   general: {
     id: 'general',
     label: 'Общая информация',
@@ -251,3 +249,6 @@ export const REPORT_SECTIONS: Record<ReportSectionId, ReportSection> = {
     rows: futureRows,
   },
 };
+
+/** Demo report shown until the model has been simulated. */
+export const DEMO_REPORT_SECTIONS: ReportSection[] = REPORT_SECTION_LINKS.map((link) => REPORT_SECTIONS[link.id]);

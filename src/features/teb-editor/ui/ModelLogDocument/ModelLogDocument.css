@@ -3,7 +3,7 @@
   height: 100%;
   position: relative;
   display: grid;
-  grid-template-rows: 28px minmax(0, 1fr);
+  grid-template-rows: 28px minmax(0, 1fr) auto;
   border: 1px solid #c5cad3;
   background: #f4f6f9;
   overflow: hidden;
@@ -218,4 +218,36 @@
   .find-replace-dialog {
     width: min(460px, calc(100vw - 24px));
   }
+}
+
+.journal-command-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px 4px;
+  padding: 4px 6px;
+  border: 1px solid #b9c7d8;
+  background: #ffffff;
+  font-size: 0.84rem;
+}
+
+.journal-command-line label {
+  color: #2f3540;
+  white-space: nowrap;
+}
+
+.journal-command-line input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid #c9d0d8;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.journal-command-line button {
+  height: 24px;
+  padding: 0 12px;
+  border: 1px solid #aeb8c4;
+  background: linear-gradient(#ffffff, #e9edf2);
+  color: #1f2933;
 }

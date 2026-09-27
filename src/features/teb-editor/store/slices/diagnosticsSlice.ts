@@ -32,7 +32,7 @@ export const createDiagnosticsSlice: StateCreator<TebEditorStore, [], [], Diagno
 
   appendModelLog(line) {
     set((state) => ({
-      modelLogText: appendLogLine(state.modelLogText || buildInitialModelLog(state.teb, state.simulationState), line),
+      modelLogText: appendLogLine(state.modelLogText || buildInitialModelLog(state.teb), line),
       syncStatus: 'saved',
       syncMessage: 'В журнал добавлена запись.',
     }));

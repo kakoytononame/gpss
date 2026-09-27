@@ -3,6 +3,7 @@ import { readLibraryPayload } from '../../../../shared/lib/libraryDrag';
 import { clamp } from '../../../../shared/lib/utils';
 import type { SchemeNode } from '../../../../shared/types/teb';
 import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
+import { SIMULATION_STATE_LABELS } from '../../model/simulationLabels';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import {
   buildLinkId,
@@ -248,8 +249,8 @@ export function SchemeDocument() {
         <h2>Структурная схема</h2>
         <div className="placeholder-document__actions">
           <IconButton label="Открыть ТЭБ" title="Перейти к редактору ТЭБа" disabled={!selectedNode} onClick={() => activateDocument('editor')} />
-          <IconButton label="Старт" title="Запустить моделирование" onClick={startSimulation} />
-          <IconButton label="Стоп" title="Остановить моделирование" onClick={stopSimulation} />
+          <IconButton label="Старт" title="Запустить моделирование" onClick={() => void startSimulation()} />
+          <IconButton label="Стоп" title="Остановить моделирование" onClick={() => void stopSimulation()} />
           <IconButton label="Удалить" title="Удалить выбранный объект" disabled={!selection} onClick={deleteSelection} />
           <IconButton label="Сброс" title="Восстановить схему" onClick={resetScheme} />
         </div>
@@ -351,7 +352,7 @@ export function SchemeDocument() {
               </div>
             ) : null}
 
-            <div className="scheme-caption">Состояние моделирования: {simulationState}</div>
+            <div className="scheme-caption">Состояние моделирования: {SIMULATION_STATE_LABELS[simulationState]}</div>
           </div>
         </div>
       </div>

@@ -31,6 +31,16 @@ public sealed class WorkspaceTests : ApiTestBase
     }
 
     [Fact]
+    public async Task DeleteWorkspace_RemovesSnapshotAndIsIdempotent()
+    {
+        await Client.PutAsJsonAsync(WorkspacePath, new { snapshot = new { activeTab = "general" } });
+
+        Assert.Equal(HttpStatusCode.NoContent, (await Client.DeleteAsync(WorkspacePath)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Client.GetAsync(WorkspacePath)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await Client.DeleteAsync(WorkspacePath)).StatusCode);
+    }
+
+    [Fact]
     public async Task SaveWorkspace_AcceptsMultiMegabyteSnapshots()
     {
         var imageUrl = "data:image/png;base64," + new string('A', 3 * 1024 * 1024);

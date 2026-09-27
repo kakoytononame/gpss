@@ -8,7 +8,6 @@ import type {
   IssueFilter,
   IssueItem,
   ReportCellEdits,
-  ReportSectionId,
   RightPanelTab,
   SchemeLink,
   SchemeNode,
@@ -23,6 +22,7 @@ import type {
   TebTestItem,
   TebTestStatus,
 } from '../../../shared/types/teb';
+import type { SimulationReport } from '../../../shared/types/simulation';
 
 type Updater<T> = T | ((current: T) => T);
 
@@ -114,12 +114,27 @@ export type GeneralField = 'nameInModel' | 'header' | 'description';
 
 export interface SimulationSliceState {
   simulationState: SimulationState;
+  /** Full GPSS model of the project ("Текст модели"). */
+  modelText: string;
+  /** Server-side simulation session (lives in API memory, not persisted). */
+  simulationSessionId: string | null;
+  simulationReport: SimulationReport | null;
+  simulationBusy: boolean;
+  /** Incremented to ask the journal to focus its command line. */
+  commandLineFocusRequest: number;
 }
 
 export interface SimulationSliceActions {
-  startSimulation: () => void;
-  stopSimulation: () => void;
-  runSimulationCommand: (command: SimulationCommand) => void;
+  loadExampleModel: () => Promise<void>;
+  setModelText: (text: string) => void;
+  validateModelText: () => Promise<void>;
+  /** Translates the model and runs it to completion (START from the model, otherwise START 1). */
+  startSimulation: () => Promise<void>;
+  stopSimulation: () => Promise<void>;
+  runSimulationCommand: (command: SimulationCommand) => Promise<void>;
+  /** Executes any GPSS command, e.g. "START 5" or "SHOW Q$BUF1". */
+  executeSimulationCommand: (commandText: string) => Promise<void>;
+  requestCommandLineFocus: () => void;
 }
 
 export interface SchemeSliceState {
@@ -144,7 +159,7 @@ export interface DiagnosticsSliceState {
 }
 
 export interface DiagnosticsSliceActions {
-  setReportCellEdit: (sectionId: ReportSectionId, rowIndex: number, columnIndex: number, value: string) => void;
+  setReportCellEdit: (sectionId: string, rowIndex: number, columnIndex: number, value: string) => void;
   setModelLogText: (text: string, message?: string) => void;
   appendModelLog: (line: string) => void;
   clearModelLog: () => void;
