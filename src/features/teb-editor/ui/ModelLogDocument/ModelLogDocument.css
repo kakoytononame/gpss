@@ -55,7 +55,7 @@
   resize: none;
   background: #ffffff;
   color: #1f2933;
-  font-family: Consolas, "Courier New", monospace;
+  font-family: Consolas, 'Courier New', monospace;
   line-height: 1.5;
   white-space: pre;
   overflow: auto;
@@ -160,7 +160,7 @@
   font-size: 1.05rem;
 }
 
-.find-replace-dialog__body input[type="text"],
+.find-replace-dialog__body input[type='text'],
 .find-replace-dialog__body label > input:not([type]) {
   height: 32px;
   padding: 0 7px;

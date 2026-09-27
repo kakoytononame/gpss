@@ -108,6 +108,7 @@
 }
 
 .status-pill--sample,
+.status-pill--warning,
 .status-pill--offline {
   color: var(--warn);
   border-color: rgba(161, 98, 7, 0.35);
@@ -327,7 +328,7 @@
   border: 1px solid var(--line-strong);
   background: #fbfcfd;
   color: #1f2937;
-  font-family: Consolas, "Courier New", monospace;
+  font-family: Consolas, 'Courier New', monospace;
   line-height: 1.5;
   resize: none;
   tab-size: 4;

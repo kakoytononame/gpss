@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import type { SourceKind, SyncStatus, TabId } from '../../../../shared/types/teb';
 import { visibleTabsForType } from '../../model/constants';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import { EditorTabs } from '../EditorTabs/EditorTabs';
@@ -10,37 +11,72 @@ import { PortsTab } from '../tabs/PortsTab';
 import { StatesTab } from '../tabs/StatesTab';
 import './TebEditorDocument.css';
 
-function renderPanel(activeTab: ReturnType<typeof useTebEditorStore.getState>['activeTab']) {
-  switch (activeTab) {
-    case 'general':
-      return <GeneralTab />;
-    case 'gpss-model':
-      return <GpssModelTab />;
-    case 'gpss-objects':
-      return <GpssObjectsTab />;
-    case 'inputs':
-      return <PortsTab collection="inputs" />;
-    case 'outputs':
-      return <PortsTab collection="outputs" />;
-    case 'parameters':
-      return <ParametersTab />;
-    case 'states':
-      return <StatesTab />;
-    default:
-      return <GeneralTab />;
-  }
-}
+type WindowState = 'normal' | 'minimized' | 'maximized';
 
-function StatusPill() {
+const TAB_PANELS: Record<TabId, () => ReactNode> = {
+  general: () => <GeneralTab />,
+  'gpss-model': () => <GpssModelTab />,
+  'gpss-objects': () => <GpssObjectsTab />,
+  inputs: () => <PortsTab collection="inputs" />,
+  outputs: () => <PortsTab collection="outputs" />,
+  parameters: () => <ParametersTab />,
+  states: () => <StatesTab />,
+};
+
+const SOURCE_LABELS: Record<SourceKind, string> = {
+  api: 'API',
+  sample: 'Демо',
+  idle: 'Старт',
+};
+
+const SYNC_LABELS: Record<SyncStatus, string> = {
+  idle: 'Готово',
+  syncing: 'Синхронизация',
+  saved: 'Сохранено',
+  warning: 'Внимание',
+  offline: 'Локально',
+};
+
+function StatusPills() {
   const source = useTebEditorStore((state) => state.source);
   const syncStatus = useTebEditorStore((state) => state.syncStatus);
-  const sourceLabel = source === 'api' ? 'API' : source === 'sample' ? 'Демо' : 'Старт';
-  const syncLabel = syncStatus === 'syncing' ? 'Синхронизация' : syncStatus === 'saved' ? 'Сохранено' : syncStatus === 'offline' ? 'Локально' : 'Готово';
 
   return (
     <div className="status-pills">
-      <span className={`status-pill status-pill--${source}`}>{sourceLabel}</span>
-      <span className={`status-pill status-pill--${syncStatus}`}>{syncLabel}</span>
+      <span className={`status-pill status-pill--${source}`}>{SOURCE_LABELS[source]}</span>
+      <span className={`status-pill status-pill--${syncStatus}`}>{SYNC_LABELS[syncStatus]}</span>
+    </div>
+  );
+}
+
+interface WindowControlsProps {
+  windowState: WindowState;
+  onToggleMinimized: () => void;
+  onToggleMaximized: () => void;
+  onClose: () => void;
+}
+
+function WindowControls({ windowState, onToggleMinimized, onToggleMaximized, onClose }: WindowControlsProps) {
+  const minimizeLabel = windowState === 'minimized' ? 'Развернуть окно редактора' : 'Свернуть окно редактора';
+  const maximizeLabel = windowState === 'maximized' ? 'Вернуть размер окна' : 'Развернуть окно';
+
+  return (
+    <div className="window-controls">
+      <button className="window-controls__button" type="button" aria-label={minimizeLabel} title={minimizeLabel} onClick={onToggleMinimized}>
+        -
+      </button>
+      <button className="window-controls__button" type="button" aria-label={maximizeLabel} title={maximizeLabel} onClick={onToggleMaximized}>
+        □
+      </button>
+      <button
+        className="window-controls__button window-controls__button--close"
+        type="button"
+        aria-label="Закрыть окно редактора"
+        title="Закрыть окно редактора"
+        onClick={onClose}
+      >
+        x
+      </button>
     </div>
   );
 }
@@ -56,11 +92,11 @@ export function TebEditorDocument() {
   const syncMessage = useTebEditorStore((state) => state.syncMessage);
   const loadError = useTebEditorStore((state) => state.loadError);
   const closeDocument = useTebEditorStore((state) => state.closeDocument);
-  const [windowState, setWindowState] = useState<'normal' | 'minimized' | 'maximized'>('normal');
+  const [windowState, setWindowState] = useState<WindowState>('normal');
 
-  const visibleTabs = visibleTabsForType(teb?.type);
   const titlePrefix = mode === 'instance' ? 'Экземпляр тэба' : 'Класс тэба';
   const isMinimized = windowState === 'minimized';
+  const toggleWindowState = (target: Exclude<WindowState, 'normal'>) => setWindowState((state) => (state === target ? 'normal' : target));
 
   return (
     <div className={`editor-window editor-window--${windowState}`} aria-busy={loading}>
@@ -70,47 +106,29 @@ export function TebEditorDocument() {
           <div className="window-subtitle">{teb ? `${teb.nameInModel || 'Без имени'} · ${teb.type}` : 'Загрузка данных'}</div>
         </div>
         <div className="window-header__right">
-          <StatusPill />
-          <div className="window-controls">
-            <button
-              className="window-controls__button"
-              type="button"
-              aria-label={isMinimized ? 'Развернуть окно редактора' : 'Свернуть окно редактора'}
-              title={isMinimized ? 'Развернуть окно редактора' : 'Свернуть окно редактора'}
-              onClick={() => setWindowState((state) => (state === 'minimized' ? 'normal' : 'minimized'))}
-            >
-              -
-            </button>
-            <button
-              className="window-controls__button"
-              type="button"
-              aria-label={windowState === 'maximized' ? 'Вернуть размер окна' : 'Развернуть окно'}
-              title={windowState === 'maximized' ? 'Вернуть размер окна' : 'Развернуть окно'}
-              onClick={() => setWindowState((state) => (state === 'maximized' ? 'normal' : 'maximized'))}
-            >
-              □
-            </button>
-            <button
-              className="window-controls__button window-controls__button--close"
-              type="button"
-              aria-label="Закрыть окно редактора"
-              title="Закрыть окно редактора"
-              onClick={() => closeDocument('editor')}
-            >
-              x
-            </button>
-          </div>
+          <StatusPills />
+          <WindowControls
+            windowState={windowState}
+            onToggleMinimized={() => toggleWindowState('minimized')}
+            onToggleMaximized={() => toggleWindowState('maximized')}
+            onClose={() => closeDocument('editor')}
+          />
         </div>
       </header>
 
-      {!isMinimized ? (
+      {isMinimized ? null : (
         <>
           <div className="context-bar">
             <div className="segmented-control" aria-label="Режим редактора">
-              <button className={mode === 'class' ? 'is-active' : ''} type="button" onClick={() => void setMode('class')}>
+              <button className={mode === 'class' ? 'is-active' : ''} type="button" aria-pressed={mode === 'class'} onClick={() => void setMode('class')}>
                 Класс
               </button>
-              <button className={mode === 'instance' ? 'is-active' : ''} type="button" onClick={() => void setMode('instance')}>
+              <button
+                className={mode === 'instance' ? 'is-active' : ''}
+                type="button"
+                aria-pressed={mode === 'instance'}
+                onClick={() => void setMode('instance')}
+              >
                 Экземпляр
               </button>
             </div>
@@ -119,15 +137,17 @@ export function TebEditorDocument() {
             </button>
           </div>
 
-          <EditorTabs visibleTabs={visibleTabs} activeTab={activeTab} onSelect={setActiveTab} />
+          <EditorTabs visibleTabs={visibleTabsForType(teb?.type)} activeTab={activeTab} onSelect={setActiveTab} />
 
-          <section className="editor-content">{loading && !teb ? <div className="loading-panel">Загрузка...</div> : renderPanel(activeTab)}</section>
+          <section className="editor-content" role="tabpanel">
+            {loading && !teb ? <div className="loading-panel">Загрузка...</div> : TAB_PANELS[activeTab]()}
+          </section>
 
           <footer className="status-bar">
             <span>{loadError || syncMessage}</span>
           </footer>
         </>
-      ) : null}
+      )}
     </div>
   );
 }

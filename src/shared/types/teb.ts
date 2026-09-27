@@ -3,7 +3,8 @@ export type TabId = 'general' | 'gpss-model' | 'gpss-objects' | 'inputs' | 'outp
 export type CollectionKey = 'gpssEntities' | 'inputs' | 'outputs' | 'states';
 export type Direction = 'up' | 'down';
 export type SourceKind = 'idle' | 'api' | 'sample';
-export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'offline';
+/** `offline` is reserved for failed server synchronisation; `warning` is a local, non-blocking notice. */
+export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'warning' | 'offline';
 export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log';
 export type SimulationState = 'idle' | 'running' | 'stopped';
 export type RightPanelTab = 'properties' | 'teb-tests';
@@ -14,6 +15,8 @@ export type ReportSectionId = 'general' | 'names' | 'blocks' | 'facilities' | 'q
 export type IssueType = 'error' | 'warning' | 'info';
 export type TebTestStatus = 'passed' | 'failed' | 'not-run' | 'running';
 export type SimulationCommand = 'conduct' | 'start' | 'step' | 'halt' | 'continue' | 'clear' | 'reset' | 'show' | 'custom';
+export type IssueFilter = 'all' | IssueType;
+export type ReportCellEdits = Record<string, string>;
 
 export interface EditorQuery {
   apiBaseUrl: string;
@@ -169,6 +172,8 @@ export interface WorkspaceSnapshot {
   issues?: IssueItem[];
   tebTests?: TebTestItem[];
 }
+
+export type CollectionRow<K extends CollectionKey = CollectionKey> = TebDocument[K][number];
 
 export interface TebApi {
   getClass: () => Promise<unknown>;

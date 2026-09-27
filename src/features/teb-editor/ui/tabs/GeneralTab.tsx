@@ -19,7 +19,11 @@ export function GeneralTab() {
       <section className="form-panel">
         <label className="field">
           <span>Имя в модели</span>
-          <input value={teb.nameInModel} onChange={(event) => updateGeneralField('nameInModel', event.target.value)} onBlur={() => void commitGeneralField('nameInModel')} />
+          <input
+            value={teb.nameInModel}
+            onChange={(event) => updateGeneralField('nameInModel', event.target.value)}
+            onBlur={() => void commitGeneralField('nameInModel')}
+          />
         </label>
         <label className="field">
           <span>Заголовок</span>
@@ -34,7 +38,11 @@ export function GeneralTab() {
       <section className="form-panel form-panel--wide">
         <label className="field field--stretch">
           <span>Описание</span>
-          <textarea value={teb.description} onChange={(event) => updateGeneralField('description', event.target.value)} onBlur={() => void commitGeneralField('description')} />
+          <textarea
+            value={teb.description}
+            onChange={(event) => updateGeneralField('description', event.target.value)}
+            onBlur={() => void commitGeneralField('description')}
+          />
         </label>
       </section>
 
@@ -55,10 +63,14 @@ export function GeneralTab() {
         />
         <div className="image-actions">
           <IconButton label="Выбрать" title="Загрузить изображение" onClick={() => inputRef.current?.click()} />
-          <IconButton label="Удалить" title="Удалить изображение" onClick={removeImage} disabled={!teb.imageUrl && !teb.imageName} />
+          <IconButton label="Удалить" title="Удалить изображение" onClick={() => void removeImage()} disabled={!teb.imageUrl && !teb.imageName} />
         </div>
         <div className="image-preview">
-          {teb.imageUrl ? <img className="image-preview__img" src={teb.imageUrl} alt={teb.imageName || 'Превью'} /> : <span>{teb.imageName || 'Изображение не выбрано'}</span>}
+          {teb.imageUrl ? (
+            <img className="image-preview__img" src={teb.imageUrl} alt={teb.imageName || 'Превью'} />
+          ) : (
+            <span>{teb.imageName || 'Изображение не выбрано'}</span>
+          )}
         </div>
       </section>
     </div>

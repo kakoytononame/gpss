@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ModelLogDocument } from '../../features/teb-editor/ui/ModelLogDocument/ModelLogDocument';
 import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
 import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
@@ -6,12 +6,23 @@ import { StandardReportDocument } from '../../features/teb-editor/ui/StandardRep
 import { StartPageDocument } from '../../features/teb-editor/ui/StartPageDocument/StartPageDocument';
 import { TebEditorDocument } from '../../features/teb-editor/ui/TebEditorDocument/TebEditorDocument';
 import { useTebEditorStore } from '../../features/teb-editor/store/useTebEditorStore';
+import { classNames } from '../../shared/lib/utils';
+import type { ActiveDocument } from '../../shared/types/teb';
 import { DocumentTabs } from '../../widgets/desktop-shell/DocumentTabs/DocumentTabs';
 import { IssuesPanel } from '../../widgets/desktop-shell/IssuesPanel/IssuesPanel';
 import { ProjectExplorer } from '../../widgets/desktop-shell/ProjectExplorer/ProjectExplorer';
 import { RightDockPanel } from '../../widgets/desktop-shell/RightDockPanel/RightDockPanel';
 import { Ribbon } from '../../widgets/desktop-shell/Ribbon/Ribbon';
 import './App.css';
+
+const DOCUMENT_VIEWS: Record<ActiveDocument, () => ReactNode> = {
+  editor: () => <TebEditorDocument />,
+  scheme: () => <SchemeDocument />,
+  start: () => <StartPageDocument />,
+  'model-text': () => <ModelTextDocument />,
+  'std-report': () => <StandardReportDocument />,
+  'model-log': () => <ModelLogDocument />,
+};
 
 function ActiveDocumentView() {
   const activeDocument = useTebEditorStore((state) => state.activeDocument);
@@ -24,33 +35,31 @@ function ActiveDocumentView() {
     );
   }
 
-  if (activeDocument === 'scheme') {
-    return <SchemeDocument />;
-  }
+  return DOCUMENT_VIEWS[activeDocument]();
+}
 
-  if (activeDocument === 'start') {
-    return <StartPageDocument />;
-  }
+/** Loads the TEB from the API, then restores the saved workspace layout. */
+function useInitialLoad() {
+  const load = useTebEditorStore((state) => state.load);
+  const loadWorkspaceSnapshot = useTebEditorStore((state) => state.loadWorkspaceSnapshot);
 
-  if (activeDocument === 'model-text') {
-    return <ModelTextDocument />;
-  }
+  useEffect(() => {
+    let cancelled = false;
 
-  if (activeDocument === 'std-report') {
-    return <StandardReportDocument />;
-  }
+    void load().then(() => {
+      if (!cancelled) {
+        void loadWorkspaceSnapshot({ quiet: true });
+      }
+    });
 
-  if (activeDocument === 'model-log') {
-    return <ModelLogDocument />;
-  }
-
-  return <TebEditorDocument />;
+    return () => {
+      cancelled = true;
+    };
+  }, [load, loadWorkspaceSnapshot]);
 }
 
 export default function App() {
-  const load = useTebEditorStore((state) => state.load);
-  const loadWorkspaceSnapshot = useTebEditorStore((state) => state.loadWorkspaceSnapshot);
-  const teb = useTebEditorStore((state) => state.teb);
+  const editorTitle = useTebEditorStore((state) => state.teb?.header || state.teb?.nameInModel || 'Экземпляр ТЭБа');
   const activeDocument = useTebEditorStore((state) => state.activeDocument);
   const openDocuments = useTebEditorStore((state) => state.openDocuments);
   const activateDocument = useTebEditorStore((state) => state.activateDocument);
@@ -61,30 +70,14 @@ export default function App() {
   const syncMessage = useTebEditorStore((state) => state.syncMessage);
   const simulationState = useTebEditorStore((state) => state.simulationState);
   const [explorerAutoHide, setExplorerAutoHide] = useState(false);
+  useInitialLoad();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    void load().then(() => {
-      if (!cancelled) {
-        loadWorkspaceSnapshot();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [load, loadWorkspaceSnapshot]);
-
-  const editorTitle = teb?.header || teb?.nameInModel || 'Экземпляр ТЭБа';
-  const desktopClassName = [
+  const desktopClassName = classNames(
     'gpss-desktop',
-    explorerVisible ? '' : 'gpss-desktop--collapsed',
-    explorerAutoHide ? 'gpss-desktop--explorer-auto-hide' : '',
-    rightPanelVisible ? '' : 'gpss-desktop--right-collapsed',
-  ]
-    .filter(Boolean)
-    .join(' ');
+    !explorerVisible && 'gpss-desktop--collapsed',
+    explorerAutoHide && 'gpss-desktop--explorer-auto-hide',
+    !rightPanelVisible && 'gpss-desktop--right-collapsed',
+  );
 
   return (
     <main className={desktopClassName}>
@@ -97,8 +90,14 @@ export default function App() {
           </div>
         ) : null}
 
-        <section className={`document-host ${issuesPanelVisible ? 'document-host--with-issues' : ''}`}>
-          <DocumentTabs activeDocument={activeDocument} editorTitle={editorTitle} openDocuments={openDocuments} onActivate={activateDocument} onClose={closeDocument} />
+        <section className={classNames('document-host', issuesPanelVisible && 'document-host--with-issues')}>
+          <DocumentTabs
+            activeDocument={activeDocument}
+            editorTitle={editorTitle}
+            openDocuments={openDocuments}
+            onActivate={activateDocument}
+            onClose={closeDocument}
+          />
           <div className="document-surface">
             <ActiveDocumentView />
           </div>
@@ -108,7 +107,7 @@ export default function App() {
         {rightPanelVisible ? <RightDockPanel /> : null}
       </div>
 
-      <footer className="global-status">
+      <footer className="global-status" role="status">
         <span>Приложение готово к работе</span>
         <span>
           {simulationState !== 'idle' ? `Моделирование: ${simulationState}. ` : ''}

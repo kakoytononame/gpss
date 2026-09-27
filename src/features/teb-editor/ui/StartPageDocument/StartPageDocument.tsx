@@ -23,6 +23,8 @@ interface ExampleProject {
   isSelected?: boolean;
 }
 
+const BUNDLED_PROJECT_ID = 'canteen';
+
 const recentProjects: RecentProject[] = [
   {
     id: 'gas',
@@ -72,14 +74,13 @@ export function StartPageDocument() {
   const activateDocument = useTebEditorStore((state) => state.activateDocument);
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
 
-  function openRecentProject(projectId: string, projectTitle: string) {
-    if (projectId === 'canteen') {
+  /** Only the "Столовая" demo project is bundled with the web version. */
+  function openProject(projectId: string, message: string) {
+    if (projectId === BUNDLED_PROJECT_ID) {
       activateDocument('scheme');
-      setStatusMessage(`Открыт проект: ${projectTitle}.`, 'saved');
-      return;
     }
 
-    setStatusMessage(`Подготовлено открытие проекта: ${projectTitle}.`, 'saved');
+    setStatusMessage(message, 'saved');
   }
 
   return (
@@ -93,7 +94,12 @@ export function StartPageDocument() {
               className={`recent-project ${project.isSelected ? 'is-selected' : ''}`}
               key={project.id}
               type="button"
-              onClick={() => openRecentProject(project.id, project.title)}
+              onClick={() =>
+                openProject(
+                  project.id,
+                  project.id === BUNDLED_PROJECT_ID ? `Открыт проект: ${project.title}.` : `Подготовлено открытие проекта: ${project.title}.`,
+                )
+              }
             >
               <img className="recent-project__icon" src={openProjectIcon} alt="" aria-hidden="true" />
 
@@ -124,14 +130,7 @@ export function StartPageDocument() {
               className={`start-example ${project.isSelected ? 'is-selected' : ''}`}
               key={project.id}
               type="button"
-              onClick={() => {
-                if (project.id === 'canteen') {
-                  activateDocument('scheme');
-                  return;
-                }
-
-                setStatusMessage(`Выбран пример проекта: ${project.title}.`, 'saved');
-              }}
+              onClick={() => openProject(project.id, `Выбран пример проекта: ${project.title}.`)}
             >
               <img className="start-example__image" src={project.image} alt="" aria-hidden="true" />
               <div className="start-example__content">

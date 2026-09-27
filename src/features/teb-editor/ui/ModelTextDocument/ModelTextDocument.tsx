@@ -20,7 +20,13 @@ export function ModelTextDocument() {
           <IconButton label="Проверить" title="Проверить модель" onClick={validateModel} />
         </div>
       </div>
-      <textarea className="gpss-textarea gpss-textarea--document" style={{ fontSize: `${modelFontSize}px` }} value={text} onChange={(event) => updateGpssModelText(event.target.value)} onBlur={() => void commitGpssModelText()} />
+      <textarea
+        className="gpss-textarea gpss-textarea--document"
+        style={{ fontSize: `${modelFontSize}px` }}
+        value={text}
+        onChange={(event) => updateGpssModelText(event.target.value)}
+        onBlur={() => void commitGpssModelText()}
+      />
     </section>
   );
 }

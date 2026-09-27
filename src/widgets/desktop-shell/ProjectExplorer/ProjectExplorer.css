@@ -168,7 +168,7 @@
 }
 
 .project-search::before {
-  content: "";
+  content: '';
   width: 15px;
   height: 15px;
   flex: 0 0 auto;
@@ -252,7 +252,7 @@
 }
 
 .tree-row__chevron.is-clickable::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 4px 3px;
   border-style: solid;
@@ -288,9 +288,7 @@
 .tree-row__icon--scheme {
   border-color: #78a6ca;
   background:
-    linear-gradient(90deg, transparent 45%, #78a6ca 45% 55%, transparent 55%),
-    linear-gradient(transparent 45%, #78a6ca 45% 55%, transparent 55%),
-    #eaf4ff;
+    linear-gradient(90deg, transparent 45%, #78a6ca 45% 55%, transparent 55%), linear-gradient(transparent 45%, #78a6ca 45% 55%, transparent 55%), #eaf4ff;
 }
 
 .tree-row__icon--text,
@@ -313,8 +311,7 @@
 .tree-row__icon--code {
   border: 0;
   background:
-    linear-gradient(120deg, transparent 20%, #6883a0 20% 35%, transparent 35%),
-    linear-gradient(60deg, transparent 65%, #6883a0 65% 80%, transparent 80%);
+    linear-gradient(120deg, transparent 20%, #6883a0 20% 35%, transparent 35%), linear-gradient(60deg, transparent 65%, #6883a0 65% 80%, transparent 80%);
 }
 
 .tree-row__img {
@@ -333,7 +330,7 @@
 
 .tree-row__teb-icon::before,
 .tree-row__teb-icon::after {
-  content: "";
+  content: '';
   position: absolute;
   box-sizing: border-box;
 }

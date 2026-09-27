@@ -9,6 +9,9 @@ namespace GpssStudio.WebApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/alina-gpss/studio/tebs")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 public sealed class TebManagementController : ControllerBase
 {
     private readonly ITebService _tebService;

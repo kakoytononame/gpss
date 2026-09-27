@@ -1,3 +1,4 @@
+import { DOCUMENT_TITLES } from '../../../features/teb-editor/model/documents';
 import type { ActiveDocument } from '../../../shared/types/teb';
 import './DocumentTabs.css';
 
@@ -9,35 +10,34 @@ interface DocumentTabsProps {
   onClose: (documentId: ActiveDocument) => void;
 }
 
-const documentLabels: Record<ActiveDocument, string> = {
-  editor: 'Редактор ТЭБа',
-  scheme: 'Структурная схема',
-  start: 'Стартовая страница',
-  'model-text': 'Текст модели',
-  'std-report': 'Стандартный отчёт',
-  'model-log': 'Журнал моделирования',
-};
-
 export function DocumentTabs({ activeDocument, editorTitle, openDocuments, onActivate, onClose }: DocumentTabsProps) {
-  const labels: Record<ActiveDocument, string> = {
-    ...documentLabels,
-    editor: editorTitle || documentLabels.editor,
-  };
+  const titleOf = (documentId: ActiveDocument) => (documentId === 'editor' && editorTitle ? editorTitle : DOCUMENT_TITLES[documentId]);
 
   return (
     <div className="document-tabs" role="tablist" aria-label="Открытые документы">
-      {openDocuments.map((documentId) => (
-        <div className={`document-tab ${activeDocument === documentId ? 'is-active' : ''}`} key={documentId} role="tab" aria-selected={activeDocument === documentId}>
-          <button className="document-tab__button" type="button" onClick={() => onActivate(documentId)}>
-            <span className="document-tab__label" title={labels[documentId]}>
-              {labels[documentId]}
-            </span>
-          </button>
-          <button className="document-tab__close" type="button" aria-label={`Закрыть ${labels[documentId]}`} title={`Закрыть ${labels[documentId]}`} onClick={() => onClose(documentId)}>
-            x
-          </button>
-        </div>
-      ))}
+      {openDocuments.map((documentId) => {
+        const title = titleOf(documentId);
+        const isActive = activeDocument === documentId;
+
+        return (
+          <div className={`document-tab ${isActive ? 'is-active' : ''}`} key={documentId} role="tab" aria-selected={isActive}>
+            <button className="document-tab__button" type="button" onClick={() => onActivate(documentId)}>
+              <span className="document-tab__label" title={title}>
+                {title}
+              </span>
+            </button>
+            <button
+              className="document-tab__close"
+              type="button"
+              aria-label={`Закрыть ${title}`}
+              title={`Закрыть ${title}`}
+              onClick={() => onClose(documentId)}
+            >
+              x
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

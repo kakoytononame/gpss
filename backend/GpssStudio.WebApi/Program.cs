@@ -3,6 +3,7 @@ using GpssStudio.WebApi.Application.Tebs.Services;
 using GpssStudio.WebApi.Infrastructure.Persistence;
 using GpssStudio.WebApi.Infrastructure.Persistence.Interfaces;
 using GpssStudio.WebApi.Infrastructure.Persistence.Repositories;
+using GpssStudio.WebApi.Infrastructure.Web;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,8 +13,16 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.PropertyNamingPolicy = null;
 });
 
+// Minimal API endpoints (health) use the same PascalCase contract as the controllers.
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = null;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
 builder.Services.AddDbContext<GpssStudioDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -33,27 +42,33 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (app.Configuration.GetValue("Database:InitializeOnStartup", true))
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<GpssStudioDbContext>();
-    dbContext.Database.ExecuteSqlRaw("""
-        create table if not exists workspace_snapshots (
-          id text primary key,
-          snapshot_json jsonb not null default '{{}}'::jsonb,
-          updated_at timestamptz not null default now()
-        );
-        """);
+    await DatabaseInitializer.InitializeAsync(app.Services);
 }
 
-if (app.Environment.IsDevelopment())
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
+if (app.Configuration.GetValue("Swagger:Enabled", true))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseCors("Frontend");
-app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/api/health", () => Results.Ok(new { Status = "ok" }));
+
+app.MapGet("/api/health", async (GpssStudioDbContext dbContext, CancellationToken cancellationToken) =>
+{
+    var databaseAvailable = await dbContext.Database.CanConnectAsync(cancellationToken);
+    var payload = new { Status = databaseAvailable ? "ok" : "degraded", Database = databaseAvailable ? "ok" : "unavailable" };
+    return databaseAvailable ? Results.Ok(payload) : Results.Json(payload, statusCode: StatusCodes.Status503ServiceUnavailable);
+});
 
 app.Run();
+
+/// <summary>
+/// Entry point marker used by integration tests (<c>WebApplicationFactory&lt;Program&gt;</c>).
+/// </summary>
+public partial class Program;

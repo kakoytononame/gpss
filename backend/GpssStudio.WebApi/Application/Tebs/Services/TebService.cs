@@ -1,3 +1,4 @@
+using GpssStudio.WebApi.Application.Common;
 using GpssStudio.WebApi.Application.Tebs.Interfaces;
 using GpssStudio.WebApi.Contracts.Requests;
 using GpssStudio.WebApi.Contracts.Responses;
@@ -49,7 +50,13 @@ public sealed class TebService : ITebService
 
     public async Task<TebClassResponse> MoveParameterAsync(string libraryId, Guid classId, string parameterId, MoveParameterRequest request, CancellationToken cancellationToken)
     {
-        var aggregate = await _repository.MoveParameterAsync(libraryId, classId, parameterId, request.Direction == "up" ? "up" : "down", cancellationToken);
+        var direction = request.Direction?.Trim().ToLowerInvariant();
+        if (direction is not ("up" or "down"))
+        {
+            throw new BadRequestException("Direction must be either 'up' or 'down'.");
+        }
+
+        var aggregate = await _repository.MoveParameterAsync(libraryId, classId, parameterId, direction, cancellationToken);
         return aggregate.ToClassResponse();
     }
 
@@ -88,6 +95,11 @@ public sealed class TebService : ITebService
 
     public async Task<WorkspaceSnapshotResponse> SaveWorkspaceSnapshotAsync(string snapshotId, WorkspaceSnapshotUpsertRequest request, CancellationToken cancellationToken)
     {
+        if (request.Snapshot.ValueKind != JsonValueKind.Object)
+        {
+            throw new BadRequestException("Workspace snapshot must be a JSON object.");
+        }
+
         var entity = await _repository.SaveWorkspaceSnapshotAsync(snapshotId, request.Snapshot, cancellationToken);
         using var document = JsonDocument.Parse(entity.SnapshotJson);
         return new WorkspaceSnapshotResponse

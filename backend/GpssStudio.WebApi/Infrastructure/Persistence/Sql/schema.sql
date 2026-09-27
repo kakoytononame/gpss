@@ -1,5 +1,3 @@
-create extension if not exists "pgcrypto";
-
 create table if not exists teb_classes (
   id uuid primary key,
   library_id text not null,

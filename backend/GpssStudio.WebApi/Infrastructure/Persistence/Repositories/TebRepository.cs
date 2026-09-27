@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GpssStudio.WebApi.Application.Common;
 using GpssStudio.WebApi.Application.Tebs;
 using GpssStudio.WebApi.Contracts.Requests;
 using GpssStudio.WebApi.Infrastructure.Persistence.Interfaces;
@@ -188,6 +189,16 @@ public sealed class TebRepository : ITebRepository
     {
         var tebClass = await RequireClassAsync(libraryId, classId, cancellationToken);
 
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new BadRequestException("Property path is required.");
+        }
+
+        if (value.ValueKind == JsonValueKind.Undefined)
+        {
+            throw new BadRequestException("Property value is required.");
+        }
+
         if (TryApplyCoreField(tebClass, path, value))
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -282,17 +293,26 @@ public sealed class TebRepository : ITebRepository
         var match = System.Text.RegularExpressions.Regex.Match(path, @"^(gpssEntities|inputs|outputs|states)\[(\d+)\]$");
         if (!match.Success)
         {
-            throw new InvalidOperationException($"Unsupported property path: {path}");
+            throw new BadRequestException($"Unsupported property path: {path}");
         }
 
         var collection = match.Groups[1].Value;
         var index = int.Parse(match.Groups[2].Value);
+
+        void EnsureIndexInRange(int count)
+        {
+            if (index >= count)
+            {
+                throw new NotFoundException($"Row {path} was not found.");
+            }
+        }
 
         if (collection == "gpssEntities")
         {
             var items = (await _dbContext.TebGpssEntities.AsNoTracking().Where(item => item.ClassId == classId).OrderBy(item => item.SortOrder).ToListAsync(cancellationToken))
                 .Select(ToPatchItem)
                 .ToList();
+            EnsureIndexInRange(items.Count);
             items[index] = JsonSerializer.Deserialize<GpssEntityPatchItem>(value.GetRawText(), JsonOptions) ?? items[index];
             await ReplaceGpssEntitiesAsync(classId, items, cancellationToken);
             return;
@@ -303,6 +323,7 @@ public sealed class TebRepository : ITebRepository
             var items = (await _dbContext.TebStates.AsNoTracking().Where(item => item.ClassId == classId).OrderBy(item => item.SortOrder).ToListAsync(cancellationToken))
                 .Select(ToPatchItem)
                 .ToList();
+            EnsureIndexInRange(items.Count);
             items[index] = JsonSerializer.Deserialize<TebStatePatchItem>(value.GetRawText(), JsonOptions) ?? items[index];
             await ReplaceStatesAsync(classId, items, cancellationToken);
             return;
@@ -312,6 +333,7 @@ public sealed class TebRepository : ITebRepository
         var ports = (await _dbContext.TebPorts.AsNoTracking().Where(item => item.ClassId == classId && item.Direction == direction).OrderBy(item => item.SortOrder).ToListAsync(cancellationToken))
             .Select(ToPatchItem)
             .ToList();
+        EnsureIndexInRange(ports.Count);
         ports[index] = JsonSerializer.Deserialize<TebPortPatchItem>(value.GetRawText(), JsonOptions) ?? ports[index];
         await ReplacePortsAsync(classId, direction, ports, cancellationToken);
     }
@@ -480,7 +502,7 @@ public sealed class TebRepository : ITebRepository
     private async Task<TebClassAggregate> RequireAggregateAsync(string libraryId, Guid classId, CancellationToken cancellationToken)
     {
         return await BuildAggregateAsync(libraryId, classId, cancellationToken)
-               ?? throw new InvalidOperationException("TEB class not found.");
+               ?? throw new NotFoundException($"TEB class {classId} was not found in library {libraryId}.");
     }
 
     private async Task EnsureClassExistsAsync(string libraryId, Guid classId, CancellationToken cancellationToken)
@@ -488,14 +510,14 @@ public sealed class TebRepository : ITebRepository
         var exists = await _dbContext.TebClasses.AnyAsync(item => item.LibraryId == libraryId && item.Id == classId, cancellationToken);
         if (!exists)
         {
-            throw new InvalidOperationException("TEB class not found.");
+            throw new NotFoundException($"TEB class {classId} was not found in library {libraryId}.");
         }
     }
 
     private async Task<TebClassEntity> RequireClassAsync(string libraryId, Guid classId, CancellationToken cancellationToken)
     {
         return await _dbContext.TebClasses.SingleOrDefaultAsync(item => item.LibraryId == libraryId && item.Id == classId, cancellationToken)
-               ?? throw new InvalidOperationException("TEB class not found.");
+               ?? throw new NotFoundException($"TEB class {classId} was not found in library {libraryId}.");
     }
 
     private async Task EnsureInstanceExistsAsync(Guid classId, Guid instanceId, CancellationToken cancellationToken)
@@ -503,7 +525,7 @@ public sealed class TebRepository : ITebRepository
         var exists = await _dbContext.TebInstances.AnyAsync(item => item.Id == instanceId && item.ClassId == classId, cancellationToken);
         if (!exists)
         {
-            throw new InvalidOperationException("TEB instance not found.");
+            throw new NotFoundException($"TEB instance {instanceId} was not found.");
         }
     }
 
@@ -511,17 +533,26 @@ public sealed class TebRepository : ITebRepository
     {
         if (int.TryParse(parameterId, out var index))
         {
+            if (index < 0)
+            {
+                throw new NotFoundException($"Parameter {parameterId} was not found.");
+            }
+
             return await _dbContext.TebParameters
                        .Where(item => item.ClassId == classId)
                        .OrderBy(item => item.SortOrder)
                        .Skip(index)
                        .FirstOrDefaultAsync(cancellationToken)
-                   ?? throw new InvalidOperationException("Parameter not found.");
+                   ?? throw new NotFoundException($"Parameter {parameterId} was not found.");
         }
 
-        var guid = Guid.Parse(parameterId);
+        if (!Guid.TryParse(parameterId, out var guid))
+        {
+            throw new BadRequestException($"Parameter identifier '{parameterId}' must be a zero-based index or a GUID.");
+        }
+
         return await _dbContext.TebParameters.SingleOrDefaultAsync(item => item.Id == guid && item.ClassId == classId, cancellationToken)
-               ?? throw new InvalidOperationException("Parameter not found.");
+               ?? throw new NotFoundException($"Parameter {parameterId} was not found.");
     }
 
     private static bool TryApplyCoreField(TebClassEntity entity, string path, JsonElement value)

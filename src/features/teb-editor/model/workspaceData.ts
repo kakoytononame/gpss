@@ -5,11 +5,11 @@ export const INITIAL_SCHEME_NODES: SchemeNode[] = [
   { id: 'time-control', label: 'Управление временем моделирования', kind: 'time', x: 36, y: 210, width: 300, height: 96 },
   { id: 'arrival', label: 'Прибытие посетителей', kind: 'teb', x: 677, y: 58, width: 166, height: 68 },
   { id: 'kitchen-choice', label: 'Выбор кухни', kind: 'teb', x: 685, y: 206, width: 150, height: 52 },
-  { id: 'cashier-1', label: 'Обслуживание посетителя Касса 1', kind: 'teb', x: 377, y: 348, width: 166, height: 68 },
-  { id: 'cashier-2', label: 'Обслуживание посетителя Касса 2', kind: 'teb', x: 517, y: 378, width: 166, height: 68 },
+  { id: 'cashier-1', label: 'Обслуживание посетителя Касса 1', kind: 'teb', x: 317, y: 348, width: 166, height: 68 },
+  { id: 'cashier-2', label: 'Обслуживание посетителя Касса 2', kind: 'teb', x: 497, y: 378, width: 166, height: 68 },
   { id: 'cashier-3', label: 'Обслуживание посетителя Касса 3', kind: 'teb', x: 677, y: 378, width: 166, height: 68 },
-  { id: 'cashier-4', label: 'Обслуживание посетителя Касса 4', kind: 'teb', x: 837, y: 378, width: 166, height: 68 },
-  { id: 'cashier-5', label: 'Обслуживание посетителя Касса 5', kind: 'teb', x: 977, y: 348, width: 166, height: 68 },
+  { id: 'cashier-4', label: 'Обслуживание посетителя Касса 4', kind: 'teb', x: 857, y: 378, width: 166, height: 68 },
+  { id: 'cashier-5', label: 'Обслуживание посетителя Касса 5', kind: 'teb', x: 1037, y: 348, width: 166, height: 68 },
   { id: 'free-seat', label: 'Выбор свободного места', kind: 'teb', x: 677, y: 556, width: 166, height: 68 },
 ];
 

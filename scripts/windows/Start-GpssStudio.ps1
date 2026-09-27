@@ -11,7 +11,6 @@ $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $composeFile = Join-Path $projectRoot 'docker-compose.yml'
 $applicationUrl = 'http://127.0.0.1:8080'
 $apiHealthUrl = 'http://127.0.0.1:3001/api/health'
-$workspaceUrl = 'http://127.0.0.1:3001/api/alina-gpss/studio/tebs/workspace'
 $composeArguments = @(
     'compose',
     '--project-name', 'gpss',
@@ -140,8 +139,8 @@ try {
     Invoke-Compose -Arguments @('up', '--detach', '--build')
 
     Write-Step 'Checking services'
-    Wait-HttpEndpoint -Uri $apiHealthUrl -DisplayName 'Backend API'
-    Wait-HttpEndpoint -Uri $workspaceUrl -DisplayName 'API to PostgreSQL connection'
+    # /api/health answers 200 only when the API can reach PostgreSQL.
+    Wait-HttpEndpoint -Uri $apiHealthUrl -DisplayName 'Backend API and PostgreSQL connection'
     Wait-HttpEndpoint -Uri $applicationUrl -DisplayName 'Web application'
 
     Write-Host "`nGPSS Studio is running: $applicationUrl" -ForegroundColor Green

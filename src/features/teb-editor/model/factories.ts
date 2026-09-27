@@ -1,8 +1,9 @@
+import { createId } from '../../../shared/lib/utils';
 import type { GpssEntity, TebParameter, TebPort, TebState } from '../../../shared/types/teb';
 
 export function createBlankGpssEntity(): GpssEntity {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     type: 'Savevalue',
     nameInModel: '',
     value: '',
@@ -12,7 +13,7 @@ export function createBlankGpssEntity(): GpssEntity {
 
 export function createBlankPort(): TebPort {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     nameInModel: '',
     header: '',
     connectedBlock: '',
@@ -23,7 +24,7 @@ export function createBlankPort(): TebPort {
 
 export function createBlankParameter(): TebParameter {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     type: 'NumberParameterType',
     header: '',
     nameInModel: '',
@@ -35,7 +36,7 @@ export function createBlankParameter(): TebParameter {
 
 export function createBlankState(): TebState {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     name: '',
     expression: '',
     description: '',

@@ -5,13 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "dev:api": "dotnet run --project backend/GpssStudio.WebApi/GpssStudio.WebApi.csproj --urls http://127.0.0.1:3001",
     "build:api": "dotnet build backend/GpssStudio.WebApi/GpssStudio.WebApi.csproj",
+    "test:api": "docker compose --profile test run --rm api-tests",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "docker:test": "docker compose --profile test run --rm api-tests && docker compose --profile test run --rm e2e"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -19,10 +28,24 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.0",
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "1.56.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^22.20.4",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.12.0",
+    "jsdom": "^30.1.1",
+    "prettier": "^3.9.9",
     "typescript": "^5.8.3",
-    "vite": "^7.1.0"
+    "typescript-eslint": "^8.70.1",
+    "vite": "^7.1.0",
+    "vitest": "^3.2.7"
   }
 }

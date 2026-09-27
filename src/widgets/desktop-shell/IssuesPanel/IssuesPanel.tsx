@@ -6,59 +6,54 @@ import errorIcon from '../../../shared/assets/icons/gpss-native/error16.png';
 import gotoIcon from '../../../shared/assets/icons/gpss-native/gotoerror_32.png';
 import infoIcon from '../../../shared/assets/icons/gpss-native/info_16.png';
 import warningIcon from '../../../shared/assets/icons/gpss-native/warning16.png';
+import type { IssueItem, IssueType } from '../../../shared/types/teb';
 import './IssuesPanel.css';
 
-export function IssuesPanel() {
-  const syncMessage = useTebEditorStore((state) => state.syncMessage);
+const FILTERS: Array<{ type: IssueType; label: string; icon: string }> = [
+  { type: 'error', label: 'Ошибки', icon: errorIcon },
+  { type: 'warning', label: 'Предупреждения', icon: warningIcon },
+  { type: 'info', label: 'Сообщения', icon: infoIcon },
+];
+
+/** Failed server synchronisation is surfaced as an error row next to model issues. */
+function useIssueRows(): IssueItem[] {
   const syncStatus = useTebEditorStore((state) => state.syncStatus);
-  const toggleIssuesPanel = useTebEditorStore((state) => state.toggleIssuesPanel);
+  const syncMessage = useTebEditorStore((state) => state.syncMessage);
   const issues = useTebEditorStore((state) => state.issues);
+
+  return useMemo(() => {
+    if (syncStatus !== 'offline') {
+      return issues;
+    }
+
+    const syncIssue: IssueItem = {
+      id: 'sync-offline',
+      type: 'error',
+      description: syncMessage,
+      library: 'База данных',
+      className: 'WorkspaceSnapshot',
+      instance: 'Текущая рабочая область',
+      documentId: 'start',
+    };
+    return [syncIssue, ...issues];
+  }, [issues, syncMessage, syncStatus]);
+}
+
+export function IssuesPanel() {
+  const toggleIssuesPanel = useTebEditorStore((state) => state.toggleIssuesPanel);
   const issueFilter = useTebEditorStore((state) => state.issueFilter);
   const setIssueFilter = useTebEditorStore((state) => state.setIssueFilter);
   const activateDocument = useTebEditorStore((state) => state.activateDocument);
   const focusProjectNode = useTebEditorStore((state) => state.focusProjectNode);
+  const allRows = useIssueRows();
+  const rows = issueFilter === 'all' ? allRows : allRows.filter((row) => row.type === issueFilter);
 
-  const rows = useMemo(
-    () => {
-      const baseRows =
-        syncStatus === 'offline'
-          ? [
-              {
-                id: 'sync-offline',
-                type: 'error' as const,
-                description: syncMessage,
-                library: 'База данных',
-                className: 'WorkspaceSnapshot',
-                instance: 'Текущая рабочая область',
-                documentId: 'start' as const,
-              },
-              ...issues,
-            ]
-          : issues;
-
-      return issueFilter === 'all' ? baseRows : baseRows.filter((row) => row.type === issueFilter);
-    },
-    [issueFilter, issues, syncMessage, syncStatus],
-  );
-
-  const allRows =
-    syncStatus === 'offline'
-      ? [{ type: 'error' as const }, ...issues]
-      : issues;
-  const errors = allRows.filter((row) => row.type === 'error').length;
-  const warnings = allRows.filter((row) => row.type === 'warning').length;
-  const messages = allRows.filter((row) => row.type === 'info').length;
-
-  function goToIssue(row = rows[0]) {
-    if (!row) {
-      return;
-    }
-
-    if (row.documentId) {
+  function goToIssue(row: IssueItem | undefined = rows[0]) {
+    if (row?.documentId) {
       activateDocument(row.documentId);
     }
 
-    if (row.sourceNodeId) {
+    if (row?.sourceNodeId) {
       focusProjectNode(row.sourceNodeId);
     }
   }
@@ -78,16 +73,18 @@ export function IssuesPanel() {
         </button>
       </div>
       <div className="issues-toolbar">
-        <button className={`issues-filter ${issueFilter === 'error' ? 'is-active' : ''}`} type="button" onClick={() => setIssueFilter(issueFilter === 'error' ? 'all' : 'error')}>
-          <img src={errorIcon} alt="" aria-hidden="true" /> Ошибки ({errors})
-        </button>
-        <button className={`issues-filter ${issueFilter === 'warning' ? 'is-active' : ''}`} type="button" onClick={() => setIssueFilter(issueFilter === 'warning' ? 'all' : 'warning')}>
-          <img src={warningIcon} alt="" aria-hidden="true" /> Предупреждения ({warnings})
-        </button>
-        <button className={`issues-filter ${issueFilter === 'info' ? 'is-active' : ''}`} type="button" onClick={() => setIssueFilter(issueFilter === 'info' ? 'all' : 'info')}>
-          <img src={infoIcon} alt="" aria-hidden="true" /> Сообщения ({messages})
-        </button>
-        <button className="issues-go-source" type="button" onClick={() => goToIssue()}>
+        {FILTERS.map(({ type, label, icon }) => (
+          <button
+            className={`issues-filter ${issueFilter === type ? 'is-active' : ''}`}
+            key={type}
+            type="button"
+            aria-pressed={issueFilter === type}
+            onClick={() => setIssueFilter(issueFilter === type ? 'all' : type)}
+          >
+            <img src={icon} alt="" aria-hidden="true" /> {label} ({allRows.filter((row) => row.type === type).length})
+          </button>
+        ))}
+        <button className="issues-go-source" type="button" disabled={!rows.length} onClick={() => goToIssue()}>
           <img src={gotoIcon} alt="" aria-hidden="true" /> Перейти к источнику замечания
         </button>
       </div>
@@ -98,8 +95,8 @@ export function IssuesPanel() {
           <span>Класс тэбов</span>
           <span>Экземпляр тэба</span>
         </div>
-        {rows.map((row, index) => (
-          <button className="issues-row" type="button" role="row" key={`${row.description}-${index}`} onClick={() => goToIssue(row)}>
+        {rows.map((row) => (
+          <button className="issues-row" type="button" role="row" key={row.id} onClick={() => goToIssue(row)}>
             <span>{row.description}</span>
             <span>{row.library}</span>
             <span>{row.className}</span>

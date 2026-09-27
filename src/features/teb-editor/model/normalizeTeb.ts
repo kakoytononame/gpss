@@ -84,11 +84,13 @@ export function normalizeTebPayload(payload: unknown, requestedMode: 'class' | '
   const gpssModel = pick<UnknownRecord>(rawClass, ['gpssModel', 'GpssModel'], {});
   const childScheme = pick<UnknownRecord>(rawClass, ['childScheme', 'ChildScheme'], {});
 
-  const parameters = toArray<unknown>(pick(rawClass, ['parameters', 'Parameters', 'parameterDefinitions', 'ParameterDefinitions'], [])).map((parameter, index) => {
-    const name = pick<string>(parameter, ['nameInModel', 'NameInModel', 'name', 'Name'], '');
-    const currentValue = parameterValues.byName.get(name) ?? parameterValues.byIndex.get(index) ?? '';
-    return normalizeParameter(parameter, index, currentValue);
-  });
+  const parameters = toArray<unknown>(pick(rawClass, ['parameters', 'Parameters', 'parameterDefinitions', 'ParameterDefinitions'], [])).map(
+    (parameter, index) => {
+      const name = pick<string>(parameter, ['nameInModel', 'NameInModel', 'name', 'Name'], '');
+      const currentValue = parameterValues.byName.get(name) ?? parameterValues.byIndex.get(index) ?? '';
+      return normalizeParameter(parameter, index, currentValue);
+    },
+  );
 
   return {
     id: pick<string>(rawClass, ['id', 'Id', 'classId', 'ClassId'], ''),
@@ -96,13 +98,18 @@ export function normalizeTebPayload(payload: unknown, requestedMode: 'class' | '
     mode: isInstance ? 'instance' : requestedMode,
     type: unwrapType(rawClass, 'TebClass'),
     nameInModel: isInstance
-      ? pick<string>(instanceCandidate, ['nameInModel', 'NameInModel', 'name', 'Name'], pick<string>(rawClass, ['nameInModel', 'NameInModel', 'name', 'Name'], ''))
+      ? pick<string>(
+          instanceCandidate,
+          ['nameInModel', 'NameInModel', 'name', 'Name'],
+          pick<string>(rawClass, ['nameInModel', 'NameInModel', 'name', 'Name'], ''),
+        )
       : pick<string>(rawClass, ['nameInModel', 'NameInModel', 'name', 'Name'], ''),
     header: isInstance
       ? pick<string>(instanceCandidate, ['header', 'Header', 'title', 'Title'], pick<string>(rawClass, ['header', 'Header', 'title', 'Title'], ''))
       : pick<string>(rawClass, ['header', 'Header', 'title', 'Title'], ''),
     description: pick<string>(rawClass, ['description', 'Description'], ''),
     imageName: pick<string>(rawClass, ['imageName', 'ImageName', 'image', 'Image'], ''),
+    imageUrl: pick<string>(rawClass, ['imageUrl', 'ImageUrl'], '') || undefined,
     gpssModel: {
       text: pick<string>(gpssModel, ['text', 'Text'], ''),
     },
@@ -111,7 +118,11 @@ export function normalizeTebPayload(payload: unknown, requestedMode: 'class' | '
       return {
         id: pick<string>(entity, ['id', 'Id'], `entity-${index}`),
         type: unwrapType(pick(entity, ['type', 'Type'], gpssInstance), 'GpssEntity'),
-        nameInModel: pick<string>(entity, ['nameInModel', 'NameInModel', 'name', 'Name'], pick<string>(gpssInstance, ['nameInModel', 'NameInModel', 'name', 'Name'], '')),
+        nameInModel: pick<string>(
+          entity,
+          ['nameInModel', 'NameInModel', 'name', 'Name'],
+          pick<string>(gpssInstance, ['nameInModel', 'NameInModel', 'name', 'Name'], ''),
+        ),
         value: pick<string | number>(entity, ['value', 'Value', 'capacity', 'Capacity', 'argument', 'Argument'], ''),
         description: pick<string>(entity, ['description', 'Description', 'comment', 'Comment'], ''),
       };

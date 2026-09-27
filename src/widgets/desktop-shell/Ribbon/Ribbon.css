@@ -245,7 +245,7 @@
   border-bottom-color: #fff;
   background: #fff;
   color: #1f252c;
- }
+}
 
 .ribbon-tab--journal {
   border-left-color: #c7cc49;
@@ -255,7 +255,6 @@
 .ribbon-tab--journal:hover {
   background: #fffff2;
 }
-
 
 .app-menu {
   position: absolute;
@@ -548,4 +547,3 @@
     font-size: 0.82rem;
   }
 }
-
