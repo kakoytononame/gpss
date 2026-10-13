@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createDiagnosticsSlice } from './slices/diagnosticsSlice';
+import { createExperimentSlice } from './slices/experimentSlice';
 import { createLayoutSlice } from './slices/layoutSlice';
 import { createPersistenceSlice } from './slices/persistenceSlice';
 import { createProjectSlice } from './slices/projectSlice';
@@ -22,5 +23,6 @@ export const useTebEditorStore = create<TebEditorStore>()((...args) => ({
   ...createSchemeSlice(...args),
   ...createDiagnosticsSlice(...args),
   ...createProjectSlice(...args),
+  ...createExperimentSlice(...args),
   ...createPersistenceSlice(...args),
 }));

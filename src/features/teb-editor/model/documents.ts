@@ -12,6 +12,7 @@ export const DOCUMENT_TITLES: Record<ActiveDocument, string> = {
   charts: 'Графики результатов',
   projects: 'Проекты',
   'model-state': 'Состояние модели',
+  experiments: 'Эксперименты',
 };
 
 const DOCUMENT_STATUS_LABELS: Record<ActiveDocument, string> = {
@@ -24,6 +25,7 @@ const DOCUMENT_STATUS_LABELS: Record<ActiveDocument, string> = {
   charts: 'графики результатов',
   projects: 'управление проектами',
   'model-state': 'состояние модели',
+  experiments: 'эксперименты',
 };
 
 /** Project explorer nodes that open a document other than the TEB editor. */
@@ -36,6 +38,7 @@ const NODE_DOCUMENTS: Record<string, ActiveDocument> = {
   'project-home': 'start',
   projects: 'projects',
   'model-state': 'model-state',
+  experiments: 'experiments',
 };
 
 const DOCUMENT_NODES: Record<ActiveDocument, string> = {
@@ -48,6 +51,7 @@ const DOCUMENT_NODES: Record<ActiveDocument, string> = {
   start: 'project-home',
   projects: 'project-home',
   'model-state': 'model-log',
+  experiments: 'model-run',
 };
 
 export function nodeToDocument(nodeId: string): ActiveDocument {

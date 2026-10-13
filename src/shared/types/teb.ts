@@ -8,7 +8,7 @@ export type Direction = 'up' | 'down';
 export type SourceKind = 'idle' | 'api' | 'sample' | 'project';
 /** `offline` is reserved for failed server synchronisation; `warning` is a local, non-blocking notice. */
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'warning' | 'offline';
-export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts' | 'projects' | 'model-state';
+export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts' | 'projects' | 'model-state' | 'experiments';
 export type SimulationState = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';
 export type RightPanelTab = 'properties' | 'teb-tests';
 export type ExplorerMode = 'project' | 'libraries';

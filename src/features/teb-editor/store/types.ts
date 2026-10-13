@@ -23,7 +23,9 @@ import type {
   TebTestStatus,
 } from '../../../shared/types/teb';
 import type { GenerationResult, ProjectSummary, StudioProject, StudioTebLink } from '../../../shared/types/project';
+import type { ExperimentResult } from '../../../shared/types/experiment';
 import type { SimulationReport, TransactionState } from '../../../shared/types/simulation';
+import type { ExperimentPlan } from '../model/experimentPlan';
 
 type Updater<T> = T | ((current: T) => T);
 
@@ -230,6 +232,20 @@ export interface ProjectSliceActions {
   updateProjectLink: (linkId: string, patch: Partial<Omit<StudioTebLink, 'Id' | 'FromNodeId' | 'ToNodeId'>>) => void;
 }
 
+export interface ExperimentSliceState {
+  experimentPlan: ExperimentPlan;
+  experimentResult: ExperimentResult | null;
+  experimentBusy: boolean;
+}
+
+export interface ExperimentSliceActions {
+  setExperimentPlan: (update: (plan: ExperimentPlan) => Partial<ExperimentPlan>) => void;
+  /** Proposes factors (INITIAL X$, STORAGE, EQU) and indicators (FR$, QT$, SR$) from the model text. */
+  suggestExperimentPlan: () => void;
+  runExperiment: () => Promise<void>;
+  exportExperiment: () => void;
+}
+
 export interface PersistenceActions {
   resetWorkspace: () => void;
   saveWorkspaceSnapshot: () => Promise<void>;
@@ -243,7 +259,8 @@ export type TebEditorState = SyncState &
   SimulationSliceState &
   SchemeSliceState &
   DiagnosticsSliceState &
-  ProjectSliceState;
+  ProjectSliceState &
+  ExperimentSliceState;
 
 export type TebEditorActions = SyncActions &
   WorkspaceLayoutActions &
@@ -252,6 +269,7 @@ export type TebEditorActions = SyncActions &
   SchemeSliceActions &
   DiagnosticsSliceActions &
   ProjectSliceActions &
+  ExperimentSliceActions &
   PersistenceActions;
 
 export type TebEditorStore = TebEditorState & TebEditorActions;

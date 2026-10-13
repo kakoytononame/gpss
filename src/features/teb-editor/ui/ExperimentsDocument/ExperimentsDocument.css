@@ -1,0 +1,103 @@
+.experiments-document__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  align-content: start;
+  gap: 8px;
+}
+
+.experiment-card {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px;
+  font-size: 0.82rem;
+}
+
+.experiment-card--wide {
+  grid-column: 1 / -1;
+}
+
+.experiment-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.experiment-card h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.experiment-card button {
+  padding: 2px 10px;
+  border: 1px solid #9eb6cc;
+  background: linear-gradient(#fdfeff, #e3edf6);
+  font: inherit;
+  cursor: pointer;
+}
+
+.experiment-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.experiment-table th,
+.experiment-table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid #edf1f5;
+  text-align: left;
+}
+
+.experiment-table th {
+  background: #eef3f8;
+  font-weight: 600;
+}
+
+.experiment-table input,
+.experiment-table select,
+.experiment-settings input,
+.experiment-settings select {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+.experiment-table input[type='radio'] {
+  width: auto;
+}
+
+.experiment-table--results td {
+  white-space: nowrap;
+}
+
+.experiment-table tr.is-best {
+  background: #e7f6e7;
+  font-weight: 600;
+}
+
+.experiment-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.experiment-settings label {
+  display: grid;
+  gap: 2px;
+  color: #46596b;
+}
+
+.experiment-message {
+  margin: 0 0 6px;
+  color: #8a5a00;
+}
+
+@media (max-width: 860px) {
+  .experiments-document__body {
+    grid-template-columns: 1fr;
+  }
+}

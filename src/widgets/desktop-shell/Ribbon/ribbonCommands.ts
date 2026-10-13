@@ -193,6 +193,11 @@ function createRibbonCommands(): RibbonCommands {
         ],
       },
       {
+        title: 'Эксперименты',
+        className: 'ribbon-group--experiments',
+        commands: [{ id: 'experiments', label: 'Серия экспериментов', icon: reportChartIcon, onClick: () => activate('experiments') }],
+      },
+      {
         title: 'Отладка',
         className: 'ribbon-group--debug',
         commands: [

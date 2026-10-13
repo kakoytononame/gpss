@@ -22,7 +22,7 @@ public sealed class ApiExceptionHandler : IExceptionHandler
         var (status, title) = exception switch
         {
             NotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
-            BadRequestException or JsonException or FormatException => (StatusCodes.Status400BadRequest, "Invalid request"),
+            BadRequestException or JsonException or FormatException or ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request"),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested => (499, "Request cancelled"),
             _ => (StatusCodes.Status500InternalServerError, "Unexpected server error"),
         };

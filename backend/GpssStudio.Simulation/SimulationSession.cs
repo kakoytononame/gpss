@@ -49,6 +49,7 @@ public sealed class SimulationSession
 {
     private const int MaxStepEntries = 10_000;
     public const int MaxListedTransactions = 300;
+    private Action<SimulationEngine>? _beforeFirstStart;
     private readonly List<string> _journal = [];
     private int _lastStartCount = 1;
 
@@ -71,7 +72,13 @@ public sealed class SimulationSession
 
     /// <summary>Translates the model and, on success, runs its control statements (INITIAL, START, ...).</summary>
     /// <param name="breakpointLines">Source lines of blocks with a stop condition, set before the model's statements run.</param>
-    public static (SimulationSession? Session, SimulationResult Result) Create(string text, string modelName, string? id = null, IReadOnlyCollection<int>? breakpointLines = null)
+    /// <param name="beforeFirstStart">Runs once before the first START / STEP (after the model's INITIAL statements), e.g. to set experiment factors.</param>
+    public static (SimulationSession? Session, SimulationResult Result) Create(
+        string text,
+        string modelName,
+        string? id = null,
+        IReadOnlyCollection<int>? breakpointLines = null,
+        Action<SimulationEngine>? beforeFirstStart = null)
     {
         var journal = new List<string> { "Трансляция модели начата." };
         var model = Translator.Translate(text);
@@ -84,7 +91,7 @@ public sealed class SimulationSession
         }
 
         journal.Add($"Трансляция завершена. Блоков: {model.Blocks.Count}.");
-        var session = new SimulationSession(id ?? Guid.NewGuid().ToString("N"), modelName, model);
+        var session = new SimulationSession(id ?? Guid.NewGuid().ToString("N"), modelName, model) { _beforeFirstStart = beforeFirstStart };
         session._journal.AddRange(journal);
         foreach (var block in model.Blocks.Where(block => breakpointLines?.Contains(block.Line) == true))
         {
@@ -162,6 +169,7 @@ public sealed class SimulationSession
                 break;
             case ControlKind.Start:
             {
+                RunBeforeFirstStart();
                 _lastStartCount = (int)Evaluate(Operand(0), 1);
                 _journal.Add($"Моделирование начато (START {_lastStartCount}).");
                 Engine.Trace = null;
@@ -170,6 +178,7 @@ public sealed class SimulationSession
             }
             case ControlKind.Step:
             {
+                RunBeforeFirstStart();
                 var steps = Math.Clamp((int)Evaluate(Operand(0), 1), 1, MaxStepEntries);
                 Engine.Trace = _journal.Add;
                 try
@@ -265,6 +274,13 @@ public sealed class SimulationSession
             default:
                 throw new SimulationException($"INITIAL поддерживает X$, LS$, LR$, MX$ и имена матриц, получено {target}.");
         }
+    }
+
+    private void RunBeforeFirstStart()
+    {
+        var hook = _beforeFirstStart;
+        _beforeFirstStart = null;
+        hook?.Invoke(Engine);
     }
 
     /// <summary>STOP: without operands removes all stop conditions; STOP [A],B[,OFF] sets or removes one.</summary>
