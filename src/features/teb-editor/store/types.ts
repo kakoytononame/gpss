@@ -20,7 +20,6 @@ import type {
   TebDocument,
   TebParameter,
   TebTestItem,
-  TebTestStatus,
 } from '../../../shared/types/teb';
 import type { GenerationResult, ProjectSummary, ReportFragment, StudioProject, StudioTebLink } from '../../../shared/types/project';
 import type { ExperimentResult } from '../../../shared/types/experiment';
@@ -194,7 +193,21 @@ export interface DiagnosticsSliceActions {
   /** Copies the standard report tables to the clipboard (tab-separated). */
   copyReport: () => Promise<void>;
   setIssueFilter: (filter: IssueFilter) => void;
-  setTebTestStatus: (id: string, status: TebTestStatus, message: string) => void;
+}
+
+export interface TebTestSliceState {
+  tebTestsBusy: boolean;
+}
+
+export interface TebTestSliceActions {
+  /**
+   * Runs the TEB tests: for an open project — every TEB of the current model (with the model generator),
+   * otherwise — the TEB class in the TEB editor.
+   */
+  runTebTests: () => Promise<void>;
+  clearTebTests: () => void;
+  /** Shows the TEB of a test: the scheme level with the TEB selected (or the TEB editor). */
+  focusTebTest: (test: TebTestItem) => void;
 }
 
 export interface ProjectSliceState {
@@ -329,7 +342,8 @@ export type TebEditorState = SyncState &
   ProjectSliceState &
   ExperimentSliceState &
   FormSliceState &
-  ResultSliceState;
+  ResultSliceState &
+  TebTestSliceState;
 
 export type TebEditorActions = SyncActions &
   WorkspaceLayoutActions &
@@ -342,6 +356,7 @@ export type TebEditorActions = SyncActions &
   FormSliceActions &
   ResultSliceActions &
   FinalReportSliceActions &
+  TebTestSliceActions &
   PersistenceActions;
 
 export type TebEditorStore = TebEditorState & TebEditorActions;

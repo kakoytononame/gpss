@@ -75,12 +75,4 @@ export const createDiagnosticsSlice: StateCreator<TebEditorStore, [], [], Diagno
   setIssueFilter(filter) {
     set({ issueFilter: filter, syncStatus: 'saved', syncMessage: 'Фильтр замечаний и ошибок изменен.' });
   },
-
-  setTebTestStatus(id, status, message) {
-    set((state) => ({
-      tebTests: state.tebTests.map((test) => (test.id === id ? { ...test, status, message } : test)),
-      syncStatus: status === 'failed' ? 'warning' : 'saved',
-      syncMessage: message,
-    }));
-  },
 });

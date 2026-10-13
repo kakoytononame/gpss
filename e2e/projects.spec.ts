@@ -84,6 +84,17 @@ test.describe('Simulation projects', () => {
     await page.getByRole('button', { name: 'Запустить моделирование' }).first().click();
     await expect(page.locator('.global-status')).toContainText('завершено');
 
+    // TEB tests check every TEB of the model, including the one inside the composite TEB.
+    await page.getByRole('tab', { name: 'Тесты ТЭБов' }).click();
+    await page.getByRole('button', { name: 'Запустить тесты' }).click();
+    await expect(page.locator('.global-status')).toContainText(/Тесты ТЭБов: пройдено \d+ из \d+/);
+    const machine = page.getByRole('region', { name: 'Станок' });
+    await expect(machine).toContainText('Входы и выходы');
+    await page.getByRole('region', { name: 'Поступление заказов' }).getByText('Описание ТЭБа').click();
+    await expect(page.locator('.scheme-breadcrumb')).not.toContainText('› Цех');
+    await machine.getByText('GPSS-модель').click();
+    await expect(page.locator('.scheme-breadcrumb')).toContainText('› Цех');
+
     await page.request.delete(`${PROJECTS}/${id}`);
   });
 

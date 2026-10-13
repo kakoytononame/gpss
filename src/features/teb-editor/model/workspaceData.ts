@@ -48,8 +48,5 @@ export const INITIAL_ISSUES: IssueItem[] = [
   },
 ];
 
-export const INITIAL_TEB_TESTS: TebTestItem[] = [
-  { id: 'test-ports', name: 'Проверка входных портов', status: 'passed', message: 'Ошибок не найдено', sourceNodeId: 'arrival' },
-  { id: 'test-gpss-model', name: 'Проверка GPSS модели', status: 'not-run', message: 'Не запускалась', sourceNodeId: 'kitchen-choice' },
-  { id: 'test-parameters', name: 'Проверка параметров класса', status: 'failed', message: 'Требуется значение заголовка', sourceNodeId: 'cashier-1' },
-];
+/** TEB tests are produced by running them ("Тесты ТЭБов" panel). */
+export const INITIAL_TEB_TESTS: TebTestItem[] = [];

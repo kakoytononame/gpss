@@ -159,10 +159,14 @@ export interface IssueItem {
 
 export interface TebTestItem {
   id: string;
+  /** TEB the test belongs to (or "Модель" for tests of the whole model); tests are grouped by it. */
+  group?: string;
   name: string;
   status: TebTestStatus;
   message: string;
   sourceNodeId?: string;
+  /** Composite TEBs to enter from the root scheme to show the TEB. */
+  schemePath?: string[];
 }
 
 export interface TabDefinition {

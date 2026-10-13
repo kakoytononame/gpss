@@ -331,11 +331,61 @@
 }
 
 .teb-test-row {
+  width: 100%;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   gap: 8px;
   padding: 7px 9px;
+  border: 0;
   border-bottom: 1px solid #e8edf3;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.teb-test-row:hover {
+  background: #eef6ff;
+}
+
+.teb-test-row > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.teb-tests-toolbar button:disabled {
+  opacity: 0.5;
+}
+
+.teb-tests-summary {
+  margin-left: auto;
+  color: #2f7a2f;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.teb-tests-summary.has-failures {
+  color: #b42318;
+}
+
+.teb-tests-group h4 {
+  margin: 0;
+  padding: 5px 9px;
+  border-bottom: 1px solid #e8edf3;
+  background: #f4f7fa;
+  font-size: 0.8rem;
+}
+
+.teb-tests-group h4.has-failures {
+  color: #b42318;
+}
+
+.teb-tests-empty {
+  margin: 0;
+  padding: 10px;
+  color: #6b7280;
+  font-size: 0.8rem;
 }
 
 .teb-test-row img {

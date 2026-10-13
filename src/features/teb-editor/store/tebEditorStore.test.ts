@@ -181,7 +181,6 @@ describe('simulation', () => {
 
     expect(store()).toMatchObject({ simulationState: 'error', activeDocument: 'model-text', issuesPanelVisible: true, syncStatus: 'warning' });
     expect(store().issues[0]).toMatchObject({ type: 'error', description: 'Строка 3: Метка "X" не определена.', documentId: 'model-text' });
-    expect(store().tebTests.find((test) => test.id === 'test-gpss-model')?.status).toBe('failed');
   });
 
   it('re-creates an expired session before executing a command', async () => {

@@ -161,7 +161,8 @@ export function stateFromWorkspaceSnapshot(snapshot: WorkspaceSnapshot, state: T
     reportCellEdits: snapshot.reportCellEdits ?? state.reportCellEdits,
     modelLogText: snapshot.modelLogText ?? state.modelLogText,
     issues: snapshot.issues ? deepClone(snapshot.issues) : state.issues,
-    tebTests: snapshot.tebTests ? deepClone(snapshot.tebTests) : state.tebTests,
+    // Demo tests of older snapshots have no TEB group; real test results always have one.
+    tebTests: snapshot.tebTests ? deepClone(snapshot.tebTests.filter((test) => test.group)) : state.tebTests,
     modelText: snapshot.modelText || state.modelText,
     simulationSessionId: snapshot.modelText && snapshot.modelText !== state.modelText ? null : state.simulationSessionId,
     simulationReport: snapshot.simulationReport ?? state.simulationReport,

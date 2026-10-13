@@ -101,11 +101,6 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
           ...simulationIssues(result),
           ...state.issues.filter((issue) => !issue.id.startsWith(SIMULATION_ISSUE_PREFIX) && issue.id !== DEMO_NO_ERRORS_ISSUE_ID),
         ],
-        tebTests: state.tebTests.map((test) =>
-          test.id === 'test-gpss-model'
-            ? { ...test, status: failed ? 'failed' : 'passed', message: failed ? 'Модель содержит ошибки' : 'Модель успешно оттранслирована и выполнена' }
-            : test,
-        ),
         syncStatus: failed ? 'warning' : 'saved',
         syncMessage: failed
           ? (result.RuntimeError ?? `Ошибки трансляции: ${result.Errors.length}. См. панель замечаний.`)
