@@ -109,6 +109,13 @@ public static class Translator
             case "SIMULATE":
             case "END":
                 return;
+            case "PROCEDURE":
+            case "EXPERIMENT":
+            {
+                var procedure = Plus.PlusParser.ParseProcedure(statement.Operand(0));
+                model.Procedures[procedure.Name] = procedure;
+                return;
+            }
             case "STORAGE":
             {
                 var name = RequireLabel(statement);
@@ -236,7 +243,13 @@ public static class Translator
             var parts = SourceParser.SplitOperands(pair);
             if (typeText[0] == 'L')
             {
-                // L functions list only Y values: "y1/y2/..." or "x,y" pairs.
+                // L functions take "x,y" pairs with x = 1, 2, ... (or only the Y values "y1/y2/...").
+                if (parts.Count == 2 && parts[0].Length > 0 && parts[1].Length > 0)
+                {
+                    points.Add((new NumberExpr(++listIndex), ParseFunctionValue(parts[1], model)));
+                    continue;
+                }
+
                 foreach (var part in parts.Where(part => part.Length > 0))
                 {
                     points.Add((new NumberExpr(++listIndex), ParseFunctionValue(part, model)));
@@ -627,6 +640,9 @@ public static class Translator
                 return Make(TransferMode.Subroutine, first: Ref(1), parameter: ParameterRef.Parse(Require(s, 2, "параметр возврата")));
             case "P":
                 return Make(TransferMode.Parameter, parameter: ParameterRef.Parse(Require(s, 1, "параметр")), step: s.HasOperand(2) ? ExpressionParser.Parse(s.Operand(2)) : null);
+            case "FN":
+                // The function value is the block number (e.g. an L function listing labels).
+                return Make(TransferMode.Function, fraction: ExpressionParser.Parse($"FN${Require(s, 1, "функция")}"), step: s.HasOperand(2) ? ExpressionParser.Parse(s.Operand(2)) : null);
             default:
                 // Fraction: .XXX or parts per thousand, with probability A go to C, otherwise to B.
                 return Make(TransferMode.Fraction, fraction: ExpressionParser.Parse(a), first: Ref(1), second: Ref(2));

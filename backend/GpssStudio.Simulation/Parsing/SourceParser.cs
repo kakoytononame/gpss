@@ -17,6 +17,21 @@ public static class SourceParser
         for (var index = 0; index < lines.Length; index++)
         {
             var lineNumber = index + 1;
+            if (Plus.PlusParser.StartsProcedure(lines[index]))
+            {
+                // PLUS procedures span several lines and use ";" as the statement terminator.
+                var last = Plus.PlusParser.FindEnd(lines, index);
+                statements.Add(new SourceStatement
+                {
+                    Line = lineNumber,
+                    Operation = lines[index].TrimStart().StartsWith("EXPERIMENT", StringComparison.OrdinalIgnoreCase) ? "EXPERIMENT" : "PROCEDURE",
+                    Operands = [string.Join("\n", lines[index..(last + 1)])],
+                });
+                pendingFunction = null;
+                index = last;
+                continue;
+            }
+
             var content = StripComment(lines[index]);
 
             if (string.IsNullOrWhiteSpace(content))
@@ -96,7 +111,7 @@ public static class SourceParser
         };
     }
 
-    private static bool IsAuxiliary(string operation, string token) => operation switch
+    internal static bool IsAuxiliary(string operation, string token) => operation switch
     {
         "TEST" => Keywords.TestOperators.Contains(token),
         "GATE" => Keywords.GateOperators.Contains(token),

@@ -144,4 +144,23 @@ public sealed class ProjectApiTests : ApiTestBase
         var empty = await Upload(Zip(("readme.txt", "nothing")), "empty.zip");
         Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
     }
+
+    [Fact]
+    public async Task ApplyForm_WritesInputValuesIntoTheModelText()
+    {
+        var body = await ReadJsonAsync(await Client.PostAsJsonAsync($"{ProjectsPath}/forms/apply", new
+        {
+            ModelText = "Desk STORAGE 1\nINITIAL X$Mean,8 ;mean\nGENERATE 5\nTERMINATE 1",
+            Inputs = new object[]
+            {
+                new { Name = "Desk", Line = 1, Operands = new[] { new { Operand = "A", Value = "3" } } },
+                new { Name = "Mean", Line = 2, Operands = new[] { new { Operand = "B", Value = "4.5" } } },
+                new { Name = "Missing", Line = 9, Operands = new[] { new { Operand = "A", Value = "1" } } },
+            },
+        }));
+
+        Assert.Equal("Desk STORAGE 3\nINITIAL X$Mean,4.5 ;mean\nGENERATE 5\nTERMINATE 1", body.GetProperty("Text").GetString());
+        Assert.Contains("строка 9", body.GetProperty("Messages")[0].GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await Client.PostAsJsonAsync($"{ProjectsPath}/forms/apply", new { ModelText = "" })).StatusCode);
+    }
 }

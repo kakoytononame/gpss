@@ -20,6 +20,7 @@ public static class Keywords
     public static readonly HashSet<string> Definitions = new(StringComparer.OrdinalIgnoreCase)
     {
         "STORAGE", "TABLE", "QTABLE", "VARIABLE", "FVARIABLE", "BVARIABLE", "FUNCTION", "EQU", "MATRIX",
+        "PROCEDURE", "EXPERIMENT",
     };
 
     public static readonly HashSet<string> Commands = new(StringComparer.OrdinalIgnoreCase)

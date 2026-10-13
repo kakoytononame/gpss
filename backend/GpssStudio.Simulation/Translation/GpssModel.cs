@@ -16,6 +16,9 @@ public sealed class GpssModel
     public Dictionary<string, MatrixDefinition> Matrices { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<ControlStatement> ControlStatements { get; } = [];
 
+    /// <summary>PLUS procedures (and experiments) by name.</summary>
+    public Dictionary<string, Plus.PlusProcedure> Procedures { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Entity names in order of first appearance; they are numbered from 10000 like in GPSS World.</summary>
     public List<string> EntityNames { get; } = [];
 

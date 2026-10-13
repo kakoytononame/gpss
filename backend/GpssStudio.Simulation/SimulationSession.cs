@@ -41,6 +41,9 @@ public sealed class SimulationResult
 
 public sealed record BreakpointInfo(int Transaction, int Block, int Line);
 
+/// <summary>Indicator collected over model time ("динамика показателей").</summary>
+public sealed record SimulationMonitor(string Expression, string? Label = null);
+
 /// <summary>
 /// A translated model with its simulation state. Mirrors a GPSS World "simulation object":
 /// control statements from the model run on creation, later commands are sent interactively.
@@ -49,6 +52,7 @@ public sealed class SimulationSession
 {
     private const int MaxStepEntries = 10_000;
     public const int MaxListedTransactions = 300;
+    public const int MaxMonitors = 64;
     private Action<SimulationEngine>? _beforeFirstStart;
     private readonly List<string> _journal = [];
     private int _lastStartCount = 1;
@@ -73,12 +77,15 @@ public sealed class SimulationSession
     /// <summary>Translates the model and, on success, runs its control statements (INITIAL, START, ...).</summary>
     /// <param name="breakpointLines">Source lines of blocks with a stop condition, set before the model's statements run.</param>
     /// <param name="beforeFirstStart">Runs once before the first START / STEP (after the model's INITIAL statements), e.g. to set experiment factors.</param>
+    /// <param name="monitors">Indicators sampled every <paramref name="monitorInterval"/> units of model time (report series of kind "monitor").</param>
     public static (SimulationSession? Session, SimulationResult Result) Create(
         string text,
         string modelName,
         string? id = null,
         IReadOnlyCollection<int>? breakpointLines = null,
-        Action<SimulationEngine>? beforeFirstStart = null)
+        Action<SimulationEngine>? beforeFirstStart = null,
+        IReadOnlyList<SimulationMonitor>? monitors = null,
+        double monitorInterval = 1)
     {
         var journal = new List<string> { "Трансляция модели начата." };
         var model = Translator.Translate(text);
@@ -96,6 +103,11 @@ public sealed class SimulationSession
         foreach (var block in model.Blocks.Where(block => breakpointLines?.Contains(block.Line) == true))
         {
             session.Engine.SetBreakpoint(0, block.Number, enabled: true);
+        }
+
+        if (monitors is { Count: > 0 })
+        {
+            session.SetMonitors(monitors, monitorInterval);
         }
 
         if (!model.ControlStatements.Any(statement => statement.Kind is ControlKind.Start or ControlKind.Step))
@@ -137,6 +149,42 @@ public sealed class SimulationSession
     }
 
     public SimulationResult Snapshot() => Result(runtimeError: null, includeJournal: false);
+
+    /// <summary>Values of SNA expressions in the current state (dynamic form indicators); null where evaluation fails.</summary>
+    public IReadOnlyList<double?> Evaluate(IReadOnlyList<string> expressions)
+    {
+        LastAccess = DateTimeOffset.UtcNow;
+        return expressions.Select(text =>
+        {
+            try
+            {
+                var value = ExpressionParser.Parse(text).Evaluate(Engine, null);
+                return double.IsFinite(value) ? value : (double?)null;
+            }
+            catch (Exception exception) when (exception is SimulationException or FormatException)
+            {
+                return null;
+            }
+        }).ToList();
+    }
+
+    private void SetMonitors(IReadOnlyList<SimulationMonitor> monitors, double interval)
+    {
+        var parsed = new List<(string Label, Expr Expression)>();
+        foreach (var monitor in monitors.Take(MaxMonitors))
+        {
+            try
+            {
+                parsed.Add((string.IsNullOrWhiteSpace(monitor.Label) ? monitor.Expression : monitor.Label!, ExpressionParser.Parse(monitor.Expression)));
+            }
+            catch (FormatException exception)
+            {
+                _journal.Add($"Показатель динамики «{monitor.Expression}» пропущен: {exception.Message}");
+            }
+        }
+
+        Engine.SetMonitors(parsed, interval > 0 && double.IsFinite(interval) ? interval : 1);
+    }
 
     private string? ExecuteStatements(IEnumerable<ControlStatement> statements)
     {

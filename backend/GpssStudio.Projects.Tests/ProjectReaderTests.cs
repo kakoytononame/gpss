@@ -141,7 +141,7 @@ public sealed class ProjectReaderTests
             Add("Мастерская/TebsLibraries/33333333-0000-0000-0000-000000000003.1.0.0.0.tlib", Library());
             Add("Мастерская/SimModels/Модель 1/Diagram.gsdiagram", Encoding.UTF8.GetBytes(Diagram));
             Add("Мастерская/SimModels/Модель 1/ModelText.gps", modelText);
-            Add("Мастерская/SimModels/Модель 1/Forms/Ввод/Form.fog", [1, 2, 3]);
+            Add("Мастерская/SimModels/Модель 1/Forms/Ввод/Form.fog", FormTests.FormPackage());
         }
 
         buffer.Position = 0;
@@ -163,6 +163,7 @@ public sealed class ProjectReaderTests
         var model = Assert.Single(project.Models);
         Assert.True(model.IsCurrent);
         Assert.Equal(["Ввод"], model.Forms);
+        Assert.Equal(3, Assert.Single(model.UserForms).Inputs.Count);
         Assert.Equal("* старый текст\n GENERATE 1\n TERMINATE 1\n", model.ModelText);
 
         var scheme = model.Scheme!;

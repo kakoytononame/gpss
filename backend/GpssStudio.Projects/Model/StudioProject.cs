@@ -28,6 +28,9 @@ public sealed class StudioModel
 
     /// <summary>Names of user forms (input / dynamics / animation) stored with the model.</summary>
     public List<string> Forms { get; set; } = [];
+
+    /// <summary>Contents of the forms that were found in the project (<c>Forms/&lt;name&gt;/Form.fog</c>).</summary>
+    public List<StudioForm> UserForms { get; set; } = [];
 }
 
 /// <summary>One level of a structural scheme: TEB nodes, connections between their ports and decorations.</summary>

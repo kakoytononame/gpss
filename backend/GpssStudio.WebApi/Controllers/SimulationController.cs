@@ -18,6 +18,7 @@ namespace GpssStudio.WebApi.Controllers;
 public sealed class SimulationController : ControllerBase
 {
     private const int MaxModelLength = 1_000_000;
+    private const int MaxEvaluatedExpressions = 500;
     private readonly SimulationSessionStore _sessions;
 
     public SimulationController(SimulationSessionStore sessions)
@@ -45,7 +46,22 @@ public sealed class SimulationController : ControllerBase
     public ActionResult<SimulationResult> CreateSession([FromBody] SimulationModelRequest request)
     {
         ValidateModel(request);
-        return Ok(_sessions.Create(request.Text, string.IsNullOrWhiteSpace(request.ModelName) ? "Модель" : request.ModelName.Trim(), request.BreakpointLines));
+        if (request.Monitors is { Count: > SimulationSession.MaxMonitors })
+        {
+            throw new BadRequestException($"Допускается не более {SimulationSession.MaxMonitors} показателей динамики.");
+        }
+
+        if (request.MonitorInterval is { } interval && !(interval > 0 && double.IsFinite(interval)))
+        {
+            throw new BadRequestException("Интервал сбора динамики должен быть положительным числом.");
+        }
+
+        return Ok(_sessions.Create(
+            request.Text,
+            string.IsNullOrWhiteSpace(request.ModelName) ? "Модель" : request.ModelName.Trim(),
+            request.BreakpointLines,
+            request.Monitors,
+            request.MonitorInterval ?? 1));
     }
 
     /// <summary>Current state and report of a session.</summary>
@@ -72,6 +88,22 @@ public sealed class SimulationController : ControllerBase
         lock (session.SyncRoot)
         {
             return Ok(session.Execute(request.Command));
+        }
+    }
+
+    /// <summary>Values of SNA expressions in the current state (indicators of the dynamic form); null where not computable.</summary>
+    [HttpPost("sessions/{sessionId}/evaluate")]
+    public ActionResult<IReadOnlyList<double?>> Evaluate([FromRoute] string sessionId, [FromBody] SimulationEvaluateRequest request)
+    {
+        if (request.Expressions.Count > MaxEvaluatedExpressions)
+        {
+            throw new BadRequestException($"Допускается не более {MaxEvaluatedExpressions} выражений.");
+        }
+
+        var session = RequireSession(sessionId);
+        lock (session.SyncRoot)
+        {
+            return Ok(session.Evaluate(request.Expressions));
         }
     }
 

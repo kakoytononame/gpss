@@ -149,11 +149,22 @@ public static class StudioProjectReader
             model.ModelText = GpssModelFile.ReadText(files[textFile]);
         }
 
-        model.Forms = files.Keys
+        var formFiles = files.Keys
             .Where(path => path.StartsWith(folder + "Forms/", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/Form.fog", StringComparison.OrdinalIgnoreCase))
-            .Select(path => path[(folder.Length + "Forms/".Length)..^"/Form.fog".Length])
-            .Union(model.Forms, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+            .ToDictionary(path => path[(folder.Length + "Forms/".Length)..^"/Form.fog".Length], path => files[path], StringComparer.OrdinalIgnoreCase);
+        model.Forms = formFiles.Keys.Union(model.Forms, StringComparer.OrdinalIgnoreCase).ToList();
+        model.UserForms = [];
+        foreach (var name in model.Forms.Where(formFiles.ContainsKey))
+        {
+            try
+            {
+                model.UserForms.Add(FormReader.Read(name, formFiles[name], notes));
+            }
+            catch (Exception exception) when (exception is InvalidDataException or System.Xml.XmlException or FormatException)
+            {
+                notes.Add($"Модель «{model.Name}», форма «{name}»: не прочитана ({exception.Message}).");
+            }
+        }
     }
 
     private static void ReadProjectFile(byte[] content, StudioProject project, List<StudioModel> models)

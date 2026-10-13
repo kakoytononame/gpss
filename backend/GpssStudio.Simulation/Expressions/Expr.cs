@@ -14,6 +14,10 @@ public interface IEvaluationContext
 
     /// <summary>Value of the cell (row, column) of a matrix given by name or number.</summary>
     double MatrixValue(string matrix, int row, int column);
+
+    /// <summary>Calls a user (PLUS) procedure; library procedures are evaluated by <see cref="CallExpr"/>.</summary>
+    double CallProcedure(string name, IReadOnlyList<double> arguments, Runtime.Transaction? transaction) =>
+        throw new SimulationException($"Неизвестная процедура {name}.");
 }
 
 public abstract class Expr
@@ -158,7 +162,7 @@ public sealed class CallExpr(string name, IReadOnlyList<Expr> arguments) : Expr
             "ATN" => Math.Atan(Arg(0)),
             "MIN" => Math.Min(Arg(0), Arg(1)),
             "MAX" => Math.Max(Arg(0), Arg(1)),
-            _ => throw new SimulationException($"Неизвестная процедура {Name}."),
+            _ => context.CallProcedure(Name, arguments.Select(argument => argument.Evaluate(context, transaction)).ToList(), transaction),
         };
     }
 

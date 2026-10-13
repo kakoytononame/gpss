@@ -76,7 +76,7 @@ public sealed partial class ExpressionParser
     private Expr ParseEquality()
     {
         var left = ParseRelational();
-        while (TryConsumeOperator([("'NE'", "!="), ("'E'", "="), ("!=", "!="), ("<>", "!="), ("=", "=")]) is { } op)
+        while (TryConsumeOperator([("'NE'", "!="), ("'E'", "="), ("!=", "!="), ("/=", "!="), ("<>", "!="), ("=", "=")]) is { } op)
         {
             left = new BinaryExpr(op, left, ParseRelational());
         }
@@ -118,6 +118,12 @@ public sealed partial class ExpressionParser
 
     private bool TryConsumeWord(string word) => TryConsumeOperator([(word, word)]) is not null;
 
+    private bool NextIs(string token)
+    {
+        SkipWhitespace();
+        return string.CompareOrdinal(_text, _position, token, 0, token.Length) == 0;
+    }
+
     private Expr ParseAdditive()
     {
         var left = ParseModulo();
@@ -155,7 +161,8 @@ public sealed partial class ExpressionParser
         while (true)
         {
             // "#" is the GPSS World multiplication operator; "*" is accepted as well.
-            string? op = TryConsume("#") || TryConsume("*") ? "*" : TryConsume("/") ? "/" : TryConsume("\\") ? "\\" : null;
+            // "/=" is the PLUS "not equal" operator, not a division.
+            string? op = TryConsume("#") || TryConsume("*") ? "*" : !NextIs("/=") && TryConsume("/") ? "/" : TryConsume("\\") ? "\\" : null;
             if (op is null)
             {
                 return left;

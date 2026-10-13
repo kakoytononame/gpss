@@ -1,5 +1,7 @@
+using GpssStudio.Projects.Forms;
 using GpssStudio.Projects.Generation;
 using GpssStudio.Projects.Import;
+using GpssStudio.Simulation.Expressions;
 using GpssStudio.Simulation;
 
 namespace GpssStudio.Projects.Tests;
@@ -65,6 +67,58 @@ public sealed class SampleProjectTests
             if (saved is not null)
             {
                 Assert.Equal(saved.Clock, run.Clock, 6);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Projects))]
+    public void SampleForms_BindToTheirModelText(string name)
+    {
+        if (name.Length == 0)
+        {
+            return;
+        }
+
+        var project = StudioProjectReader.ReadDirectory(Path.Combine(SamplesDirectory!, name));
+        foreach (var form in project.Models.SelectMany(model => model.UserForms))
+        {
+            Assert.NotNull(form.ModelText);
+            var lines = form.ModelText!.Replace("\r\n", "\n").Split('\n');
+            foreach (var input in form.Inputs)
+            {
+                Assert.Contains(input.Operator, lines[input.Line - 1], StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Input values written back give a model that translates.
+            var (text, messages) = FormModelBuilder.Apply(form.ModelText, form.Inputs);
+            Assert.Empty(messages);
+            var translated = SimulationSession.Translate(text);
+            Assert.True(translated.Succeeded, $"{name}/{form.Name}: {string.Join("; ", translated.Errors)}");
+            var (session, created) = SimulationSession.Create(text, form.Name);
+            var run = created.State == "idle" ? session!.Execute($"START {form.Run.StartCount}") : created;
+            // The form of "Строительство" ends with TERMINATE without a count: the run stops when no events are left.
+            Assert.True(run.Success || run.RuntimeError!.Contains("Цепь будущих событий пуста"), $"{name}/{form.Name}: {run.RuntimeError}");
+
+            var inputNumbers = form.Inputs.Select(input => input.Number).ToHashSet();
+            var indicators = form.Indicators.ToDictionary(indicator => indicator.Id);
+            foreach (var layout in new[] { form.EntryForm, form.DynamicForm }.OfType<Projects.Model.FormControl>())
+            {
+                var controls = FormReader.Flatten(layout).ToList();
+                Assert.All(controls.Where(control => control.Input is not null), control => Assert.Contains(control.Input!.Value, inputNumbers));
+                Assert.All(controls.Where(control => control.Indicator is not null), control => Assert.True(indicators.ContainsKey(control.Indicator!.Value), $"{form.Name}: SNA {control.Indicator}"));
+                Assert.All(controls.Where(control => control.Image is not null), control => Assert.True(form.Images.ContainsKey(control.Image!), control.Image));
+            }
+
+            foreach (var indicator in form.Indicators.Where(indicator => indicator.Expression is not null))
+            {
+                ExpressionParser.Parse(indicator.Expression!);
+            }
+
+            if (form.Plan is { } plan)
+            {
+                Assert.All(plan.Factors, factor => Assert.NotNull(Simulation.Parsing.OperandEditor.Read(lines[factor.Line - 1], Simulation.Parsing.OperandEditor.IndexOf(factor.Operand))));
+                Assert.All(plan.Targets, target => ExpressionParser.Parse(target.Expression));
             }
         }
     }

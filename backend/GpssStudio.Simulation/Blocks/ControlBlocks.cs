@@ -13,9 +13,12 @@ public enum TransferMode
     Pick,
     Subroutine,
     Parameter,
+
+    /// <summary>TRANSFER FN,B,C — the next block is FN$B + C.</summary>
+    Function,
 }
 
-/// <summary>TRANSFER in all common modes (unconditional, fractional, BOTH, ALL, PICK, SBR, P).</summary>
+/// <summary>TRANSFER in all modes (unconditional, fractional, BOTH, ALL, PICK, SBR, P, FN).</summary>
 public sealed class TransferBlock : Block
 {
     public required TransferMode Mode { get; init; }
@@ -82,6 +85,9 @@ public sealed class TransferBlock : Block
                 break;
             case TransferMode.Parameter:
                 transaction.NextBlock = (int)transaction.GetParameter(Parameter!.Resolve(engine, transaction)) + (Step is null ? 0 : (int)engine.Eval(Step, transaction));
+                break;
+            case TransferMode.Function:
+                transaction.NextBlock = (int)engine.Eval(Fraction!, transaction) + (Step is null ? 0 : (int)engine.Eval(Step, transaction));
                 break;
         }
 

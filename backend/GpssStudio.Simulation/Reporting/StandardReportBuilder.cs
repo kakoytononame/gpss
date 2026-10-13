@@ -257,7 +257,7 @@ public static class StandardReportBuilder
         var clock = engine.AbsoluteClock;
         var series = engine.Series.Series
             .Where(pair => !pair.Key.StartsWith("F:", StringComparison.Ordinal))
-            .Select(pair => new ChartSeries(pair.Key.StartsWith("Q:", StringComparison.Ordinal) ? "queue" : "storage", pair.Key[2..], Downsample(pair.Value, clock)))
+            .Select(pair => new ChartSeries(SeriesKind(pair.Key), pair.Key[2..], Downsample(pair.Value, clock)))
             .OrderBy(item => item.Kind).ThenBy(item => item.Name)
             .ToList();
 
@@ -281,6 +281,13 @@ public static class StandardReportBuilder
                 }).ToList())).ToList(),
         };
     }
+
+    private static string SeriesKind(string key) => key[0] switch
+    {
+        'Q' => "queue",
+        'M' => "monitor",
+        _ => "storage",
+    };
 
     /// <summary>Keeps at most <see cref="MaxChartPoints"/> points and closes the step line at the current clock.</summary>
     private static IReadOnlyList<double[]> Downsample(List<SeriesPoint> points, double clock)

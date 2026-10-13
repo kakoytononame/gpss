@@ -62,6 +62,12 @@ public sealed class SimulationEngine : IEvaluationContext
     public SeriesRecorder Series { get; } = new();
 
     private long _chainSequence;
+    private readonly Dictionary<string, double> _userVariables = new(StringComparer.OrdinalIgnoreCase);
+    private const int MaxMonitorSamples = 4000;
+    private List<(string Key, Expr Expression)> _monitors = [];
+    private double _monitorInterval;
+    private double _nextMonitorTime;
+    private int _monitorSamples;
     private int _nextTransactionNumber = 1;
     private bool _generatorsPrimed;
     private long? _stepBudget;
@@ -256,6 +262,8 @@ public sealed class SimulationEngine : IEvaluationContext
         _streams.Clear();
         _resumeAfterBreak = null;
         Series.Clear();
+        _nextMonitorTime = 0;
+        _monitorSamples = 0;
         CreateDefinedEntities();
 
         foreach (var block in _model.Blocks)
@@ -274,6 +282,66 @@ public sealed class SimulationEngine : IEvaluationContext
     }
 
     public void SeedRandom(int stream, long seed) => _random.Seed(stream, seed);
+
+    /// <summary>
+    /// Indicators sampled every <paramref name="interval"/> units of model time into <see cref="Series"/>
+    /// under the keys "M:label" (GPSS Studio "динамика показателей"). The interval doubles when a run
+    /// produces more than <see cref="MaxMonitorSamples"/> samples.
+    /// </summary>
+    public void SetMonitors(IEnumerable<(string Label, Expr Expression)> monitors, double interval)
+    {
+        if (!(interval > 0) || !double.IsFinite(interval))
+        {
+            throw new ArgumentException("Интервал сбора динамики должен быть положительным числом.");
+        }
+
+        _monitors = monitors.Select(monitor => ($"M:{monitor.Label}", monitor.Expression)).ToList();
+        _monitorInterval = interval;
+        _nextMonitorTime = AbsoluteClock;
+        _monitorSamples = 0;
+    }
+
+    /// <summary>Samples the monitors at grid points before <paramref name="time"/> (the state is constant between events).</summary>
+    private void SampleMonitors(double time, bool inclusive)
+    {
+        if (_monitors.Count == 0)
+        {
+            return;
+        }
+
+        var clock = AbsoluteClock;
+        while (_nextMonitorTime < time || (inclusive && _nextMonitorTime <= time))
+        {
+            // Time-weighted SNA (SR, QA, AC1, ...) are evaluated at the grid point itself.
+            AbsoluteClock = Math.Max(clock, _nextMonitorTime);
+            foreach (var (key, expression) in _monitors)
+            {
+                double value;
+                try
+                {
+                    value = expression.Evaluate(this, null);
+                }
+                catch (SimulationException)
+                {
+                    value = double.NaN;
+                }
+
+                if (double.IsFinite(value))
+                {
+                    Series.Record(key, _nextMonitorTime, value);
+                }
+            }
+
+            _nextMonitorTime += _monitorInterval;
+            if (++_monitorSamples >= MaxMonitorSamples)
+            {
+                _monitorInterval *= 2;
+                _monitorSamples /= 2;
+            }
+        }
+
+        AbsoluteClock = clock;
+    }
 
     private void PrimeGenerators()
     {
@@ -305,11 +373,13 @@ public sealed class SimulationEngine : IEvaluationContext
         {
             if (TerminationCount <= 0)
             {
+                SampleMonitors(AbsoluteClock, inclusive: true);
                 return State = RunState.Completed;
             }
 
             if (!ScanCurrentChain())
             {
+                SampleMonitors(AbsoluteClock, inclusive: TerminationCount <= 0);
                 return State = TerminationCount <= 0 ? RunState.Completed : RunState.Paused;
             }
 
@@ -320,6 +390,7 @@ public sealed class SimulationEngine : IEvaluationContext
             }
 
             var nextTime = _futureChain.Min!.MoveTime;
+            SampleMonitors(nextTime, inclusive: false);
             AbsoluteClock = nextTime;
             while (_futureChain.Count > 0 && _futureChain.Min!.MoveTime == nextTime)
             {
@@ -1217,8 +1288,23 @@ public sealed class SimulationEngine : IEvaluationContext
 
     public double Random(int stream) => _random.Next(stream);
 
+    /// <summary>Global user variable assigned by a PLUS procedure (it takes precedence over EQU values).</summary>
+    public void SetUserVariable(string name, double value) => _userVariables[name] = value;
+
+    public double CallProcedure(string name, IReadOnlyList<double> arguments, Transaction? transaction) => CallProcedure(name, arguments, transaction, 0);
+
+    public double CallProcedure(string name, IReadOnlyList<double> arguments, Transaction? transaction, int depth) =>
+        _model.Procedures.TryGetValue(name, out var procedure) && !procedure.IsExperiment
+            ? procedure.Invoke(this, transaction, arguments, depth)
+            : throw new SimulationException($"Неизвестная процедура {name}.");
+
     public double NameValue(string name)
     {
+        if (_userVariables.TryGetValue(name, out var variable))
+        {
+            return variable;
+        }
+
         if (_model.Constants.TryGetValue(name, out var constant))
         {
             return constant;

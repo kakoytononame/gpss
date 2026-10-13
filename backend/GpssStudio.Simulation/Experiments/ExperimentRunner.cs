@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using GpssStudio.Simulation.Expressions;
+using GpssStudio.Simulation.Parsing;
 using GpssStudio.Simulation.Runtime;
 
 namespace GpssStudio.Simulation.Experiments;
@@ -18,12 +19,21 @@ public enum FactorKind
 
     /// <summary>Value of the <c>Name EQU value</c> statement (the model is translated with the new value).</summary>
     Equ,
+
+    /// <summary>Operand <see cref="ExperimentFactor.Operand"/> of the statement in line <see cref="ExperimentFactor.Line"/> (GPSS Studio form factors).</summary>
+    Operand,
 }
 
 public sealed class ExperimentFactor
 {
     public string Name { get; init; } = string.Empty;
     public FactorKind Kind { get; init; } = FactorKind.Savevalue;
+
+    /// <summary>1-based model text line of an <see cref="FactorKind.Operand"/> factor.</summary>
+    public int? Line { get; init; }
+
+    /// <summary>Operand letter (A, B, ...) of an <see cref="FactorKind.Operand"/> factor.</summary>
+    public string? Operand { get; init; }
 
     /// <summary>Levels of the factor; the plan is the full factorial design of all factors.</summary>
     public IReadOnlyList<double> Levels { get; init; } = [];
@@ -102,7 +112,7 @@ public static class ExperimentRunner
         for (var point = 0; point < plan.Count && stopwatch.Elapsed < TimeLimit; point++)
         {
             var levels = plan[point];
-            var text = ApplyEquFactors(request.ModelText, request.Factors, levels);
+            var text = ApplyTextFactors(request.ModelText, request.Factors, levels);
             for (var replication = 0; replication < replications; replication++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -152,6 +162,11 @@ public static class ExperimentRunner
             {
                 throw new ArgumentException($"Фактор «{factor.Name}»: нужны имя и хотя бы одно значение.");
             }
+
+            if (factor.Kind == FactorKind.Operand && (factor.Line is not > 0 || string.IsNullOrWhiteSpace(factor.Operand)))
+            {
+                throw new ArgumentException($"Фактор «{factor.Name}»: укажите строку модели и операнд.");
+            }
         }
 
         if (request.ObjectiveIndicator is { } objective && (objective < 0 || objective >= request.Indicators.Count))
@@ -184,23 +199,30 @@ public static class ExperimentRunner
         return plan.ToList();
     }
 
-    private static string ApplyEquFactors(string text, IReadOnlyList<ExperimentFactor> factors, double[] levels)
+    /// <summary>EQU and operand factors change the model text before translation.</summary>
+    private static string ApplyTextFactors(string text, IReadOnlyList<ExperimentFactor> factors, double[] levels)
     {
         for (var index = 0; index < factors.Count; index++)
         {
-            if (factors[index].Kind != FactorKind.Equ)
-            {
-                continue;
-            }
-
-            var pattern = new Regex($@"^(\s*{Regex.Escape(factors[index].Name)}\s+EQU\s+)([^\s;]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            if (!pattern.IsMatch(text))
-            {
-                throw new ArgumentException($"Фактор «{factors[index].Name}»: в модели нет оператора {factors[index].Name} EQU.");
-            }
-
+            var factor = factors[index];
             var value = levels[index].ToString(CultureInfo.InvariantCulture);
-            text = pattern.Replace(text, match => match.Groups[1].Value + value, 1);
+            switch (factor.Kind)
+            {
+                case FactorKind.Equ:
+                {
+                    var pattern = new Regex($@"^(\s*{Regex.Escape(factor.Name)}\s+EQU\s+)([^\s;]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                    if (!pattern.IsMatch(text))
+                    {
+                        throw new ArgumentException($"Фактор «{factor.Name}»: в модели нет оператора {factor.Name} EQU.");
+                    }
+
+                    text = pattern.Replace(text, match => match.Groups[1].Value + value, 1);
+                    break;
+                }
+                case FactorKind.Operand:
+                    text = OperandEditor.ReplaceInText(text, factor.Line ?? 0, factor.Operand ?? string.Empty, value);
+                    break;
+            }
         }
 
         return text;

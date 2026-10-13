@@ -1,5 +1,6 @@
 using System.Text;
 using GpssStudio.Simulation.Parsing;
+using GpssStudio.Simulation.Plus;
 
 namespace GpssStudio.Projects.Generation;
 
@@ -36,9 +37,20 @@ public sealed class StatementLine
     {
         var result = new List<StatementLine>();
         var afterFunction = false;
-        foreach (var rawLine in (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
+        var lines = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n').Select(line => line.TrimEnd().Replace("\0", string.Empty)).ToList();
+        for (var index = 0; index < lines.Count; index++)
         {
-            var line = rawLine.TrimEnd().Replace("\0", string.Empty);
+            var line = lines[index];
+            if (PlusParser.StartsProcedure(line))
+            {
+                // PLUS procedures are copied as they are (their statements end with ";", not comments).
+                var last = PlusParser.FindEnd(lines, index);
+                result.AddRange(lines.GetRange(index, last - index + 1).Select(item => new StatementLine { Raw = item }));
+                index = last;
+                afterFunction = false;
+                continue;
+            }
+
             var statement = Parse(line, afterFunction);
             afterFunction = statement.Operation == "FUNCTION" || (afterFunction && statement.IsFunctionFollower);
             result.Add(statement);

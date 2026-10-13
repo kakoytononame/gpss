@@ -1,3 +1,4 @@
+using GpssStudio.Projects.Forms;
 using GpssStudio.Projects.Generation;
 using GpssStudio.Projects.Model;
 using GpssStudio.WebApi.Application.Common;
@@ -88,5 +89,18 @@ public sealed class StudioProjectsController : ControllerBase
         }
 
         return Ok(StudioProjectService.Generate(request.Scheme, string.IsNullOrWhiteSpace(request.ModelName) ? "Модель" : request.ModelName.Trim()));
+    }
+
+    /// <summary>Writes the input data of a form into its model text ("Сформировать модель" of the entry form).</summary>
+    [HttpPost("forms/apply")]
+    public ActionResult<ApplyFormResponse> ApplyForm([FromBody] ApplyFormRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ModelText))
+        {
+            throw new BadRequestException("Текст модели формы пуст.");
+        }
+
+        var (text, messages) = FormModelBuilder.Apply(request.ModelText, request.Inputs);
+        return Ok(new ApplyFormResponse(text, messages));
     }
 }

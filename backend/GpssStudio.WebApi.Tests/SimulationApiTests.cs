@@ -82,4 +82,29 @@ public sealed class SimulationApiTests : ApiTestBase
         Assert.Equal(3, body.GetProperty("Transactions")[0].GetProperty("NextBlock").GetInt32());
         Assert.Equal(5, body.GetProperty("BlockLines").GetArrayLength());
     }
+
+    [Fact]
+    public async Task Monitors_AndEvaluate_ReportIndicatorDynamicsAndCurrentValues()
+    {
+        var created = await ReadJsonAsync(await Client.PostAsJsonAsync($"{SimulationPath}/sessions", new
+        {
+            text = Model + "  START 3",
+            Monitors = new[] { new { Expression = "AC1", Label = "Время" } },
+            MonitorInterval = 2.5,
+        }));
+        var sessionId = created.GetProperty("SessionId").GetString();
+
+        var series = created.GetProperty("Report").GetProperty("Charts").GetProperty("TimeSeries").EnumerateArray()
+            .Single(item => item.GetProperty("Kind").GetString() == "monitor");
+        Assert.Equal("Время", series.GetProperty("Name").GetString());
+        Assert.Equal(2.5, series.GetProperty("Points")[1][0].GetDouble());
+        Assert.Equal(2.5, series.GetProperty("Points")[1][1].GetDouble());
+
+        var values = await ReadJsonAsync(await Client.PostAsJsonAsync($"{SimulationPath}/sessions/{sessionId}/evaluate", new { Expressions = new[] { "N1", "Q$(" } }));
+        Assert.True(values[0].GetDouble() >= 3);
+        Assert.Equal(JsonValueKind.Null, values[1].ValueKind);
+
+        var invalid = await Client.PostAsJsonAsync($"{SimulationPath}/sessions", new { text = Model, MonitorInterval = -1 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
 }
