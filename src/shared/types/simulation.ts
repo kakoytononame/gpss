@@ -40,7 +40,8 @@ export interface ChartBar {
 }
 
 export interface ChartSeries {
-  Kind: 'queue' | 'storage';
+  /** monitor: indicator sampled on a model time grid ("динамика показателей"). */
+  Kind: 'queue' | 'storage' | 'monitor';
   Name: string;
   /** [time, value] pairs of a step function. */
   Points: Array<[number, number]>;

@@ -34,6 +34,8 @@ export interface TreeNode {
   documentId?: ActiveDocument;
   /** Model of the open project selected by this node. */
   modelIndex?: number;
+  /** Form of the current model opened by this node (with {@link documentId}). */
+  formIndex?: number;
   children?: TreeNode[];
 }
 
@@ -300,7 +302,37 @@ export function buildProjectTree(project: StudioProject, modelIndex: number, has
         },
       ]
     : [];
-  const forms: TreeNode[] = (current?.Forms ?? []).map((form, index) => ({ id: `project-form-${index}`, label: form, icon: 'form', iconAsset: formIcon }));
+  const userForms = current?.UserForms ?? [];
+  const forms: TreeNode[] = (current?.Forms ?? []).map((form, index) => {
+    const formIndex = userForms.findIndex((item) => item.Name === form);
+    if (formIndex < 0) {
+      return { id: `project-form-${index}`, label: form, icon: 'form', iconAsset: formIcon };
+    }
+
+    return {
+      id: `project-form-${index}`,
+      label: form,
+      icon: 'form',
+      iconAsset: formIcon,
+      formIndex,
+      documentId: 'input-form',
+      children: [
+        { id: `project-form-${index}-input`, label: 'Форма ввода данных', icon: 'form', iconAsset: formIcon, formIndex, documentId: 'input-form' },
+        ...(userForms[formIndex].DynamicForm
+          ? [
+              {
+                id: `project-form-${index}-dynamic`,
+                label: 'Динамическая форма',
+                icon: 'form',
+                iconAsset: formIcon,
+                formIndex,
+                documentId: 'dynamic-form' as const,
+              },
+            ]
+          : []),
+      ],
+    };
+  });
 
   return [
     {

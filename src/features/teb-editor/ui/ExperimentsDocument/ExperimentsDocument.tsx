@@ -121,6 +121,33 @@ export function ExperimentsDocument() {
                         </option>
                       ))}
                     </select>
+                    {factor.kind === 'Operand' ? (
+                      <span className="experiment-operand">
+                        стр.
+                        <input
+                          aria-label="Строка модели"
+                          type="number"
+                          min={1}
+                          value={factor.line ?? ''}
+                          onChange={(event) =>
+                            setPlan((current) => ({
+                              factors: current.factors.map((item, i) => (i === index ? { ...item, line: Number(event.target.value) || undefined } : item)),
+                            }))
+                          }
+                        />
+                        оп.
+                        <input
+                          aria-label="Операнд"
+                          maxLength={1}
+                          value={factor.operand ?? ''}
+                          onChange={(event) =>
+                            setPlan((current) => ({
+                              factors: current.factors.map((item, i) => (i === index ? { ...item, operand: event.target.value.toUpperCase() } : item)),
+                            }))
+                          }
+                        />
+                      </span>
+                    ) : null}
                   </td>
                   <td>
                     <input

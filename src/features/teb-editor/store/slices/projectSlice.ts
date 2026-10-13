@@ -34,6 +34,7 @@ export const initialProjectState: ProjectSliceState = {
   projectBusy: false,
   generation: null,
   editingNodeId: null,
+  projectFormIndex: 0,
 };
 
 function currentModelIndex(project: StudioProject): number {
@@ -87,6 +88,9 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
       projectBusy: false,
       generation: null,
       editingNodeId: null,
+      projectFormIndex: 0,
+      simulationMonitoring: null,
+      simulationStartCount: 1,
       modelText: model?.ModelText ?? state.modelText,
       simulationSessionId: null,
       simulationState: 'idle',
@@ -144,7 +148,14 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
     },
 
     closeProject() {
-      set({ ...initialProjectState, projects: get().projects, syncStatus: 'saved', syncMessage: 'Проект закрыт.' });
+      set({
+        ...initialProjectState,
+        projects: get().projects,
+        simulationMonitoring: null,
+        simulationStartCount: 1,
+        syncStatus: 'saved',
+        syncMessage: 'Проект закрыт.',
+      });
       get().resetScheme();
     },
 
@@ -188,7 +199,15 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
         return;
       }
 
-      set({ modelText: model.ModelText ?? '', simulationSessionId: null, simulationState: 'idle', syncMessage: `Выбрана модель «${model.Name}».` });
+      set({
+        modelText: model.ModelText ?? '',
+        simulationSessionId: null,
+        simulationState: 'idle',
+        projectFormIndex: 0,
+        simulationMonitoring: null,
+        simulationStartCount: 1,
+        syncMessage: `Выбрана модель «${model.Name}».`,
+      });
       showSchemeLevel(project, index, []);
     },
 

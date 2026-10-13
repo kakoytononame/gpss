@@ -5,6 +5,9 @@ export interface FactorDraft {
   name: string;
   kind: FactorKind;
   levels: string;
+  /** Operand factors (form plans): 1-based model line and operand letter. */
+  line?: number;
+  operand?: string;
 }
 
 export interface IndicatorDraft {
@@ -26,6 +29,7 @@ export const FACTOR_KIND_LABELS: Record<FactorKind, string> = {
   Savevalue: 'Ячейка X$',
   Storage: 'Ёмкость памяти',
   Equ: 'Константа EQU',
+  Operand: 'Операнд строки',
 };
 
 const MAX_LEVELS = 50;
@@ -59,7 +63,14 @@ export function parseLevels(text: string): number[] {
 }
 
 export function toRequestFactors(factors: FactorDraft[]): ExperimentFactor[] {
-  return factors.filter((factor) => factor.name.trim()).map((factor) => ({ Name: factor.name.trim(), Kind: factor.kind, Levels: parseLevels(factor.levels) }));
+  return factors
+    .filter((factor) => factor.name.trim())
+    .map((factor) => ({
+      Name: factor.name.trim(),
+      Kind: factor.kind,
+      Levels: parseLevels(factor.levels),
+      ...(factor.kind === 'Operand' ? { Line: factor.line ?? null, Operand: factor.operand ?? null } : {}),
+    }));
 }
 
 export function toRequestIndicators(indicators: IndicatorDraft[]): ExperimentIndicator[] {

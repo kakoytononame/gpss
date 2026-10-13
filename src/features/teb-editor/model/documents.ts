@@ -13,6 +13,8 @@ export const DOCUMENT_TITLES: Record<ActiveDocument, string> = {
   projects: 'Проекты',
   'model-state': 'Состояние модели',
   experiments: 'Эксперименты',
+  'input-form': 'Форма ввода данных',
+  'dynamic-form': 'Динамическая форма',
 };
 
 const DOCUMENT_STATUS_LABELS: Record<ActiveDocument, string> = {
@@ -26,6 +28,8 @@ const DOCUMENT_STATUS_LABELS: Record<ActiveDocument, string> = {
   projects: 'управление проектами',
   'model-state': 'состояние модели',
   experiments: 'эксперименты',
+  'input-form': 'форма ввода исходных данных',
+  'dynamic-form': 'динамическая форма',
 };
 
 /** Project explorer nodes that open a document other than the TEB editor. */
@@ -39,6 +43,7 @@ const NODE_DOCUMENTS: Record<string, ActiveDocument> = {
   projects: 'projects',
   'model-state': 'model-state',
   experiments: 'experiments',
+  'input-form': 'input-form',
 };
 
 const DOCUMENT_NODES: Record<ActiveDocument, string> = {
@@ -52,6 +57,8 @@ const DOCUMENT_NODES: Record<ActiveDocument, string> = {
   projects: 'project-home',
   'model-state': 'model-log',
   experiments: 'model-run',
+  'input-form': 'input-form',
+  'dynamic-form': 'input-form',
 };
 
 export function nodeToDocument(nodeId: string): ActiveDocument {

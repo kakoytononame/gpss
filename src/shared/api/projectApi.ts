@@ -1,4 +1,4 @@
-import type { GenerationResult, ProjectSummary, StudioProject, TebScheme } from '../types/project';
+import type { ApplyFormResult, FormInput, GenerationResult, ProjectSummary, StudioProject, TebScheme } from '../types/project';
 import { createHttpClient } from './httpClient';
 
 const PROJECTS_ROOT = '/api/alina-gpss/studio/projects';
@@ -12,6 +12,8 @@ export interface ProjectApi {
   save: (project: StudioProject) => Promise<StudioProject>;
   remove: (id: string) => Promise<void>;
   generate: (scheme: TebScheme, modelName: string) => Promise<GenerationResult>;
+  /** Writes the input data of a form into its model text. */
+  applyForm: (modelText: string, inputs: FormInput[]) => Promise<ApplyFormResult>;
 }
 
 /** Client of the project storage, GPSS Studio import and model generator. */
@@ -34,5 +36,7 @@ export function createProjectApi(apiBaseUrl: string, fetchImpl?: typeof fetch): 
     },
     generate: async (scheme, modelName) =>
       (await request(`${PROJECTS_ROOT}/generate`, json('POST', { ModelName: modelName, Scheme: scheme }))) as GenerationResult,
+    applyForm: async (modelText, inputs) =>
+      (await request(`${PROJECTS_ROOT}/forms/apply`, json('POST', { ModelText: modelText, Inputs: inputs }))) as ApplyFormResult,
   };
 }

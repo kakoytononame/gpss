@@ -25,6 +25,7 @@ import type {
 import type { GenerationResult, ProjectSummary, StudioProject, StudioTebLink } from '../../../shared/types/project';
 import type { ExperimentResult } from '../../../shared/types/experiment';
 import type { SimulationReport, TransactionState } from '../../../shared/types/simulation';
+import type { SimulationMonitoring } from '../../../shared/api/simulationApi';
 import type { ExperimentPlan } from '../model/experimentPlan';
 
 type Updater<T> = T | ((current: T) => T);
@@ -129,6 +130,10 @@ export interface SimulationSliceState {
   breakpointLines: number[];
   /** Debugger "model state" from the last simulator response. */
   modelState: ModelState | null;
+  /** Indicators collected over model time by new sessions (set by a form run). */
+  simulationMonitoring: SimulationMonitoring | null;
+  /** Termination count of START for models without a START statement. */
+  simulationStartCount: number;
 }
 
 export interface ModelState {
@@ -204,6 +209,8 @@ export interface ProjectSliceState {
   generation: GenerationResult | null;
   /** Project TEB shown in the TEB editor. */
   editingNodeId: string | null;
+  /** Form of the current model shown by the form documents. */
+  projectFormIndex: number;
 }
 
 export interface ProjectSliceActions {
@@ -246,6 +253,27 @@ export interface ExperimentSliceActions {
   exportExperiment: () => void;
 }
 
+export interface FormSliceState {
+  /** Values of the dynamic form indicators by indicator id. */
+  formIndicatorValues: Record<number, number | null>;
+  formBusy: boolean;
+}
+
+export interface FormSliceActions {
+  /** Opens a form of the current model ("Форма ввода данных" or "Динамическая форма"). */
+  openForm: (formIndex: number, documentId: 'input-form' | 'dynamic-form') => void;
+  setFormInputValue: (inputNumber: number, operand: string, value: string) => void;
+  resetFormInputs: () => void;
+  /** Writes the input data into the form's model text and makes it the model text of the project. */
+  applyFormToModel: () => Promise<boolean>;
+  /** Applies the input data and runs the model with the form's settings (START count, dynamics). */
+  runForm: () => Promise<void>;
+  /** Reads the values of the dynamic form indicators from the simulation session. */
+  refreshFormIndicators: () => Promise<void>;
+  /** Fills the experiment plan from the form (factors bound to operands, targets). */
+  planExperimentFromForm: () => Promise<void>;
+}
+
 export interface PersistenceActions {
   resetWorkspace: () => void;
   saveWorkspaceSnapshot: () => Promise<void>;
@@ -260,7 +288,8 @@ export type TebEditorState = SyncState &
   SchemeSliceState &
   DiagnosticsSliceState &
   ProjectSliceState &
-  ExperimentSliceState;
+  ExperimentSliceState &
+  FormSliceState;
 
 export type TebEditorActions = SyncActions &
   WorkspaceLayoutActions &
@@ -270,6 +299,7 @@ export type TebEditorActions = SyncActions &
   DiagnosticsSliceActions &
   ProjectSliceActions &
   ExperimentSliceActions &
+  FormSliceActions &
   PersistenceActions;
 
 export type TebEditorStore = TebEditorState & TebEditorActions;

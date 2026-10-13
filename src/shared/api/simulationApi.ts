@@ -3,10 +3,18 @@ import { createHttpClient } from './httpClient';
 
 const SIMULATION_ROOT = '/api/alina-gpss/studio/simulation';
 
+/** Indicators collected over model time ("динамика показателей") and the sampling interval. */
+export interface SimulationMonitoring {
+  monitors: Array<{ Expression: string; Label?: string | null }>;
+  interval: number;
+}
+
 export interface SimulationApi {
   translate: (text: string) => Promise<SimulationResult>;
-  createSession: (text: string, modelName: string, breakpointLines?: number[]) => Promise<SimulationResult>;
+  createSession: (text: string, modelName: string, breakpointLines?: number[], monitoring?: SimulationMonitoring | null) => Promise<SimulationResult>;
   execute: (sessionId: string, command: string) => Promise<SimulationResult>;
+  /** Values of SNA expressions in the current state of a session (null where not computable). */
+  evaluate: (sessionId: string, expressions: string[]) => Promise<Array<number | null>>;
   getExample: (exampleId: string) => Promise<ExampleModel>;
 }
 
@@ -17,9 +25,16 @@ export function createSimulationApi(apiBaseUrl: string, fetchImpl?: typeof fetch
 
   return {
     translate: async (text) => (await post('/translate', { text })) as SimulationResult,
-    createSession: async (text, modelName, breakpointLines = []) =>
-      (await post('/sessions', { text, modelName, BreakpointLines: breakpointLines })) as SimulationResult,
+    createSession: async (text, modelName, breakpointLines = [], monitoring = null) =>
+      (await post('/sessions', {
+        text,
+        modelName,
+        BreakpointLines: breakpointLines,
+        ...(monitoring && monitoring.monitors.length > 0 ? { Monitors: monitoring.monitors, MonitorInterval: monitoring.interval } : {}),
+      })) as SimulationResult,
     execute: async (sessionId, command) => (await post(`/sessions/${encodeURIComponent(sessionId)}/commands`, { command })) as SimulationResult,
+    evaluate: async (sessionId, expressions) =>
+      (await post(`/sessions/${encodeURIComponent(sessionId)}/evaluate`, { Expressions: expressions })) as Array<number | null>,
     getExample: async (exampleId) => (await request(`${SIMULATION_ROOT}/examples/${encodeURIComponent(exampleId)}`)) as ExampleModel,
   };
 }

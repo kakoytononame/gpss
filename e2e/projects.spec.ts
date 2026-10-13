@@ -105,4 +105,71 @@ test.describe('Simulation projects', () => {
     expect(imported).toBeTruthy();
     await page.request.delete(`${PROJECTS}/${imported.Id}`);
   });
+
+  test('edits a form, runs it and shows the dynamic form', async ({ page }) => {
+    const name = `Порт e2e ${Date.now()}`;
+    const created = await (await page.request.post(PROJECTS, { data: { Name: name } })).json();
+    const control = (Type: string, extra: object) => ({
+      Type,
+      Name: Type,
+      X: 0,
+      Y: 0,
+      Width: 90,
+      Height: 22,
+      FontSize: 9,
+      Choices: [],
+      Intervals: [],
+      Series: [],
+      Children: [],
+      ...extra,
+    });
+    const form = {
+      Name: 'Порт',
+      ModelText: 'Berth STORAGE 2\nINITIAL X$Gap,10\n GENERATE X$Gap\n ENTER Berth\n ADVANCE 15\n LEAVE Berth\n TERMINATE 1\n',
+      HasAnimation: false,
+      Inputs: [
+        {
+          Number: 1,
+          Name: '(2) INITIAL',
+          Kind: 'command',
+          Operator: 'initial',
+          Line: 2,
+          Operands: [{ Name: 'Интервал', Operand: 'B', ValueType: 'Numeric', Value: '10', DefaultValue: '10' }],
+        },
+      ],
+      Indicators: [{ Id: 5, Title: 'Причал', Object: 'Berth', ObjectType: 'Storage', Sna: 'S', Expression: 'S$Berth', Monitored: true }],
+      Run: { StartCount: 20, CollectDynamics: true, MonitorInterval: 10 },
+      Plan: null,
+      EntryForm: control('panel', {
+        Width: 400,
+        Height: 120,
+        Children: [
+          control('label', { Text: 'Интервал прихода', X: 5, Y: 5, Width: 140 }),
+          control('input', { Name: 'Интервал прихода (поле)', X: 160, Y: 5, Input: 1, Operand: 'B' }),
+        ],
+      }),
+      DynamicForm: control('panel', { Width: 400, Height: 120, Children: [control('sna', { Name: 'Занято мест', X: 10, Y: 10, Indicator: 5 })] }),
+      Images: {},
+    };
+    await page.request.put(`${PROJECTS}/${created.Id}`, {
+      data: { Id: created.Id, Name: name, Models: [{ Name: 'Порт', IsCurrent: true, ModelText: form.ModelText, Forms: ['Порт'], UserForms: [form] }] },
+    });
+    await openFreshApp(page);
+
+    await page.getByRole('button', { name: 'Открыть проект / Управление' }).click();
+    await page.locator('.projects-table tr', { hasText: name }).getByRole('button', { name: 'Открыть' }).click();
+    await page.locator('.tree-row', { hasText: 'Форма ввода данных' }).click();
+
+    await expect(page.getByText('Интервал прихода', { exact: true })).toBeVisible();
+    await page.getByRole('textbox', { name: 'Интервал прихода (поле)' }).fill('8');
+    await page.getByRole('button', { name: 'Записать исходные данные в текст модели' }).click();
+    await expect(page.getByRole('textbox', { name: 'Текст GPSS модели' })).toHaveValue(/INITIAL X\$Gap,8/);
+
+    await page.locator('.tree-row', { hasText: 'Форма ввода данных' }).click();
+    await page.getByRole('button', { name: 'Сформировать модель и выполнить моделирование' }).click();
+    await expect(page.locator('.global-status')).toContainText('завершено');
+    await expect(page.getByRole('heading', { name: /Динамическая форма/ })).toBeVisible();
+    await expect(page.locator('output[aria-label="Занято мест"]')).toHaveText(/^[0-2]$/);
+    await expect(page.getByRole('region', { name: 'Динамика показателей' })).toContainText('Причал (S$Berth)');
+  });
 });

@@ -101,3 +101,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+.experiment-operand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.experiment-table .experiment-operand input {
+  width: 48px;
+}
+
+.experiment-table .experiment-operand input[maxlength='1'] {
+  width: 28px;
+}

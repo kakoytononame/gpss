@@ -123,6 +123,37 @@ public sealed class SampleProjectTests
         }
     }
 
+    /// <summary>
+    /// GPSS World writes the end of the run into the journal saved with the model ("The Simulation has ended.
+    /// Clock is 12000.000000."): the saved model text must end at the same model time in this simulator.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Projects))]
+    public void SavedModelText_EndsAtTheClockOfTheGpssWorldJournal(string name)
+    {
+        if (name.Length == 0)
+        {
+            return;
+        }
+
+        foreach (var modelFolder in Directory.GetDirectories(Path.Combine(SamplesDirectory!, name, "SimModels")))
+        {
+            var journal = Path.Combine(modelFolder, "StdJournal.sim");
+            var text = Path.Combine(modelFolder, "ModelText.gps");
+            var ended = File.Exists(journal)
+                ? System.Text.RegularExpressions.Regex.Match(System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(journal)), @"The Simulation has ended\.\s+Clock is (\d+(?:\.\d+)?)")
+                : null;
+            if (ended is not { Success: true } || !File.Exists(text))
+            {
+                continue;
+            }
+
+            var run = Run(Formats.GpssModelFile.ReadText(File.ReadAllBytes(text)));
+            Assert.True(run.Success, $"{name}: {run.RuntimeError}");
+            Assert.Equal(double.Parse(ended.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), run.Clock, 6);
+        }
+    }
+
     private static SimulationResult Run(string text)
     {
         var (session, result) = SimulationSession.Create(text, "sample");

@@ -1,10 +1,13 @@
 /** Contracts of `/api/alina-gpss/studio/experiments` (backend/GpssStudio.Simulation/Experiments). */
-export type FactorKind = 'Savevalue' | 'Storage' | 'Equ';
+export type FactorKind = 'Savevalue' | 'Storage' | 'Equ' | 'Operand';
 
 export interface ExperimentFactor {
   Name: string;
   Kind: FactorKind;
   Levels: number[];
+  /** Operand factors: 1-based model line and operand letter. */
+  Line?: number | null;
+  Operand?: string | null;
 }
 
 export interface ExperimentIndicator {

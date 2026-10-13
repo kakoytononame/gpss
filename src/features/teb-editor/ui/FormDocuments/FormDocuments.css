@@ -1,0 +1,182 @@
+.form-document__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.form-document__body > * {
+  /* Scrollable sections must keep their height inside the scrolling column. */
+  flex-shrink: 0;
+}
+
+.form-document__selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.form-document__selector select {
+  max-width: 220px;
+  font: inherit;
+}
+
+.form-document__canvas {
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.form-document__status,
+.form-document__empty {
+  margin: 0;
+  padding: 4px 2px;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.form-document__inputs {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+}
+
+.form-document__inputs summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.form-document__inputs input {
+  width: 100%;
+  min-width: 80px;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.form-document__dynamics h3 {
+  margin: 4px 0;
+  font-size: 0.92rem;
+}
+
+.form-canvas {
+  position: relative;
+}
+
+.form-canvas__panel,
+.form-canvas__group,
+.form-canvas__tabs {
+  box-sizing: border-box;
+}
+
+.form-canvas__panel {
+  position: relative;
+}
+
+.form-canvas__root {
+  overflow: hidden;
+}
+
+.form-canvas__group {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #c3ccd6;
+  border-radius: 3px;
+}
+
+.form-canvas__group legend {
+  margin-left: 6px;
+  padding: 0 3px;
+}
+
+.form-canvas__tabs {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #b8c4d0;
+}
+
+.form-canvas__tab-headers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px 2px 0;
+  background: #f0f0f0;
+}
+
+.form-canvas__tab-headers button {
+  padding: 2px 10px;
+  border: 1px solid #b8c4d0;
+  border-bottom: 0;
+  background: #e6ebf0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.form-canvas__tab-headers button.is-active {
+  background: #fff;
+  font-weight: 600;
+}
+
+.form-canvas__tab-page {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+}
+
+.form-canvas__label {
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: pre-wrap;
+  line-height: 1.15;
+}
+
+.form-canvas__input {
+  box-sizing: border-box;
+  border: 1px solid #7a8a99;
+  padding: 1px 3px;
+}
+
+.form-canvas__input:focus {
+  outline: 2px solid var(--accent);
+}
+
+.form-canvas__sna {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #8796a5;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-canvas__picture {
+  box-sizing: border-box;
+  display: block;
+}
+
+.form-canvas__picture--missing {
+  border: 1px dashed #c3ccd6;
+}
+
+.form-canvas__chart {
+  box-sizing: border-box;
+  border: 1px solid #d5dde5;
+  background: #fff;
+}
+
+.form-canvas__clock {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #c3ccd6;
+  border-radius: 50%;
+}
+
+.form-canvas__clock strong {
+  font-size: 1.1rem;
+}

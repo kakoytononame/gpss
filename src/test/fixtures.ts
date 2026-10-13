@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { StudioProject, StudioTebNode, StudioTebPort } from '../shared/types/project';
+import type { FormControl, StudioForm, StudioProject, StudioTebNode, StudioTebPort } from '../shared/types/project';
 import type { SimulationResult } from '../shared/types/simulation';
 
 /** Class payload in the shape returned by the ASP.NET backend (PascalCase). */
@@ -201,4 +201,88 @@ export function studioProject(): StudioProject {
     Libraries: [],
     ImportNotes: [],
   };
+}
+
+function control(Type: FormControl['Type'], patch: Partial<FormControl> = {}): FormControl {
+  return { Type, Name: Type, X: 0, Y: 0, Width: 80, Height: 20, FontSize: 8.25, Choices: [], Intervals: [], Series: [], Children: [], ...patch };
+}
+
+/** Form of a port model: two inputs (EQU, INITIAL), indicators, plan and both layouts. */
+export function studioForm(): StudioForm {
+  return {
+    Name: 'Порт',
+    ModelText: 'Berth EQU 1\nINITIAL X$Gap,26\nGENERATE X$Gap\nTERMINATE 1\n',
+    HasAnimation: false,
+    Inputs: [
+      {
+        Number: 0,
+        Name: 'Berth',
+        Kind: 'command',
+        Operator: 'equ',
+        Line: 1,
+        Operands: [{ Name: 'Операнд A', Operand: 'A', ValueType: 'Numeric', Value: '1', DefaultValue: '1' }],
+      },
+      {
+        Number: 1,
+        Name: '(2) INITIAL',
+        Kind: 'command',
+        Operator: 'initial',
+        Line: 2,
+        Operands: [{ Name: 'Интервал', Operand: 'B', ValueType: 'Numeric', Value: '30', DefaultValue: '26' }],
+      },
+    ],
+    Indicators: [
+      { Id: 10, Title: 'Причал', Object: 'Berth', ObjectType: 'Storage', Sna: 'S', Expression: 'S$Berth', Monitored: true },
+      { Id: 15, Title: 'Причал', Object: 'Berth', ObjectType: 'Storage', Sna: 'SR', Expression: 'SR$Berth', Monitored: false },
+      { Id: 20, Title: 'Матрица', Object: 'M', ObjectType: 'Matrix', Sna: 'MX(1,1)', Expression: null, Monitored: true },
+    ],
+    Run: { StartCount: 50, CollectDynamics: true, MonitorInterval: 60, ModelTimeUnit: 'Minutes', Period: 500, PeriodUnit: 'Days' },
+    Plan: {
+      Method: 'Stepwise',
+      Factors: [{ Id: 1, Name: 'Интервал', Line: 2, Operand: 'B', Object: '(2) INITIAL', Default: 26, Min: 20, Max: 24, Step: 2 }],
+      Targets: [{ Name: 'Загрузка причала', Expression: 'SR$Berth' }],
+      Points: [[20], [22], [24]],
+    },
+    EntryForm: control('panel', {
+      Width: 400,
+      Height: 200,
+      Children: [
+        control('label', { Text: 'Интервал прихода', X: 5, Y: 5 }),
+        control('input', { Name: 'GapInput', X: 120, Y: 5, Input: 1, Operand: 'B', Value: '30' }),
+        control('combo', {
+          Name: 'BerthCombo',
+          X: 120,
+          Y: 40,
+          Input: 0,
+          Operand: 'A',
+          Choices: [
+            { Label: 'Один', Value: '1' },
+            { Label: 'Два', Value: '2' },
+          ],
+        }),
+      ],
+    }),
+    DynamicForm: control('panel', {
+      Width: 400,
+      Height: 200,
+      Children: [
+        control('sna', {
+          Name: 'BusyBox',
+          Indicator: 10,
+          Intervals: [
+            { Low: 0, High: 1, BackColor: '#7CFC00' },
+            { Low: 2, High: 100, BackColor: 'Red' },
+          ],
+        }),
+        control('chart', { Name: 'Chart', Series: [{ Name: 'Загрузка', ViewType: 'Bar', Points: [{ Argument: 'Причал', Indicator: 15 }] }] }),
+      ],
+    }),
+    Images: {},
+  };
+}
+
+/** {@link studioProject} whose model has {@link studioForm}. */
+export function studioProjectWithForm(): StudioProject {
+  const project = studioProject();
+  return { ...project, Models: project.Models.map((model) => ({ ...model, Forms: ['Порт'], UserForms: [studioForm()] })) };
 }

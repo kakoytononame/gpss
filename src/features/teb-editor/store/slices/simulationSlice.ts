@@ -125,9 +125,9 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
   };
 
   const createSession = async () => {
-    const { project, projectModelIndex, modelText, breakpointLines } = get();
+    const { project, projectModelIndex, modelText, breakpointLines, simulationMonitoring } = get();
     const modelName = project?.Models[projectModelIndex]?.Name ?? MODEL_NAME;
-    const result = await api().createSession(modelText, modelName, breakpointLines);
+    const result = await api().createSession(modelText, modelName, breakpointLines, simulationMonitoring);
     applyResult(result, result.State === 'completed' ? 'Моделирование завершено.' : 'Модель оттранслирована.');
     return result;
   };
@@ -198,6 +198,8 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
     commandLineFocusRequest: 0,
     breakpointLines: [],
     modelState: null,
+    simulationMonitoring: null,
+    simulationStartCount: 1,
 
     async loadExampleModel() {
       if (get().modelText.trim()) {
@@ -235,8 +237,8 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
         const created = await createSession();
 
         if (created.SessionId && created.State === 'idle') {
-          // The model has no START statement: run it for one termination.
-          await execute('START 1');
+          // The model has no START statement: run it for the default termination count (1, or the form's).
+          await execute(`START ${Math.max(1, get().simulationStartCount)}`);
         }
 
         const { simulationState } = get();

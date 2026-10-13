@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import runSimIcon from '../../../../shared/assets/icons/run-sim.png';
-import type { SimulationCharts, SimulationReport } from '../../../../shared/types/simulation';
+import type { ChartSeries, SimulationCharts, SimulationReport } from '../../../../shared/types/simulation';
 import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import { BarsChart, ChartCard, HistogramChart, StepSeriesChart } from './ChartCards';
@@ -16,6 +16,14 @@ interface ChartSection {
   isAvailable: (charts: SimulationCharts) => boolean;
   render: (charts: SimulationCharts, report: SimulationReport) => ReactNode;
 }
+
+const SERIES_SUBTITLES: Record<ChartSeries['Kind'], string> = {
+  queue: 'Длина очереди во времени',
+  storage: 'Занято единиц памяти во времени',
+  monitor: 'Показатель формы во времени',
+};
+
+const SERIES_VALUE_LABELS: Record<ChartSeries['Kind'], string> = { queue: 'Длина очереди', storage: 'Занято', monitor: 'Значение' };
 
 const SECTIONS: ChartSection[] = [
   {
@@ -50,18 +58,8 @@ const SECTIONS: ChartSection[] = [
     render: (charts, report) => (
       <div className="chart-grid">
         {charts.TimeSeries.map((series) => (
-          <ChartCard
-            key={`${series.Kind}-${series.Name}`}
-            title={series.Name}
-            subtitle={series.Kind === 'queue' ? 'Длина очереди во времени' : 'Занято единиц памяти во времени'}
-            height={170}
-          >
-            <StepSeriesChart
-              series={series}
-              valueLabel={series.Kind === 'queue' ? 'Длина очереди' : 'Занято'}
-              startTime={report.StartTime}
-              endTime={report.EndTime}
-            />
+          <ChartCard key={`${series.Kind}-${series.Name}`} title={series.Name} subtitle={SERIES_SUBTITLES[series.Kind]} height={170}>
+            <StepSeriesChart series={series} valueLabel={SERIES_VALUE_LABELS[series.Kind]} startTime={report.StartTime} endTime={report.EndTime} />
           </ChartCard>
         ))}
       </div>
