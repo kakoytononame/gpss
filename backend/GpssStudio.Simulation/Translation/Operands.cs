@@ -31,8 +31,9 @@ public sealed class EntityRef
         return new EntityRef(null, ExpressionParser.Parse(text));
     }
 
+    /// <summary>The literal name, or the entity number computed by the expression (entities are keyed by number).</summary>
     public string Resolve(SimulationEngine engine, Transaction? transaction) =>
-        _name ?? engine.EntityNameByNumber((int)Math.Round(_expression!.Evaluate(engine, transaction)));
+        _name ?? ((long)Math.Round(_expression!.Evaluate(engine, transaction))).ToString(CultureInfo.InvariantCulture);
 
     /// <summary>Literal names and numbers are used directly as entity names.</summary>
     public static bool IsPlainName(string text) =>

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../GpssStudio.Simulation/GpssStudio.Simulation.csproj" />
+    <ProjectReference Include="../GpssStudio.Projects/GpssStudio.Projects.csproj" />
   </ItemGroup>
 
   <ItemGroup>

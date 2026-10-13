@@ -1,3 +1,4 @@
+using GpssStudio.WebApi.Application.Projects;
 using GpssStudio.WebApi.Application.Simulation;
 using GpssStudio.WebApi.Application.Tebs.Interfaces;
 using GpssStudio.WebApi.Application.Tebs.Services;
@@ -30,6 +31,7 @@ builder.Services.AddDbContext<GpssStudioDbContext>(options =>
 builder.Services.AddScoped<ITebRepository, TebRepository>();
 builder.Services.AddScoped<ITebService, TebService>();
 builder.Services.AddSingleton<SimulationSessionStore>();
+builder.Services.AddScoped<StudioProjectService>();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>

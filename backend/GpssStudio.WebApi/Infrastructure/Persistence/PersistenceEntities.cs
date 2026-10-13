@@ -102,3 +102,16 @@ public sealed class WorkspaceSnapshotEntity
     public string SnapshotJson { get; set; } = "{}";
     public DateTimeOffset UpdatedAt { get; set; }
 }
+
+/// <summary>
+/// EF Core entity for a simulation project (GPSS Studio project model serialized as JSON).
+/// </summary>
+public sealed class StudioProjectEntity
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string Document { get; set; } = "{}";
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}

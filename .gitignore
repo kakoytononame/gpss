@@ -19,3 +19,6 @@ playwright-report/
 *.tsbuildinfo
 backend/**/bin/
 backend/**/obj/
+
+# Third-party GPSS Studio sample projects (scripts/fetch-gpss-studio-samples.sh)
+/vendor/

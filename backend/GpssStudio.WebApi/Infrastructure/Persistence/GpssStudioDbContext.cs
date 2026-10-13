@@ -20,6 +20,7 @@ public sealed class GpssStudioDbContext : DbContext
     public DbSet<TebInstanceEntity> TebInstances => Set<TebInstanceEntity>();
     public DbSet<TebInstanceParameterValueEntity> TebInstanceParameterValues => Set<TebInstanceParameterValueEntity>();
     public DbSet<WorkspaceSnapshotEntity> WorkspaceSnapshots => Set<WorkspaceSnapshotEntity>();
+    public DbSet<StudioProjectEntity> StudioProjects => Set<StudioProjectEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,18 @@ public sealed class GpssStudioDbContext : DbContext
             entity.Property(item => item.Value).HasColumnName("value");
             entity.HasOne(item => item.Instance).WithMany(item => item.ParameterValues).HasForeignKey(item => item.InstanceId);
             entity.HasOne(item => item.Parameter).WithMany(item => item.InstanceValues).HasForeignKey(item => item.ParameterId);
+        });
+
+        modelBuilder.Entity<StudioProjectEntity>(entity =>
+        {
+            entity.ToTable("studio_projects");
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
+            entity.Property(item => item.Name).HasColumnName("name");
+            entity.Property(item => item.Description).HasColumnName("description");
+            entity.Property(item => item.Document).HasColumnName("document").HasColumnType("jsonb");
+            entity.Property(item => item.CreatedAt).HasColumnName("created_at");
+            entity.Property(item => item.UpdatedAt).HasColumnName("updated_at");
         });
 
         modelBuilder.Entity<WorkspaceSnapshotEntity>(entity =>

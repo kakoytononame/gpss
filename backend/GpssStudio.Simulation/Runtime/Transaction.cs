@@ -13,6 +13,9 @@ public sealed class Transaction
     /// <summary>Block the transaction is currently in (0 before it enters GENERATE).</summary>
     public int CurrentBlock { get; set; }
 
+    /// <summary>Trace indicator (TRACE / UNTRACE).</summary>
+    public bool Traced { get; set; }
+
     /// <summary>Block the transaction will try to enter next.</summary>
     public int NextBlock { get; set; }
 
@@ -26,11 +29,17 @@ public sealed class Transaction
     /// <summary>Remaining ADVANCE time of a preempted transaction.</summary>
     internal double? PreemptedRemainingTime { get; set; }
 
-    /// <summary>Entry times into queues, used for queue residence statistics.</summary>
-    internal Dictionary<string, double> QueueEntryTimes { get; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Entry times into queues (by queue number), used for queue residence statistics.</summary>
+    internal Dictionary<int, double> QueueEntryTimes { get; } = [];
 
-    /// <summary>Units taken per queue (QUEUE A,B).</summary>
-    internal Dictionary<string, int> QueueUnits { get; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Units taken per queue number (QUEUE A,B).</summary>
+    internal Dictionary<int, int> QueueUnits { get; } = [];
+
+    /// <summary>Time the transaction was linked to its current user chain.</summary>
+    internal double UserChainEntryTime { get; set; }
+
+    /// <summary>Transaction groups the transaction belongs to.</summary>
+    internal HashSet<TransactionGroup> Groups { get; } = [];
 
     public IReadOnlyDictionary<string, double> Parameters => _parameters;
 

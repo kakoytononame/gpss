@@ -155,6 +155,46 @@ public static class StandardReportBuilder
             });
         }
 
+        if (engine.UserChains.Count > 0)
+        {
+            sections.Add(new ReportSection
+            {
+                Id = "userchains",
+                Label = "Списки пользователя",
+                Columns = ["Имя / номер", "Текущее содержимое", "Число входов", "Среднее содержимое", "Среднее время", "Максимальное содержимое"],
+                Rows = engine.UserChains.OrderBy(chain => chain.Number).Select(chain => (IReadOnlyList<string>)
+                [
+                    chain.Name, I(chain.Members.Count), I(chain.Entries), N(engine.Sna("CA", chain.Name, null)), N(engine.Sna("CT", chain.Name, null)), I(chain.MaxContent),
+                ]).ToList(),
+            });
+        }
+
+        if (engine.Matrices.Count > 0)
+        {
+            sections.Add(new ReportSection
+            {
+                Id = "matrices",
+                Label = "Матрицы",
+                Columns = ["Имя", "Строка", "Столбец", "Значение"],
+                Rows = engine.Matrices.OrderBy(matrix => matrix.Number).SelectMany(MatrixRows).ToList(),
+            });
+        }
+
+        if (engine.NumericGroups.Count + engine.TransactionGroups.Count > 0)
+        {
+            sections.Add(new ReportSection
+            {
+                Id = "groups",
+                Label = "Группы",
+                Columns = ["Имя / номер", "Тип", "Число элементов", "Элементы"],
+                Rows = engine.NumericGroups.OrderBy(group => group.Number)
+                    .Select(group => (IReadOnlyList<string>)[group.Name, "Числовая", I(group.Members.Count), string.Join(", ", group.Members.Order().Take(50).Select(N))])
+                    .Concat(engine.TransactionGroups.OrderBy(group => group.Number)
+                        .Select(group => (IReadOnlyList<string>)[group.Name, "Транзактов", I(group.Members.Count), string.Join(", ", group.Members.Take(50).Select(member => I(member.Number)))]))
+                    .ToList(),
+            });
+        }
+
         return new SimulationReport
         {
             ModelName = modelName,
@@ -164,6 +204,21 @@ public static class StandardReportBuilder
             Sections = sections,
             Charts = BuildCharts(engine, facilities, queues, storages),
         };
+    }
+
+    /// <summary>Non-zero cells only, like the matrix window of GPSS World (large matrices stay readable).</summary>
+    private static IEnumerable<IReadOnlyList<string>> MatrixRows(MatrixEntity matrix)
+    {
+        for (var row = 1; row <= matrix.Rows; row++)
+        {
+            for (var column = 1; column <= matrix.Columns; column++)
+            {
+                if (matrix[row, column] != 0)
+                {
+                    yield return [matrix.Name, I(row), I(column), N(matrix[row, column])];
+                }
+            }
+        }
     }
 
     private static IEnumerable<IReadOnlyList<string>> TableRows(TableEntity table)

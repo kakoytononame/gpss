@@ -11,6 +11,9 @@ public interface IEvaluationContext
 
     /// <summary>Uniform random number in [0, 1) from the given stream.</summary>
     double Random(int stream);
+
+    /// <summary>Value of the cell (row, column) of a matrix given by name or number.</summary>
+    double MatrixValue(string matrix, int row, int column);
 }
 
 public abstract class Expr
@@ -42,14 +45,48 @@ public sealed class NameExpr(string name) : Expr
     public override string? AsName() => Name;
 }
 
-public sealed class SnaExpr(string family, string argument) : Expr
+/// <summary>String constant. GPSS World converts strings to their numeric equivalent in arithmetic.</summary>
+public sealed class StringExpr(string value) : Expr
+{
+    public string Value { get; } = value;
+
+    public override double Evaluate(IEvaluationContext context, Runtime.Transaction? transaction) =>
+        double.TryParse(Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : 0;
+}
+
+/// <summary>SNA such as <c>Q$Name</c> or, with indirect addressing, <c>Q*Param</c> (entity number taken from a parameter).</summary>
+public sealed class SnaExpr(string family, string argument, bool indirect = false) : Expr
 {
     public string Family { get; } = family;
     public string Argument { get; } = argument;
+    public bool Indirect { get; } = indirect;
 
-    public override double Evaluate(IEvaluationContext context, Runtime.Transaction? transaction) => context.Sna(Family, Argument, transaction);
+    public override double Evaluate(IEvaluationContext context, Runtime.Transaction? transaction) =>
+        context.Sna(Family, Indirect ? IndirectEntity(context, Argument, transaction) : Argument, transaction);
 
-    public override string ToString() => $"{Family}${Argument}";
+    /// <summary>Entity number stored in parameter <paramref name="parameter"/> of the active transaction.</summary>
+    public static string IndirectEntity(IEvaluationContext context, string parameter, Runtime.Transaction? transaction) =>
+        ((long)Math.Round(context.Sna("P", parameter, transaction))).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    public override string ToString() => Indirect ? $"{Family}*{Argument}" : $"{Family}${Argument}";
+}
+
+/// <summary>Matrix cell <c>MX$Name(row,column)</c> or <c>MX*Param(row,column)</c>.</summary>
+public sealed class MatrixCellExpr(string matrix, bool indirect, Expr row, Expr column) : Expr
+{
+    public string Matrix { get; } = matrix;
+    public bool Indirect { get; } = indirect;
+    public Expr Row { get; } = row;
+    public Expr Column { get; } = column;
+
+    public string ResolveMatrix(IEvaluationContext context, Runtime.Transaction? transaction) =>
+        Indirect ? SnaExpr.IndirectEntity(context, Matrix, transaction) : Matrix;
+
+    public override double Evaluate(IEvaluationContext context, Runtime.Transaction? transaction) =>
+        context.MatrixValue(ResolveMatrix(context, transaction), Index(Row, context, transaction), Index(Column, context, transaction));
+
+    public static int Index(Expr expression, IEvaluationContext context, Runtime.Transaction? transaction) =>
+        (int)Math.Round(expression.Evaluate(context, transaction));
 }
 
 public sealed class UnaryExpr(char op, Expr operand) : Expr

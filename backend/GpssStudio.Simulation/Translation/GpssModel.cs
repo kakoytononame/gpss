@@ -13,6 +13,7 @@ public sealed class GpssModel
     public Dictionary<string, TableDefinition> Tables { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, VariableDefinition> Variables { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, FunctionDefinition> Functions { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, MatrixDefinition> Matrices { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<ControlStatement> ControlStatements { get; } = [];
 
     /// <summary>Entity names in order of first appearance; they are numbered from 10000 like in GPSS World.</summary>

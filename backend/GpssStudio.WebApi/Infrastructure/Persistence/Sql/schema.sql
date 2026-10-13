@@ -76,6 +76,15 @@ create table if not exists teb_instance_parameter_values (
   primary key (instance_id, parameter_id)
 );
 
+create table if not exists studio_projects (
+  id uuid primary key,
+  name text not null,
+  description text,
+  document jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists workspace_snapshots (
   id text primary key,
   snapshot_json jsonb not null default '{}'::jsonb,

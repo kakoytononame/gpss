@@ -11,7 +11,7 @@ public static class SourceParser
     public static IReadOnlyList<SourceStatement> Parse(string text, ICollection<TranslationError> errors)
     {
         var statements = new List<SourceStatement>();
-        var lines = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        var lines = RemoveControlCharacters(text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         SourceStatement? pendingFunction = null;
 
         for (var index = 0; index < lines.Length; index++)
@@ -76,6 +76,12 @@ public static class SourceParser
             auxiliary = tokens[position].ToUpperInvariant();
             position++;
         }
+        else if (position < tokens.Count && tokens[position].IndexOf(',') is var comma and > 0 && IsAuxiliary(operation, tokens[position][..comma]))
+        {
+            // Older form with the operator separated by a comma: "SELECT SNF,3,Bin1,Bin3".
+            auxiliary = tokens[position][..comma].ToUpperInvariant();
+            tokens[position] = tokens[position][(comma + 1)..];
+        }
 
         // Operands are a single token; anything after it is a trailing comment.
         var operands = position < tokens.Count ? SplitOperands(tokens[position]) : [];
@@ -95,8 +101,16 @@ public static class SourceParser
         "TEST" => Keywords.TestOperators.Contains(token),
         "GATE" => Keywords.GateOperators.Contains(token),
         "LOGIC" => Keywords.LogicOperators.Contains(token),
+        "COUNT" or "SELECT" => Keywords.SelectionOperators.Contains(token),
+        "REMOVE" or "SCAN" or "ALTER" => Keywords.GroupOperators.Contains(token),
         _ => false,
     };
+
+    /// <summary>NUL and other control characters (e.g. padding of binary model files) are treated as spaces.</summary>
+    private static string RemoveControlCharacters(string text) =>
+        text.Any(ch => char.IsControl(ch) && ch is not '\n' and not '\r' and not '\t')
+            ? new string(text.Select(ch => char.IsControl(ch) && ch is not '\n' and not '\r' and not '\t' ? ' ' : ch).ToArray())
+            : text;
 
     private static string StripComment(string line)
     {
@@ -166,7 +180,7 @@ public static class SourceParser
             tokens.Add(current.ToString());
         }
 
-        return tokens;
+        return JoinOperandsSplitAfterCommas(tokens);
     }
 
     /// <summary>Splits "A,B,(f(1,2)),D" on top-level commas, keeping empty operands.</summary>
@@ -199,5 +213,20 @@ public static class SourceParser
 
         operands.Add(current.ToString());
         return operands.Select(item => item.Trim()).ToList();
+    }
+
+    /// <summary>"A, B" is read as one operand field "A,B" (spaces after commas are tolerated, as in GPSS Studio).</summary>
+    private static List<string> JoinOperandsSplitAfterCommas(List<string> tokens)
+    {
+        for (var i = tokens.Count - 1; i > 0; i--)
+        {
+            if (tokens[i - 1].EndsWith(',') && !tokens[i].StartsWith(';'))
+            {
+                tokens[i - 1] += tokens[i];
+                tokens.RemoveAt(i);
+            }
+        }
+
+        return tokens;
     }
 }

@@ -101,13 +101,14 @@ public sealed class AdvanceBlock : Block
 public sealed class SplitBlock : Block
 {
     public required Expr Count { get; init; }
-    public required BlockRef Destination { get; init; }
+    /// <summary>Destination of the copies; the next sequential block when omitted.</summary>
+    public BlockRef? Destination { get; init; }
     public ParameterRef? SerialParameter { get; init; }
 
     public override BlockOutcome Execute(SimulationEngine engine, Transaction transaction)
     {
         var count = (int)engine.Eval(Count, transaction);
-        var destination = Destination.Resolve(engine, transaction);
+        var destination = Destination?.Resolve(engine, transaction) ?? Number + 1;
         var serialName = SerialParameter?.Resolve(engine, transaction);
         var serialBase = serialName is null ? 0 : transaction.GetParameter(serialName);
 

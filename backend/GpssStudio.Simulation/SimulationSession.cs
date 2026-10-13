@@ -42,7 +42,7 @@ public sealed class SimulationSession
         Id = id;
         ModelName = modelName;
         Model = model;
-        Engine = new SimulationEngine(model);
+        Engine = new SimulationEngine(model) { Journal = _journal.Add };
     }
 
     public string Id { get; }
@@ -138,7 +138,7 @@ public sealed class SimulationSession
         switch (statement.Kind)
         {
             case ControlKind.Initial:
-                ApplyInitial(Operand(0), Evaluate(Operand(1), 1));
+                ApplyInitial(Operand(0), Operand(1).Equals("UNSPECIFIED", StringComparison.OrdinalIgnoreCase) ? 0 : Evaluate(Operand(1), 1));
                 break;
             case ControlKind.Start:
             {
@@ -206,25 +206,41 @@ public sealed class SimulationSession
         }
     }
 
+    /// <summary>INITIAL X$Name,V | LS$Name | LR$Name | MX$Name(m,n),V | MatrixName,V (all cells).</summary>
     private void ApplyInitial(string target, double value)
     {
-        var dollar = target.IndexOf('$');
-        var family = dollar > 0 ? target[..dollar].ToUpperInvariant() : "X";
-        var name = dollar > 0 ? target[(dollar + 1)..] : target;
-
-        switch (family)
+        Expr reference;
+        try
         {
-            case "X":
-                Engine.Savevalue(name).Value = value;
+            reference = ExpressionParser.Parse(target);
+        }
+        catch (FormatException)
+        {
+            throw new SimulationException($"INITIAL: неверный операнд A \"{target}\".");
+        }
+
+        switch (reference)
+        {
+            case SnaExpr { Family: "X" } savevalue:
+                Engine.Savevalue(savevalue.Argument).Value = value;
                 break;
-            case "LS":
-                Engine.Logic(name).IsSet = true;
+            case SnaExpr { Family: "LS" } set:
+                Engine.Logic(set.Argument).IsSet = value != 0;
                 break;
-            case "LR":
-                Engine.Logic(name).IsSet = false;
+            case SnaExpr { Family: "LR" } reset:
+                Engine.Logic(reset.Argument).IsSet = false;
+                break;
+            case MatrixCellExpr cell:
+                Engine.Matrix(cell.ResolveMatrix(Engine, null))[MatrixCellExpr.Index(cell.Row, Engine, null), MatrixCellExpr.Index(cell.Column, Engine, null)] = value;
+                break;
+            case NameExpr name when Model.Matrices.ContainsKey(name.Name):
+                Engine.Matrix(name.Name).Fill(value);
+                break;
+            case NameExpr name:
+                Engine.Savevalue(name.Name).Value = value;
                 break;
             default:
-                throw new SimulationException($"INITIAL поддерживает X$, LS$ и LR$, получено {target}.");
+                throw new SimulationException($"INITIAL поддерживает X$, LS$, LR$, MX$ и имена матриц, получено {target}.");
         }
     }
 

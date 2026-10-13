@@ -4,9 +4,10 @@ using System.Text.RegularExpressions;
 namespace GpssStudio.Simulation.Expressions;
 
 /// <summary>
-/// Recursive-descent parser for GPSS World expressions:
-/// numbers, names, SNAs (<c>Q$BUF</c>, <c>P1</c>, <c>RN2</c>), library procedures and operators
-/// <c>+ - * / \ @ ^</c>, comparisons (<c>= != &lt; &lt;= &gt; &gt;=</c>, <c>'G'</c> etc.) and <c>&amp; |</c>.
+/// Recursive-descent parser for GPSS World expressions: numbers, strings, names, SNAs (<c>Q$BUF</c>,
+/// <c>P1</c>, <c>RN2</c>, indirect <c>Q*Param</c>, matrix cells <c>MX$Name(r,c)</c>), library procedures
+/// and operators with the GPSS World precedence (highest first): <c>^</c>; <c># * / \</c>; <c>@</c>;
+/// <c>+ -</c>; <c>&lt; &lt;= &gt; &gt;=</c> ('L' 'LE' 'G' 'GE'); <c>= !=</c> ('E' 'NE'); <c>&amp;</c> ('AND'); <c>|</c> ('OR').
 /// </summary>
 public sealed partial class ExpressionParser
 {
@@ -15,7 +16,7 @@ public sealed partial class ExpressionParser
     {
         "Q", "QA", "QM", "QC", "QZ", "QT", "QX", "F", "FC", "FR", "FT", "FI", "FV",
         "S", "R", "SR", "SM", "SC", "SA", "ST", "SE", "SF", "SV", "X", "P", "FN", "V", "BV",
-        "N", "W", "LS", "LR", "TB", "TC", "TD", "CH", "CA", "CM", "CC", "RN",
+        "N", "W", "LS", "LR", "TB", "TC", "TD", "CH", "CA", "CM", "CC", "CT", "RN", "MX", "GN", "GT", "MB",
     };
 
     /// <summary>Attributes that need no argument.</summary>
@@ -53,7 +54,7 @@ public sealed partial class ExpressionParser
     private Expr ParseOr()
     {
         var left = ParseAnd();
-        while (TryConsume("|"))
+        while (TryConsume("|") || TryConsumeWord("'OR'"))
         {
             left = new BinaryExpr("|", left, ParseAnd());
         }
@@ -63,39 +64,48 @@ public sealed partial class ExpressionParser
 
     private Expr ParseAnd()
     {
-        var left = ParseComparison();
-        while (TryConsume("&"))
+        var left = ParseEquality();
+        while (TryConsume("&") || TryConsumeWord("'AND'"))
         {
-            left = new BinaryExpr("&", left, ParseComparison());
+            left = new BinaryExpr("&", left, ParseEquality());
         }
 
         return left;
     }
 
-    private Expr ParseComparison()
+    private Expr ParseEquality()
     {
-        var left = ParseAdditive();
-        while (true)
+        var left = ParseRelational();
+        while (TryConsumeOperator([("'NE'", "!="), ("'E'", "="), ("!=", "!="), ("<>", "!="), ("=", "=")]) is { } op)
         {
-            var op = TryConsumeComparison();
-            if (op is null)
-            {
-                return left;
-            }
-
-            left = new BinaryExpr(op, left, ParseAdditive());
+            left = new BinaryExpr(op, left, ParseRelational());
         }
+
+        return left;
     }
 
-    private string? TryConsumeComparison()
+    private Expr ParseRelational()
+    {
+        var left = ParseAdditive();
+        while (TryConsumeOperator([("'GE'", ">="), ("'LE'", "<="), ("'G'", ">"), ("'L'", "<"), ("<=", "<="), (">=", ">="), ("<", "<"), (">", ">")]) is { } op)
+        {
+            left = new BinaryExpr(op, left, ParseAdditive());
+        }
+
+        return left;
+    }
+
+    private string? TryConsumeOperator(ReadOnlySpan<(string Token, string Operator)> operators)
     {
         SkipWhitespace();
-        foreach (var (token, op) in new[]
-                 {
-                     ("'GE'", ">="), ("'LE'", "<="), ("'NE'", "!="), ("'G'", ">"), ("'L'", "<"), ("'E'", "="),
-                     ("<=", "<="), (">=", ">="), ("!=", "!="), ("<>", "!="), ("<", "<"), (">", ">"), ("=", "="),
-                 })
+        foreach (var (token, op) in operators)
         {
+            // "<" must not swallow "<>", which belongs to the equality level.
+            if (token == "<" && _position + 1 < _text.Length && _text[_position + 1] == '>')
+            {
+                continue;
+            }
+
             if (string.Compare(_text, _position, token, 0, token.Length, StringComparison.OrdinalIgnoreCase) == 0)
             {
                 _position += token.Length;
@@ -106,18 +116,20 @@ public sealed partial class ExpressionParser
         return null;
     }
 
+    private bool TryConsumeWord(string word) => TryConsumeOperator([(word, word)]) is not null;
+
     private Expr ParseAdditive()
     {
-        var left = ParseTerm();
+        var left = ParseModulo();
         while (true)
         {
             if (TryConsume("+"))
             {
-                left = new BinaryExpr("+", left, ParseTerm());
+                left = new BinaryExpr("+", left, ParseModulo());
             }
             else if (TryConsume("-"))
             {
-                left = new BinaryExpr("-", left, ParseTerm());
+                left = new BinaryExpr("-", left, ParseModulo());
             }
             else
             {
@@ -126,12 +138,24 @@ public sealed partial class ExpressionParser
         }
     }
 
+    private Expr ParseModulo()
+    {
+        var left = ParseTerm();
+        while (TryConsume("@"))
+        {
+            left = new BinaryExpr("@", left, ParseTerm());
+        }
+
+        return left;
+    }
+
     private Expr ParseTerm()
     {
         var left = ParsePower();
         while (true)
         {
-            string? op = TryConsume("*") ? "*" : TryConsume("/") ? "/" : TryConsume("\\") ? "\\" : TryConsume("@") ? "@" : null;
+            // "#" is the GPSS World multiplication operator; "*" is accepted as well.
+            string? op = TryConsume("#") || TryConsume("*") ? "*" : TryConsume("/") ? "/" : TryConsume("\\") ? "\\" : null;
             if (op is null)
             {
                 return left;
@@ -172,6 +196,26 @@ public sealed partial class ExpressionParser
             return inner;
         }
 
+        if (_text[_position] == '"')
+        {
+            var end = _text.IndexOf('"', _position + 1);
+            if (end < 0)
+            {
+                throw new FormatException("Незакрытая строковая константа.");
+            }
+
+            var literal = _text[(_position + 1)..end];
+            _position = end + 1;
+            return new StringExpr(literal);
+        }
+
+        if (_text[_position] == '*')
+        {
+            // "*Param" is the value of a parameter of the active transaction.
+            _position++;
+            return new SnaExpr("P", ReadSpecifier());
+        }
+
         var numberMatch = NumberPattern().Match(_text, _position);
         if (numberMatch.Success && numberMatch.Index == _position)
         {
@@ -187,6 +231,28 @@ public sealed partial class ExpressionParser
 
         _position += identifierMatch.Length;
         var identifier = identifierMatch.Value;
+
+        // Indirect addressing: "Q*Param", "FN*2", "MX*Sales(...)".
+        if (_position < _text.Length && _text[_position] == '*' && Families.Contains(identifier) && _position + 1 < _text.Length
+            && (char.IsLetterOrDigit(_text[_position + 1]) || _text[_position + 1] is '_' or '$'))
+        {
+            _position++;
+            var parameter = ReadSpecifier();
+            var family = identifier.ToUpperInvariant();
+            return family == "MX" ? ParseMatrixCell(parameter, indirect: true) : new SnaExpr(family, parameter, indirect: true);
+        }
+
+        var dollar = identifier.IndexOf('$');
+        if (dollar > 0 && identifier[..dollar].Equals("MX", StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseMatrixCell(identifier[(dollar + 1)..], indirect: false);
+        }
+
+        var numberedMatrix = NumberedSnaPattern().Match(identifier);
+        if (numberedMatrix.Success && numberedMatrix.Groups[1].Value.Equals("MX", StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseMatrixCell(numberedMatrix.Groups[2].Value, indirect: false);
+        }
 
         SkipWhitespace();
         if (_position < _text.Length && _text[_position] == '(' && !identifier.Contains('$'))
@@ -208,6 +274,35 @@ public sealed partial class ExpressionParser
         }
 
         return ParseIdentifier(identifier);
+    }
+
+    /// <summary>Name or number after "*" or "$" ("$" in "*$Name" is optional).</summary>
+    private string ReadSpecifier()
+    {
+        if (_position < _text.Length && _text[_position] == '$')
+        {
+            _position++;
+        }
+
+        var match = SpecifierPattern().Match(_text, _position);
+        if (!match.Success || match.Index != _position)
+        {
+            throw new FormatException("Ожидалось имя или номер после \"*\".");
+        }
+
+        _position += match.Length;
+        return match.Value;
+    }
+
+    /// <summary>MX$Name(row,column): the row and column may themselves use indirect addressing.</summary>
+    private Expr ParseMatrixCell(string matrix, bool indirect)
+    {
+        Expect("(");
+        var row = ParseOr();
+        Expect(",");
+        var column = ParseOr();
+        Expect(")");
+        return new MatrixCellExpr(matrix, indirect, row, column);
     }
 
     /// <summary>Classifies an identifier as SNA or plain name.</summary>
@@ -276,4 +371,7 @@ public sealed partial class ExpressionParser
 
     [GeneratedRegex(@"^([A-Za-z]+)(\d+)$")]
     private static partial Regex NumberedSnaPattern();
+
+    [GeneratedRegex(@"[\p{L}\p{N}_]+")]
+    private static partial Regex SpecifierPattern();
 }

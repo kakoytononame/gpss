@@ -14,6 +14,8 @@ public sealed record VariableDefinition(string Name, Expr Expression, VariableKi
 
 public sealed record StorageDefinition(string Name, int Capacity);
 
+public sealed record MatrixDefinition(string Name, int Rows, int Columns);
+
 public sealed record TableDefinition(string Name, Expr Argument, double FirstUpperLimit, double Width, int Classes);
 
 /// <summary>GPSS FUNCTION: discrete (D), continuous (C), list (L) or attribute-valued (E).</summary>
@@ -22,10 +24,13 @@ public sealed class FunctionDefinition
     public required string Name { get; init; }
     public required Expr Argument { get; init; }
     public required char Type { get; init; }
-    public required IReadOnlyList<(double X, Expr Y)> Points { get; init; }
+    /// <summary>Function points; X may be an expression such as <c>(X$Start#60)</c>.</summary>
+    public required IReadOnlyList<(Expr X, Expr Y)> Points { get; init; }
 
     /// <summary>RNj used directly as argument yields a fraction in [0, 1).</summary>
     public int? RandomStream { get; init; }
+
+    private double X(int index, SimulationEngine engine, Transaction? transaction) => Points[index].X.Evaluate(engine, transaction);
 
     public double Evaluate(SimulationEngine engine, Transaction? transaction)
     {
@@ -45,17 +50,19 @@ public sealed class FunctionDefinition
             }
             case 'C':
             {
-                if (x <= Points[0].X)
+                if (x <= X(0, engine, transaction))
                 {
                     return Points[0].Y.Evaluate(engine, transaction);
                 }
 
                 for (var i = 1; i < Points.Count; i++)
                 {
-                    if (x <= Points[i].X)
+                    var x1 = X(i, engine, transaction);
+                    if (x <= x1)
                     {
-                        var (x0, y0) = (Points[i - 1].X, Points[i - 1].Y.Evaluate(engine, transaction));
-                        var (x1, y1) = (Points[i].X, Points[i].Y.Evaluate(engine, transaction));
+                        var x0 = X(i - 1, engine, transaction);
+                        var y0 = Points[i - 1].Y.Evaluate(engine, transaction);
+                        var y1 = Points[i].Y.Evaluate(engine, transaction);
                         return x1 == x0 ? y1 : y0 + (y1 - y0) * (x - x0) / (x1 - x0);
                     }
                 }
@@ -64,11 +71,11 @@ public sealed class FunctionDefinition
             }
             default:
             {
-                foreach (var (pointX, y) in Points)
+                for (var i = 0; i < Points.Count; i++)
                 {
-                    if (x <= pointX)
+                    if (x <= X(i, engine, transaction))
                     {
-                        return y.Evaluate(engine, transaction);
+                        return Points[i].Y.Evaluate(engine, transaction);
                     }
                 }
 

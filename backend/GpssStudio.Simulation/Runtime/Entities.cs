@@ -91,6 +91,48 @@ public sealed class UserChain(string name, int number) : Entity(name, number)
     public bool LinkIndicator { get; set; }
     public int Entries { get; set; }
     public int MaxContent { get; set; }
+    public double TotalTime { get; set; }
+    public TimeIntegral ContentIntegral { get; } = new();
+}
+
+/// <summary>Two-dimensional GPSS matrix (MATRIX / MSAVEVALUE / MX$). Higher dimensions are fixed at index 1.</summary>
+public sealed class MatrixEntity(string name, int number, int rows, int columns) : Entity(name, number)
+{
+    private readonly double[] _cells = new double[rows * columns];
+
+    public int Rows { get; } = rows;
+    public int Columns { get; } = columns;
+
+    public double this[int row, int column]
+    {
+        get => _cells[Offset(row, column)];
+        set => _cells[Offset(row, column)] = value;
+    }
+
+    public void Fill(double value) => Array.Fill(_cells, value);
+
+    private int Offset(int row, int column)
+    {
+        if (row < 1 || row > Rows || column < 1 || column > Columns)
+        {
+            throw new Expressions.SimulationException($"элемент ({row},{column}) вне границ матрицы {Name} ({Rows}x{Columns}).");
+        }
+
+        return (row - 1) * Columns + (column - 1);
+    }
+}
+
+/// <summary>Numeric group (JOIN / REMOVE / EXAMINE with a value).</summary>
+public sealed class NumericGroup(string name, int number) : Entity(name, number)
+{
+    public HashSet<double> Members { get; } = [];
+}
+
+/// <summary>Transaction group (JOIN / REMOVE / EXAMINE / SCAN / ALTER).</summary>
+public sealed class TransactionGroup(string name, int number) : Entity(name, number)
+{
+    /// <summary>Members in order of joining.</summary>
+    public List<Transaction> Members { get; } = [];
 }
 
 /// <summary>Frequency table (TABLE statement + TABULATE block).</summary>
@@ -128,4 +170,13 @@ public sealed class TableEntity(string name, int number, Expressions.Expr argume
         Sum = 0;
         SumOfSquares = 0;
     }
+}
+
+/// <summary>Open data stream: a cursor over an in-memory text file.</summary>
+public sealed class DataStream(string fileName, List<string> lines)
+{
+    public string FileName { get; } = fileName;
+    public List<string> Lines { get; } = lines;
+    public int Position { get; set; }
+    public int ErrorCode { get; set; }
 }

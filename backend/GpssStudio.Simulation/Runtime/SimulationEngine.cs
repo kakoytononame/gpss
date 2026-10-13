@@ -35,15 +35,25 @@ public sealed class SimulationEngine : IEvaluationContext
     private readonly List<Transaction> _retryChain = [];
     private const int RetryOnClockLimit = 1000;
     private readonly SortedSet<Transaction> _futureChain = new(Comparer<Transaction>.Create(CompareFutureEvents));
+    // Entities are keyed by entity number: a name and its EQU number (or a number held in a
+    // parameter) address the same entity, as in GPSS World.
     private readonly Dictionary<string, int> _entityNumbers = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, Facility> _facilities = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, QueueEntity> _queues = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, Storage> _storages = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, LogicSwitch> _logicSwitches = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, Savevalue> _savevalues = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, TableEntity> _tables = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, UserChain> _userChains = new(StringComparer.OrdinalIgnoreCase);
+    private int _nextNamedEntityNumber = 10000;
+    private readonly Dictionary<int, Facility> _facilities = [];
+    private readonly Dictionary<int, QueueEntity> _queues = [];
+    private readonly Dictionary<int, Storage> _storages = [];
+    private readonly Dictionary<int, LogicSwitch> _logicSwitches = [];
+    private readonly Dictionary<int, Savevalue> _savevalues = [];
+    private readonly Dictionary<int, TableEntity> _tables = [];
+    private readonly Dictionary<int, UserChain> _userChains = [];
+    private readonly Dictionary<int, MatrixEntity> _matrices = [];
+    private readonly Dictionary<int, NumericGroup> _numericGroups = [];
+    private readonly Dictionary<int, TransactionGroup> _transactionGroups = [];
     private readonly RandomStreams _random = new();
+    private readonly Dictionary<int, Transaction> _liveTransactions = [];
+    private readonly Dictionary<int, DataStream> _streams = [];
+    private const int MaxTraceLinesPerRun = 10_000;
+    private int _traceLines;
 
     /// <summary>Time series for result charts, keyed "Q:name", "S:name", "F:name".</summary>
     public SeriesRecorder Series { get; } = new();
@@ -83,6 +93,15 @@ public sealed class SimulationEngine : IEvaluationContext
     /// <summary>Receives a line for every block entry while stepping (STEP).</summary>
     public Action<string>? Trace { get; set; }
 
+    /// <summary>Receives block entries of transactions switched on by TRACE.</summary>
+    public Action<string>? Journal { get; set; }
+
+    /// <summary>In-memory text files used by the data stream blocks (OPEN / READ / WRITE / SEEK / CLOSE).</summary>
+    public Dictionary<string, List<string>> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Transactions that exist in the model, by number.</summary>
+    public IReadOnlyDictionary<int, Transaction> LiveTransactions => _liveTransactions;
+
     public IReadOnlyCollection<Facility> Facilities => _facilities.Values;
     public IReadOnlyCollection<QueueEntity> Queues => _queues.Values;
     public IReadOnlyCollection<Storage> Storages => _storages.Values;
@@ -90,6 +109,9 @@ public sealed class SimulationEngine : IEvaluationContext
     public IReadOnlyCollection<Savevalue> Savevalues => _savevalues.Values;
     public IReadOnlyCollection<TableEntity> Tables => _tables.Values;
     public IReadOnlyCollection<UserChain> UserChains => _userChains.Values;
+    public IReadOnlyCollection<MatrixEntity> Matrices => _matrices.Values;
+    public IReadOnlyCollection<NumericGroup> NumericGroups => _numericGroups.Values;
+    public IReadOnlyCollection<TransactionGroup> TransactionGroups => _transactionGroups.Values;
     public IEnumerable<Transaction> FutureEvents => _futureChain;
     public IEnumerable<Transaction> CurrentEvents => _currentChain;
     public IReadOnlyList<Transaction> RetryChain => _retryChain;
@@ -105,12 +127,20 @@ public sealed class SimulationEngine : IEvaluationContext
     {
         foreach (var definition in _model.Storages.Values)
         {
-            _storages[definition.Name] = new Storage(definition.Name, EntityNumber(definition.Name), definition.Capacity);
+            var number = EntityNumber(definition.Name);
+            _storages[number] = new Storage(definition.Name, number, definition.Capacity);
         }
 
         foreach (var definition in _model.Tables.Values)
         {
-            _tables[definition.Name] = new TableEntity(definition.Name, EntityNumber(definition.Name), definition.Argument, definition.FirstUpperLimit, definition.Width, definition.Classes);
+            var number = EntityNumber(definition.Name);
+            _tables[number] = new TableEntity(definition.Name, number, definition.Argument, definition.FirstUpperLimit, definition.Width, definition.Classes);
+        }
+
+        foreach (var definition in _model.Matrices.Values)
+        {
+            var number = EntityNumber(definition.Name);
+            _matrices[number] = new MatrixEntity(definition.Name, number, definition.Rows, definition.Columns);
         }
     }
 
@@ -191,6 +221,8 @@ public sealed class SimulationEngine : IEvaluationContext
         {
             chain.Entries = chain.Members.Count;
             chain.MaxContent = chain.Members.Count;
+            chain.TotalTime = 0;
+            chain.ContentIntegral.Reset(AbsoluteClock);
         }
     }
 
@@ -207,7 +239,12 @@ public sealed class SimulationEngine : IEvaluationContext
         _savevalues.Clear();
         _tables.Clear();
         _userChains.Clear();
+        _matrices.Clear();
+        _numericGroups.Clear();
+        _transactionGroups.Clear();
         _random.Reset();
+        _liveTransactions.Clear();
+        _streams.Clear();
         Series.Clear();
         CreateDefinedEntities();
 
@@ -248,6 +285,7 @@ public sealed class SimulationEngine : IEvaluationContext
     {
         _stepBudget = stepBudget;
         _entriesThisRun = 0;
+        _traceLines = 0;
         _runStopwatch.Restart();
         State = RunState.Paused;
 
@@ -374,7 +412,11 @@ public sealed class SimulationEngine : IEvaluationContext
             if (_stepBudget is not null)
             {
                 _stepBudget--;
-                Trace?.Invoke($"Транзакт {transaction.Number} вошёл в блок {block.Number} {block.Operation}{(block.OperandText.Length > 0 ? " " + block.OperandText : string.Empty)}. Время {AbsoluteClock:F3}.");
+                Trace?.Invoke(DescribeEntry(transaction, block));
+            }
+            else if (transaction.Traced && Journal is not null && _traceLines++ < MaxTraceLinesPerRun)
+            {
+                Journal(DescribeEntry(transaction, block));
             }
 
             transaction.NextBlock = block.Number + 1;
@@ -404,6 +446,9 @@ public sealed class SimulationEngine : IEvaluationContext
             }
         }
     }
+
+    private string DescribeEntry(Transaction transaction, Block block) =>
+        $"Транзакт {transaction.Number} вошёл в блок {block.Number} {block.Operation}{(block.OperandText.Length > 0 ? " " + block.OperandText : string.Empty)}. Время {AbsoluteClock:F3}.";
 
     private Block BlockAt(int number, Transaction transaction)
     {
@@ -462,6 +507,7 @@ public sealed class SimulationEngine : IEvaluationContext
 
         var transaction = new Transaction { Number = _nextTransactionNumber++, Priority = priority, MarkTime = AbsoluteClock };
         transaction.AssemblySet = transaction.Number;
+        _liveTransactions[transaction.Number] = transaction;
         return transaction;
     }
 
@@ -512,6 +558,7 @@ public sealed class SimulationEngine : IEvaluationContext
 
     public void DestroyTransaction(Transaction transaction)
     {
+        _liveTransactions.Remove(transaction.Number);
         RemoveFromCurrentChain(transaction);
         _retryChain.Remove(transaction);
         if (transaction.OnFutureChain)
@@ -524,19 +571,103 @@ public sealed class SimulationEngine : IEvaluationContext
         {
             throw new SimulationException($"Транзакт {transaction.Number} уничтожен, не освободив устройство {facility.Name}.");
         }
+
+        foreach (var group in transaction.Groups)
+        {
+            group.Members.Remove(transaction);
+        }
+
+        transaction.Groups.Clear();
     }
 
     public void DecrementTerminationCount(int count) => TerminationCount -= count;
+
+    public Transaction? FindTransaction(int number) => _liveTransactions.GetValueOrDefault(number);
+
+    /// <summary>
+    /// DISPLACE: takes the transaction off the future events, retry, delay and user chains and sends it to
+    /// <paramref name="destination"/>. Returns the residual ADVANCE time if it was on the future events chain.
+    /// </summary>
+    public double? Displace(Transaction transaction, int destination)
+    {
+        double? residual = null;
+        if (transaction.OnFutureChain)
+        {
+            residual = transaction.MoveTime - AbsoluteClock;
+            _futureChain.Remove(transaction);
+            transaction.OnFutureChain = false;
+        }
+
+        _retryChain.Remove(transaction);
+        foreach (var facility in _facilities.Values)
+        {
+            facility.DelayChain.Remove(transaction);
+        }
+
+        foreach (var storage in _storages.Values)
+        {
+            var node = storage.DelayChain.First;
+            while (node is not null)
+            {
+                var next = node.Next;
+                if (node.Value.Transaction == transaction)
+                {
+                    storage.DelayChain.Remove(node);
+                }
+
+                node = next;
+            }
+        }
+
+        foreach (var chain in _userChains.Values)
+        {
+            chain.Members.Remove(transaction);
+        }
+
+        transaction.NextBlock = destination;
+        AddToCurrentChain(transaction);
+        return residual;
+    }
+
+    // ----------------------------------------------------------------- data streams
+
+    public void OpenStream(int number, string fileName)
+    {
+        if (!Files.TryGetValue(fileName, out var lines))
+        {
+            lines = [];
+            Files[fileName] = lines;
+        }
+
+        _streams[number] = new DataStream(fileName, lines);
+    }
+
+    public DataStream? DataStream(int number) => _streams.GetValueOrDefault(number);
+
+    public DataStream? CloseStream(int number)
+    {
+        if (_streams.Remove(number, out var stream))
+        {
+            return stream;
+        }
+
+        return null;
+    }
+
+    /// <summary>Text value of an operand: string constants as is, numbers in invariant format.</summary>
+    public string EvalText(Expr expression, Transaction? transaction) =>
+        expression is StringExpr text ? text.Value : Eval(expression, transaction).ToString("0.##########", CultureInfo.InvariantCulture);
 
     // ----------------------------------------------------------------- facilities
 
     public Facility Facility(string name)
     {
-        if (!_facilities.TryGetValue(name, out var facility))
+        var number = EntityNumber(name);
+        if (!_facilities.TryGetValue(number, out var facility))
         {
-            facility = new Facility(name, EntityNumber(name));
+            facility = new Facility(name, number);
             facility.Busy.Reset(StatisticsStartTime);
-            _facilities[name] = facility;
+            _facilities[number] = facility;
         }
 
         return facility;
@@ -656,11 +787,12 @@ public sealed class SimulationEngine : IEvaluationContext
 
     public QueueEntity Queue(string name)
     {
-        if (!_queues.TryGetValue(name, out var queue))
+        var number = EntityNumber(name);
+        if (!_queues.TryGetValue(number, out var queue))
         {
-            queue = new QueueEntity(name, EntityNumber(name));
+            queue = new QueueEntity(name, number);
             queue.ContentIntegral.Reset(StatisticsStartTime);
-            _queues[name] = queue;
+            _queues[number] = queue;
         }
 
         return queue;
@@ -674,8 +806,8 @@ public sealed class SimulationEngine : IEvaluationContext
         queue.Entries += units;
         queue.MaxContent = Math.Max(queue.MaxContent, queue.Content);
         Series.Record($"Q:{queue.Name}", AbsoluteClock, queue.Content);
-        transaction.QueueEntryTimes[queue.Name] = AbsoluteClock;
-        transaction.QueueUnits[queue.Name] = transaction.QueueUnits.GetValueOrDefault(queue.Name) + units;
+        transaction.QueueEntryTimes[queue.Number] = AbsoluteClock;
+        transaction.QueueUnits[queue.Number] = transaction.QueueUnits.GetValueOrDefault(queue.Number) + units;
     }
 
     public void DepartQueue(QueueEntity queue, Transaction transaction, int units)
@@ -690,7 +822,7 @@ public sealed class SimulationEngine : IEvaluationContext
         _statusChanged = true;
         Series.Record($"Q:{queue.Name}", AbsoluteClock, queue.Content);
 
-        if (transaction.QueueEntryTimes.TryGetValue(queue.Name, out var entryTime))
+        if (transaction.QueueEntryTimes.TryGetValue(queue.Number, out var entryTime))
         {
             var residence = AbsoluteClock - entryTime;
             queue.TotalTime += residence * units;
@@ -699,15 +831,15 @@ public sealed class SimulationEngine : IEvaluationContext
                 queue.ZeroEntries += units;
             }
 
-            var remaining = transaction.QueueUnits.GetValueOrDefault(queue.Name) - units;
+            var remaining = transaction.QueueUnits.GetValueOrDefault(queue.Number) - units;
             if (remaining <= 0)
             {
-                transaction.QueueEntryTimes.Remove(queue.Name);
-                transaction.QueueUnits.Remove(queue.Name);
+                transaction.QueueEntryTimes.Remove(queue.Number);
+                transaction.QueueUnits.Remove(queue.Number);
             }
             else
             {
-                transaction.QueueUnits[queue.Name] = remaining;
+                transaction.QueueUnits[queue.Number] = remaining;
             }
         }
     }
@@ -715,7 +847,7 @@ public sealed class SimulationEngine : IEvaluationContext
     // ----------------------------------------------------------------- storages
 
     public Storage Storage(string name) =>
-        _storages.TryGetValue(name, out var storage)
+        _storages.TryGetValue(EntityNumber(name), out var storage)
             ? storage
             : throw new SimulationException($"многоканальное устройство {name} не описано оператором STORAGE.");
 
@@ -785,46 +917,66 @@ public sealed class SimulationEngine : IEvaluationContext
 
     // ----------------------------------------------------------------- other entities
 
-    public LogicSwitch Logic(string name)
+    private static T GetOrCreate<T>(Dictionary<int, T> entities, int number, Func<T> create)
     {
-        if (!_logicSwitches.TryGetValue(name, out var logicSwitch))
+        if (!entities.TryGetValue(number, out var entity))
         {
-            logicSwitch = new LogicSwitch(name, EntityNumber(name));
-            _logicSwitches[name] = logicSwitch;
+            entity = create();
+            entities[number] = entity;
         }
 
-        return logicSwitch;
+        return entity;
+    }
+
+    public LogicSwitch Logic(string name)
+    {
+        var number = EntityNumber(name);
+        return GetOrCreate(_logicSwitches, number, () => new LogicSwitch(name, number));
     }
 
     public Savevalue Savevalue(string name)
     {
-        if (!_savevalues.TryGetValue(name, out var savevalue))
-        {
-            savevalue = new Savevalue(name, EntityNumber(name));
-            _savevalues[name] = savevalue;
-        }
-
-        return savevalue;
+        var number = EntityNumber(name);
+        return GetOrCreate(_savevalues, number, () => new Savevalue(name, number));
     }
 
     public TableEntity Table(string name) =>
-        _tables.TryGetValue(name, out var table) ? table : throw new SimulationException($"таблица {name} не описана оператором TABLE.");
+        _tables.TryGetValue(EntityNumber(name), out var table) ? table : throw new SimulationException($"таблица {name} не описана оператором TABLE.");
+
+    public MatrixEntity Matrix(string name) =>
+        _matrices.TryGetValue(EntityNumber(name), out var matrix) ? matrix : throw new SimulationException($"матрица {name} не описана оператором MATRIX.");
+
+    public double MatrixValue(string matrix, int row, int column) => Matrix(matrix)[row, column];
+
+    public NumericGroup NumericGroup(string name)
+    {
+        var number = EntityNumber(name);
+        return GetOrCreate(_numericGroups, number, () => new NumericGroup(name, number));
+    }
+
+    public TransactionGroup TransactionGroup(string name)
+    {
+        var number = EntityNumber(name);
+        return GetOrCreate(_transactionGroups, number, () => new TransactionGroup(name, number));
+    }
 
     public UserChain UserChain(string name)
     {
-        if (!_userChains.TryGetValue(name, out var chain))
+        var number = EntityNumber(name);
+        return GetOrCreate(_userChains, number, () =>
         {
-            chain = new UserChain(name, EntityNumber(name));
-            _userChains[name] = chain;
-        }
-
-        return chain;
+            var chain = new UserChain(name, number);
+            chain.ContentIntegral.Reset(StatisticsStartTime);
+            return chain;
+        });
     }
 
     public void LinkToUserChain(UserChain chain, Transaction transaction, string order)
     {
         RemoveFromCurrentChain(transaction);
+        chain.ContentIntegral.Accumulate(AbsoluteClock, chain.Members.Count);
         chain.Entries++;
+        transaction.UserChainEntryTime = AbsoluteClock;
 
         if (order == "LIFO")
         {
@@ -861,6 +1013,8 @@ public sealed class SimulationEngine : IEvaluationContext
         var moved = 0;
         while (moved < limit && chain.Members.First is { } first)
         {
+            chain.ContentIntegral.Accumulate(AbsoluteClock, chain.Members.Count);
+            chain.TotalTime += AbsoluteClock - first.Value.UserChainEntryTime;
             chain.Members.RemoveFirst();
             first.Value.NextBlock = destination;
             AddToCurrentChain(first.Value);
@@ -877,11 +1031,24 @@ public sealed class SimulationEngine : IEvaluationContext
 
     // ----------------------------------------------------------------- names
 
+    /// <summary>Numbers come from the name itself ("3"), from an EQU constant, or are assigned from 10000 on.</summary>
     private int RegisterEntityNumber(string name)
     {
         if (!_entityNumbers.TryGetValue(name, out var number))
         {
-            number = int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numeric) ? numeric : 10000 + _entityNumbers.Count(pair => pair.Value >= 10000);
+            if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numeric))
+            {
+                number = numeric;
+            }
+            else if (_model.Constants.TryGetValue(name, out var constant) && constant >= 1 && constant == Math.Floor(constant))
+            {
+                number = (int)constant;
+            }
+            else
+            {
+                number = _nextNamedEntityNumber++;
+            }
+
             _entityNumbers[name] = number;
         }
 
@@ -937,6 +1104,18 @@ public sealed class SimulationEngine : IEvaluationContext
         return _model.Labels.TryGetValue(name, out var block) ? block : EntityNumber(name);
     }
 
+    /// <summary>Block number for a label or number; throws if the block does not exist.</summary>
+    public int BlockNumber(string reference)
+    {
+        var number = _model.Labels.TryGetValue(reference, out var labelled) ? labelled : int.TryParse(reference, out var numeric) ? numeric : 0;
+        if (number < 1 || number > _model.Blocks.Count)
+        {
+            throw new SimulationException($"блок {reference} не существует.");
+        }
+
+        return number;
+    }
+
     public double Sna(string family, string argument, Transaction? transaction)
     {
         Transaction RequireTransaction() => transaction ?? throw new SimulationException($"СЧА {family} требует активного транзакта.");
@@ -964,7 +1143,16 @@ public sealed class SimulationEngine : IEvaluationContext
             case "TG1":
                 return TerminationCount;
             case "X":
-                return _savevalues.TryGetValue(argument, out var savevalue) ? savevalue.Value : 0;
+                return _savevalues.TryGetValue(EntityNumber(argument), out var savevalue) ? savevalue.Value : 0;
+            case "GN":
+                return _numericGroups.TryGetValue(EntityNumber(argument), out var numericGroup) ? numericGroup.Members.Count : 0;
+            case "GT":
+                return _transactionGroups.TryGetValue(EntityNumber(argument), out var transactionGroup) ? transactionGroup.Members.Count : 0;
+            case "MB":
+            {
+                var number = BlockNumber(argument);
+                return _model.Blocks[number - 1] is MatchBlock match && match.HasWaitingFamilyMember(RequireTransaction()) ? 1 : 0;
+            }
             case "FN":
                 return _model.Functions.TryGetValue(argument, out var function)
                     ? function.Evaluate(this, transaction)
@@ -981,24 +1169,18 @@ public sealed class SimulationEngine : IEvaluationContext
             case "N":
             case "W":
             {
-                var number = _model.Labels.TryGetValue(argument, out var labelled) ? labelled : int.TryParse(argument, out var numeric) ? numeric : 0;
-                if (number < 1 || number > _model.Blocks.Count)
-                {
-                    throw new SimulationException($"блок {argument} не существует.");
-                }
-
-                var block = _model.Blocks[number - 1];
+                var block = _model.Blocks[BlockNumber(argument) - 1];
                 return family == "N" ? block.EntryCount : block.CurrentCount;
             }
             case "LS":
-                return _logicSwitches.TryGetValue(argument, out var set) && set.IsSet ? 1 : 0;
+                return _logicSwitches.TryGetValue(EntityNumber(argument), out var set) && set.IsSet ? 1 : 0;
             case "LR":
-                return _logicSwitches.TryGetValue(argument, out var reset) && reset.IsSet ? 0 : 1;
+                return _logicSwitches.TryGetValue(EntityNumber(argument), out var reset) && reset.IsSet ? 0 : 1;
         }
 
         if (family.StartsWith('Q'))
         {
-            var queue = _queues.GetValueOrDefault(argument);
+            var queue = _queues.GetValueOrDefault(EntityNumber(argument));
             if (queue is null)
             {
                 return 0;
@@ -1020,7 +1202,7 @@ public sealed class SimulationEngine : IEvaluationContext
 
         if (family.StartsWith('F'))
         {
-            var facility = _facilities.GetValueOrDefault(argument);
+            var facility = _facilities.GetValueOrDefault(EntityNumber(argument));
             if (facility is null)
             {
                 return family == "FV" ? 1 : 0;
@@ -1073,13 +1255,14 @@ public sealed class SimulationEngine : IEvaluationContext
 
         if (family.StartsWith('C'))
         {
-            var chain = _userChains.GetValueOrDefault(argument);
+            var chain = _userChains.GetValueOrDefault(EntityNumber(argument));
             return family switch
             {
                 "CH" => chain?.Members.Count ?? 0,
                 "CC" => chain?.Entries ?? 0,
                 "CM" => chain?.MaxContent ?? 0,
-                "CA" => chain?.Members.Count ?? 0,
+                "CA" => chain is null ? 0 : chain.ContentIntegral.Average(AbsoluteClock, chain.Members.Count),
+                "CT" => chain is null || chain.Entries == 0 ? 0 : chain.ContentIntegral.Average(AbsoluteClock, chain.Members.Count) * RelativeClock / chain.Entries,
                 _ => throw new SimulationException($"Неизвестный СЧА {family}."),
             };
         }

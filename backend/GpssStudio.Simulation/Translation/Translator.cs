@@ -90,6 +90,11 @@ public static class Translator
             throw new FormatException("блок не поддерживается веб-версией симулятора.");
         }
 
+        if (Keywords.UnsupportedCommands.Contains(op))
+        {
+            throw new FormatException("команда не поддерживается веб-версией симулятора.");
+        }
+
         if (Keywords.SupportedBlocks.Contains(op))
         {
             var block = CreateBlock(statement, model);
@@ -141,7 +146,20 @@ public static class Translator
                 RegisterName(model, statement.Label);
                 return;
             case "MATRIX":
-                throw new FormatException("матрицы не поддерживаются веб-версией симулятора.");
+            {
+                var name = RequireLabel(statement);
+                RegisterName(model, name);
+                var rows = (int)RequireConstant(statement, 1, model, "число строк");
+                var columns = (int)RequireConstant(statement, 2, model, "число столбцов");
+                if (rows < 1 || columns < 1)
+                {
+                    throw new FormatException("размеры матрицы должны быть положительными.");
+                }
+
+                // Dimensions above the second are fixed at index 1 for MX$ and MSAVEVALUE (as in GPSS World).
+                model.Matrices[name] = new MatrixDefinition(name, rows, columns);
+                return;
+            }
         }
 
         if (Keywords.Commands.Contains(op))
@@ -210,7 +228,7 @@ public static class Translator
         int? randomStream = argument is SnaExpr { Family: "RN" } rn && int.TryParse(rn.Argument, out var stream) ? stream : null;
 
         var data = string.Concat(statement.FollowerLines).Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var points = new List<(double X, Expr Y)>();
+        var points = new List<(Expr X, Expr Y)>();
         var listIndex = 0;
         foreach (var pair in data)
         {
@@ -220,13 +238,23 @@ public static class Translator
                 // L functions list only Y values: "y1/y2/..." or "x,y" pairs.
                 foreach (var part in parts.Where(part => part.Length > 0))
                 {
-                    points.Add((++listIndex, ParseFunctionValue(part, model)));
+                    points.Add((new NumberExpr(++listIndex), ParseFunctionValue(part, model)));
                 }
 
                 continue;
             }
 
-            if (parts.Count != 2 || !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x))
+            if (parts.Count != 2 || parts[0].Length == 0 || parts[1].Length == 0)
+            {
+                throw new FormatException($"неверная точка функции \"{pair}\".");
+            }
+
+            Expr x;
+            try
+            {
+                x = ExpressionParser.Parse(parts[0]);
+            }
+            catch (FormatException)
             {
                 throw new FormatException($"неверная точка функции \"{pair}\".");
             }
@@ -234,12 +262,15 @@ public static class Translator
             points.Add((x, ParseFunctionValue(parts[1], model)));
         }
 
-        if (points.Count != count)
+        // GPSS World reads exactly the declared number of points; extra points are ignored.
+        if (points.Count < count)
         {
             throw new FormatException($"ожидалось {count} точек, задано {points.Count}.");
         }
 
-        if (typeText[0] is 'C' or 'D' && points.Zip(points.Skip(1)).Any(pair => pair.First.X > pair.Second.X))
+        points = points.Take(count).ToList();
+        var constants = points.Select(point => point.X.AsConstant()).ToList();
+        if (typeText[0] is 'C' or 'D' && constants.Zip(constants.Skip(1)).Any(pair => pair.First > pair.Second))
         {
             throw new FormatException("значения аргумента функции должны возрастать.");
         }
@@ -389,7 +420,7 @@ public static class Translator
                 {
                     Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
                     Count = ExpressionParser.Parse(Require(s, 0, "число копий")),
-                    Destination = BlockRef.Parse(Require(s, 1, "метка назначения"), model.Labels),
+                    Destination = OptionalBlock(1),
                     SerialParameter = s.HasOperand(2) ? ParameterRef.Parse(s.Operand(2)) : null,
                 };
             case "ASSEMBLE":
@@ -428,6 +459,132 @@ public static class Translator
             }
             case "ADOPT":
                 return new AdoptBlock { Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, AssemblySet = ExpressionParser.Parse(Require(s, 0, "номер семейства")) };
+            case "MSAVEVALUE":
+            {
+                var (name, mode) = SplitModeSuffix(Require(s, 0, "матрица"));
+                var reference = EntityRef.Parse(name);
+                RegisterName(model, reference.LiteralName);
+                return new MsavevalueBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Entity = reference, Mode = mode,
+                    Row = Parse(s, 1, "строка"), Column = Parse(s, 2, "столбец"), Value = Parse(s, 3, "значение"),
+                };
+            }
+            case "COUNT":
+            case "SELECT":
+            {
+                var condition = s.Auxiliary ?? throw new FormatException("не задан условный или логический оператор.");
+                var parameter = ParameterRef.Parse(Require(s, 0, "параметр"));
+                var snaClass = s.HasOperand(4) ? s.Operand(4).ToUpperInvariant() : null;
+                if (!ConditionOperators.Logical.Contains(condition) && snaClass is null)
+                {
+                    throw new FormatException("в условном режиме требуется класс СЧА (операнд E).");
+                }
+
+                if (s.Operation == "COUNT")
+                {
+                    return new CountBlock
+                    {
+                        Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Condition = condition, Parameter = parameter,
+                        From = Parse(s, 1, "нижняя граница"), To = Parse(s, 2, "верхняя граница"), Reference = Optional(3), SnaClass = snaClass,
+                    };
+                }
+
+                return new SelectBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Condition = condition, Parameter = parameter,
+                    From = Parse(s, 1, "нижняя граница"), To = Parse(s, 2, "верхняя граница"), Reference = Optional(3), SnaClass = snaClass, Alternate = OptionalBlock(5),
+                };
+            }
+            case "DISPLACE":
+                return new DisplaceBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    Target = Parse(s, 0, "номер транзакта"), Destination = BlockRef.Parse(Require(s, 1, "блок назначения"), model.Labels),
+                    ResidualParameter = s.HasOperand(2) ? ParameterRef.Parse(s.Operand(2)) : null, Alternate = OptionalBlock(3),
+                };
+            case "JOIN":
+                return new JoinBlock { Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Entity = Entity(0), Value = Optional(1) };
+            case "EXAMINE":
+                return new ExamineBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Entity = Entity(0), Value = Optional(1),
+                    Alternate = BlockRef.Parse(Require(s, 2, "альтернативный блок"), model.Labels),
+                };
+            case "REMOVE":
+                return new RemoveBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Entity = Entity(0), Condition = s.Auxiliary,
+                    Limit = s.Operand(1).Equals("ALL", StringComparison.OrdinalIgnoreCase) ? null : Optional(1), Value = Optional(2),
+                    Tested = s.HasOperand(3) ? MemberAttribute.Parse(s.Operand(3)) : null, Reference = Optional(4), Alternate = OptionalBlock(5),
+                };
+            case "SCAN":
+                return new ScanBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Entity = Entity(0), Condition = s.Auxiliary,
+                    Tested = s.HasOperand(1) ? MemberAttribute.Parse(s.Operand(1)) : null, Reference = Optional(2),
+                    Source = MemberAttribute.Parse(Require(s, 3, "атрибут члена группы")), Target = ParameterRef.Parse(Require(s, 4, "параметр")), Alternate = OptionalBlock(5),
+                };
+            case "ALTER":
+                return new AlterBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Entity = Entity(0), Condition = s.Auxiliary,
+                    Limit = s.Operand(1).Equals("ALL", StringComparison.OrdinalIgnoreCase) ? null : Optional(1),
+                    Changed = MemberAttribute.Parse(Require(s, 2, "изменяемый атрибут")), Value = Parse(s, 3, "значение"),
+                    Tested = s.HasOperand(4) ? MemberAttribute.Parse(s.Operand(4)) : null, Reference = Optional(5), Alternate = OptionalBlock(6),
+                };
+            case "MATCH":
+                return new MatchBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    Conjugate = BlockRef.Parse(Require(s, 0, "сопряжённый блок MATCH"), model.Labels),
+                };
+            case "PLUS":
+                return new PlusBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    Expression = Parse(s, 0, "выражение"), Parameter = s.HasOperand(1) ? ParameterRef.Parse(s.Operand(1)) : null,
+                };
+            case "EXECUTE":
+                return new ExecuteBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    Target = BlockRef.Parse(Require(s, 0, "блок"), model.Labels),
+                };
+            case "TRACE":
+            case "UNTRACE":
+                return new TraceBlock { Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text, Enable = s.Operation == "TRACE" };
+            case "OPEN":
+                return new OpenBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    FileName = Parse(s, 0, "имя файла"), Stream = Optional(1), Alternate = OptionalBlock(2),
+                };
+            case "READ":
+                return new ReadBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    Parameter = ParameterRef.Parse(Require(s, 0, "параметр")), Stream = Optional(1), Alternate = OptionalBlock(2),
+                };
+            case "WRITE":
+                return new WriteBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    Value = Parse(s, 0, "значение"), Stream = Optional(1), Alternate = OptionalBlock(2),
+                    Replace = s.Operand(3).Equals("OFF", StringComparison.OrdinalIgnoreCase),
+                };
+            case "SEEK":
+                return new SeekBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    TargetLine = Parse(s, 0, "номер строки"), Stream = Optional(1),
+                };
+            case "CLOSE":
+                return new CloseBlock
+                {
+                    Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
+                    ErrorParameter = s.HasOperand(0) ? ParameterRef.Parse(s.Operand(0)) : null, Stream = Optional(1), Alternate = OptionalBlock(2),
+                };
             case "INDEX":
                 return new IndexBlock
                 {

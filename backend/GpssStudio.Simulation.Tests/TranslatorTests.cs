@@ -24,7 +24,7 @@ public sealed class TranslatorTests
     [Fact]
     public void Translate_ReportsErrorsWithLineNumbersInOrder()
     {
-        var model = Translator.Translate("  SEIZE\n  TRANSFER ,NOWHERE\nX FOO 1\n  COUNT L 1,2\n  GENERATE (1+\n");
+        var model = Translator.Translate("  SEIZE\n  TRANSFER ,NOWHERE\nX FOO 1\n  INCLUDE \"other.gps\"\n  GENERATE (1+\n");
 
         Assert.False(model.Succeeded);
         Assert.Equal([1, 2, 3, 4, 5], model.Errors.Select(error => error.Line));
@@ -83,5 +83,6 @@ public sealed class TranslatorTests
         public double Sna(string family, string argument, Runtime.Transaction? transaction) => 0;
         public double NameValue(string name) => 0;
         public double Random(int stream) => 0.5;
+        public double MatrixValue(string matrix, int row, int column) => row * 10 + column;
     }
 }
