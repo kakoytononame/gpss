@@ -22,3 +22,18 @@ public sealed class ApplyFormRequest
 }
 
 public sealed record ApplyFormResponse(string Text, IReadOnlyList<string> Messages);
+
+public sealed class CreateSimulationResultRequest
+{
+    public string? ProjectId { get; init; }
+
+    /// <summary>single | series.</summary>
+    public string Kind { get; init; } = "single";
+    public string Name { get; init; } = string.Empty;
+    public System.Text.Json.JsonElement Payload { get; init; }
+}
+
+public sealed class RenameSimulationResultRequest
+{
+    public string Name { get; init; } = string.Empty;
+}

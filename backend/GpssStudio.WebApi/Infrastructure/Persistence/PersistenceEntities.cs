@@ -115,3 +115,16 @@ public sealed class StudioProjectEntity
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
+
+/// <summary>Saved result of a single experiment or a series of experiments ("Результаты моделирования").</summary>
+public sealed class SimulationResultEntity
+{
+    public Guid Id { get; set; }
+    public Guid? ProjectId { get; set; }
+
+    /// <summary>single | series.</summary>
+    public string Kind { get; set; } = "single";
+    public string Name { get; set; } = string.Empty;
+    public string Payload { get; set; } = "{}";
+    public DateTimeOffset CreatedAt { get; set; }
+}

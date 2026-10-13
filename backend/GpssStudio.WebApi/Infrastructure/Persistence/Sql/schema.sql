@@ -85,6 +85,17 @@ create table if not exists studio_projects (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists simulation_results (
+  id uuid primary key,
+  project_id uuid references studio_projects(id) on delete cascade,
+  kind text not null,
+  name text not null,
+  payload jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists simulation_results_project_idx on simulation_results (project_id, created_at);
+
 create table if not exists workspace_snapshots (
   id text primary key,
   snapshot_json jsonb not null default '{}'::jsonb,
