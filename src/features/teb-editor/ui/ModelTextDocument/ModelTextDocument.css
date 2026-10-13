@@ -1,3 +1,62 @@
-.gpss-textarea--document {
+.model-text-document__body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
   min-height: 560px;
+}
+
+.model-text-document__body.has-names {
+  grid-template-columns: 1fr minmax(240px, 320px);
+}
+
+.names-table {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 4px;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 0.8rem;
+}
+
+.names-table input {
+  margin: 4px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+.names-table table {
+  display: block;
+  overflow: auto;
+  border-collapse: collapse;
+}
+
+.names-table th,
+.names-table td {
+  padding: 2px 6px;
+  border-bottom: 1px solid #edf1f5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.names-table th {
+  position: sticky;
+  top: 0;
+  background: #eef3f8;
+}
+
+.names-table tbody tr {
+  cursor: pointer;
+}
+
+.names-table tbody tr:hover {
+  background: #e8f1fb;
+}
+
+@media (max-width: 860px) {
+  .model-text-document__body.has-names {
+    grid-template-columns: 1fr;
+  }
 }

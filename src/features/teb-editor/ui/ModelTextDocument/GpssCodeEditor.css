@@ -1,0 +1,126 @@
+.gpss-code-editor {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--line-strong);
+  background: #fbfcfd;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.gpss-code-editor__gutter {
+  overflow: hidden;
+  padding: 12px 6px 12px 8px;
+  border-right: 1px solid var(--line);
+  background: #f0f3f6;
+  color: #8a97a3;
+  text-align: right;
+  user-select: none;
+}
+
+.gpss-code-editor__gutter .is-error {
+  color: #c62828;
+  font-weight: 700;
+}
+
+.gpss-code-editor__body {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gpss-code-editor__highlight,
+.gpss-code-editor__input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  font: inherit;
+  white-space: pre;
+  tab-size: 4;
+  overflow: auto;
+}
+
+.gpss-code-editor__highlight {
+  pointer-events: none;
+  color: #1f2937;
+  scrollbar-width: none;
+}
+
+.gpss-code-editor__highlight::-webkit-scrollbar {
+  display: none;
+}
+
+.gpss-code-editor__input {
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: #111827;
+  outline: none;
+}
+
+.gpss-code-editor__input::selection {
+  background: rgba(37, 99, 235, 0.25);
+  color: transparent;
+}
+
+.gpss-code-editor__input::placeholder {
+  color: #9aa5b1;
+}
+
+.gpss-code-editor:focus-within {
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.gpss-line.is-error {
+  background: rgba(220, 38, 38, 0.09);
+  text-decoration: underline wavy rgba(220, 38, 38, 0.65);
+  text-underline-offset: 3px;
+}
+
+.gpss-token--label {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.gpss-token--block {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.gpss-token--definition {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.gpss-token--command {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.gpss-token--auxiliary {
+  color: #1d4ed8;
+}
+
+.gpss-token--number {
+  color: #be123c;
+}
+
+.gpss-token--sna {
+  color: #0369a1;
+}
+
+.gpss-token--string {
+  color: #15803d;
+}
+
+.gpss-token--operator {
+  color: #475569;
+}
+
+.gpss-token--comment {
+  color: #16a34a;
+  font-style: italic;
+}

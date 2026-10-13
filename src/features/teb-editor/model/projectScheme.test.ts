@@ -57,7 +57,11 @@ describe('project scheme view', () => {
     const view = toSchemeView(inner);
     expect(applySchemeView(inner, view.nodes, view.links).Links.map((link) => link.Id)).toEqual(['in']);
     // Deleting the boundary connection on the scheme removes it; the connector itself stays.
-    const updated = applySchemeView(inner, view.nodes, view.links.map((link) => ({ ...link, hidden: true })));
+    const updated = applySchemeView(
+      inner,
+      view.nodes,
+      view.links.map((link) => ({ ...link, hidden: true })),
+    );
     expect(updated.Links).toEqual([]);
     expect(updated.Nodes.map((node) => node.Id)).toEqual(['teb3']);
 
