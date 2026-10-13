@@ -1,4 +1,5 @@
 import type { StudioProject } from '../../../shared/types/project';
+import type { SimulationResultSummary } from '../../../shared/types/result';
 import type { ActiveDocument } from '../../../shared/types/teb';
 import csProjectIcon from '../../../shared/assets/icons/gpss-native/csproject_16.png';
 import entityIcon from '../../../shared/assets/icons/gpss-native/entity_16.png';
@@ -24,6 +25,7 @@ import simpleTebIcon from '../../../shared/assets/icons/gpss-native/simpleteb16.
 import tebsLibraryCollectionIcon from '../../../shared/assets/icons/gpss-native/tebslibrarycollection_16.png';
 import tebsLibraryIcon from '../../../shared/assets/icons/gpss-native/tebslibrary_16.png';
 import { getGpssBlockIconShape } from '../../../shared/lib/gpssBlockShapes';
+import { groupResults, RESULT_KIND_LABELS } from '../../../features/teb-editor/model/simulationResults';
 
 export interface TreeNode {
   id: string;
@@ -36,6 +38,8 @@ export interface TreeNode {
   modelIndex?: number;
   /** Form of the current model opened by this node (with {@link documentId}). */
   formIndex?: number;
+  /** Saved simulation result opened by this node. */
+  resultId?: string;
   children?: TreeNode[];
 }
 
@@ -273,7 +277,7 @@ export const PROJECT_TREE: TreeNode[] = [
  * "Текущий проект" tree of an open simulation project: its models (the current one with scheme, text,
  * results and forms) and TEB libraries. Document nodes keep the ids of {@link PROJECT_TREE}.
  */
-export function buildProjectTree(project: StudioProject, modelIndex: number, hasResults: boolean): TreeNode[] {
+export function buildProjectTree(project: StudioProject, modelIndex: number, hasResults: boolean, savedResults: SimulationResultSummary[] = []): TreeNode[] {
   const models = project.Models.map<TreeNode>((model, index) => {
     if (index !== modelIndex) {
       return { id: `project-model-${index}`, label: model.Name, icon: 'model', iconAsset: simModelCurrentIcon, modelIndex: index };
@@ -334,6 +338,30 @@ export function buildProjectTree(project: StudioProject, modelIndex: number, has
     };
   });
 
+  const grouped = groupResults(savedResults);
+  const resultsRoot: TreeNode = {
+    id: 'results-root',
+    label: 'Результаты моделирования',
+    icon: 'run',
+    iconAsset: resultsChartIcon,
+    documentId: 'results',
+    children: (['single', 'series'] as const).map((kind) => ({
+      id: `results-${kind}`,
+      label: RESULT_KIND_LABELS[kind],
+      icon: 'folder',
+      iconAsset: folderIcon,
+      documentId: 'results' as const,
+      children: grouped[kind].map((result) => ({
+        id: `result-${result.Id}`,
+        label: result.Name,
+        icon: kind === 'single' ? 'table' : 'run',
+        iconAsset: kind === 'single' ? stdReportIcon : simulationIcon,
+        documentId: 'results' as const,
+        resultId: result.Id,
+      })),
+    })),
+  };
+
   return [
     {
       id: 'project-home',
@@ -343,6 +371,7 @@ export function buildProjectTree(project: StudioProject, modelIndex: number, has
       children: [
         { id: 'models-root', label: 'Модели', icon: 'model', iconAsset: projectModelsIcon, children: [...models, ...results] },
         ...(forms.length > 0 ? [{ id: 'forms-root', label: 'Формы', icon: 'form', iconAsset: formCollectionIcon, children: forms }] : []),
+        resultsRoot,
         {
           id: 'libraries-root',
           label: 'Библиотеки ТЭБов проекта',

@@ -171,5 +171,17 @@ test.describe('Simulation projects', () => {
     await expect(page.getByRole('heading', { name: /Динамическая форма/ })).toBeVisible();
     await expect(page.locator('output[aria-label="Занято мест"]')).toHaveText(/^[0-2]$/);
     await expect(page.getByRole('region', { name: 'Динамика показателей' })).toContainText('Причал (S$Berth)');
+
+    // The run is saved as a single experiment of the project and opens from the result tree.
+    await expect(page.locator('.global-status')).toContainText('сохранён');
+    await page.locator('.tree-row', { hasText: 'Эксперимент «Порт»' }).click();
+    const details = page.locator('.results-detail');
+    await expect(details.getByRole('heading', { name: /Эксперимент «Порт»/ })).toBeVisible();
+    await details.getByRole('tab', { name: 'Исходные данные' }).click();
+    await expect(details.getByRole('tabpanel', { name: 'Исходные данные' })).toContainText('Интервал');
+    await expect(details.getByRole('tabpanel', { name: 'Исходные данные' })).toContainText('8');
+    await details.getByRole('tab', { name: 'Динамика показателей' }).click();
+    await expect(details.getByRole('tabpanel', { name: 'Динамика показателей' })).toContainText('Причал (S$Berth)');
+    await page.request.delete(`${PROJECTS}/${created.Id}`);
   });
 });

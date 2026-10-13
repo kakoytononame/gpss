@@ -91,10 +91,16 @@ export const createFormSlice: StateCreator<TebEditorStore, [], [], FormSliceStat
       }
 
       await get().startSimulation();
+      const completed = get().simulationState === 'completed';
       const form = currentForm();
       if (form?.DynamicForm && get().simulationSessionId) {
         get().openForm(get().projectFormIndex, 'dynamic-form');
         await get().refreshFormIndicators();
+      }
+
+      // A completed run is kept as a single experiment of the project ("Результаты моделирования").
+      if (completed) {
+        await get().saveSimulationResult({ auto: true });
       }
     },
 

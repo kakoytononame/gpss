@@ -87,10 +87,45 @@ type Responder = (request: RecordedRequest) => { status: number; body?: unknown 
 
 /**
  * Replaces global fetch with a router: GET class/instance return fixtures, the workspace
- * returns 404, simulation endpoints return a completed run and other mutations answer 200.
+ * returns 404, simulation endpoints return a completed run, saved results live in memory
+ * and other mutations answer 200.
  */
 export function mockBackend(respond: Responder = () => undefined) {
   const requests: RecordedRequest[] = [];
+  const results = new Map<string, Record<string, unknown>>();
+
+  /** In-memory `/studio/results`: list, get, create, rename, delete. */
+  const storedResults = (request: RecordedRequest): { status: number; body?: unknown } => {
+    const id = /\/studio\/results\/([^/?]+)/.exec(request.url)?.[1];
+    const summary = ({ Payload: _payload, ...rest }: Record<string, unknown>) => rest;
+    if (!id) {
+      if (request.method === 'POST') {
+        const body = request.body as Record<string, unknown>;
+        const created = { ...body, Id: `result-${results.size + 1}`, CreatedAt: '2026-10-13T10:00:00Z' };
+        results.set(created.Id, created);
+        return { status: 201, body: created };
+      }
+
+      return { status: 200, body: [...results.values()].map(summary) };
+    }
+
+    const stored = results.get(id);
+    if (!stored) {
+      return { status: 404, body: { detail: `Результат ${id} не найден.` } };
+    }
+
+    if (request.method === 'PATCH') {
+      stored.Name = (request.body as { Name: string }).Name;
+      return { status: 200, body: summary(stored) };
+    }
+
+    if (request.method === 'DELETE') {
+      results.delete(id);
+      return { status: 204 };
+    }
+
+    return { status: 200, body: stored };
+  };
 
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const request: RecordedRequest = {
@@ -111,6 +146,10 @@ export function mockBackend(respond: Responder = () => undefined) {
 
       if (request.url.includes('/simulation/')) {
         return { status: 200, body: simulationResult() };
+      }
+
+      if (request.url.includes('/studio/results')) {
+        return storedResults(request);
       }
 
       if (request.method !== 'GET') {

@@ -1,0 +1,156 @@
+.results-document__body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.results-tree {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 6px;
+}
+
+.results-tree h3 {
+  margin: 4px 0;
+  font-size: 0.86rem;
+}
+
+.results-tree ul {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.results-tree li {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.results-tree li.is-selected {
+  background: #d7ebff;
+}
+
+.results-tree li input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+}
+
+.results-tree__item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 3px 4px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.results-tree__item span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.results-tree__item small {
+  color: #667788;
+}
+
+.results-tree__tools button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.results-tree__tools button:hover {
+  border-color: #9eb6cc;
+  background: #eef3f8;
+}
+
+.results-detail {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px;
+}
+
+.results-detail__title {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.results-tabs,
+.results-report__sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid #147fd1;
+}
+
+.results-tabs button,
+.results-report__sections button {
+  padding: 3px 10px;
+  border: 1px solid #9eb6cc;
+  border-bottom: 0;
+  background: linear-gradient(#fdfeff, #e3edf6);
+  font: inherit;
+  cursor: pointer;
+}
+
+.results-tabs button.is-active,
+.results-report__sections button.is-active {
+  background: #2e99f5;
+  border-color: #2e99f5;
+  color: #fff;
+}
+
+.results-report__sections {
+  border-bottom-width: 1px;
+}
+
+.results-info th {
+  width: 220px;
+  background: #f5f8fb;
+}
+
+.results-model-text {
+  margin: 0;
+  padding: 6px;
+  border: 1px solid #edf1f5;
+  background: #fbfcfd;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.8rem;
+  white-space: pre;
+  overflow: auto;
+}
+
+.results-tab-content .experiment-table + .experiment-table {
+  margin-top: 10px;
+}
+
+.results-empty {
+  margin: 4px 0;
+  color: #667788;
+}
+
+@media (max-width: 860px) {
+  .results-document__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

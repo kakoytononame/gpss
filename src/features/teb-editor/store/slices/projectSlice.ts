@@ -14,6 +14,7 @@ import {
   toSchemeView,
 } from '../../model/projectScheme';
 import { createHistory, safeTabForDocument, syncFailureMessage } from '../helpers';
+import { initialResultState } from './resultSlice';
 import type { ProjectSliceActions, ProjectSliceState, TebEditorStore } from '../types';
 
 const GENERATION_ISSUE_PREFIX = 'gen-';
@@ -95,12 +96,14 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
       simulationSessionId: null,
       simulationState: 'idle',
       simulationReport: null,
+      ...initialResultState,
       openDocuments: keepLayout ? state.openDocuments : withDocument(state.openDocuments, preferred),
       activeDocument: keepLayout ? state.activeDocument : preferred,
       syncStatus: project.ImportNotes.length > 0 ? 'warning' : 'saved',
       syncMessage: project.ImportNotes.length > 0 ? `${message} Замечаний импорта: ${project.ImportNotes.length}.` : message,
     }));
     showSchemeLevel(project, modelIndex, []);
+    void get().loadResults();
   };
 
   return {
@@ -150,6 +153,7 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
     closeProject() {
       set({
         ...initialProjectState,
+        ...initialResultState,
         projects: get().projects,
         simulationMonitoring: null,
         simulationStartCount: 1,

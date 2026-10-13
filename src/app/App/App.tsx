@@ -6,6 +6,7 @@ import { InputFormDocument } from '../../features/teb-editor/ui/FormDocuments/In
 import { ModelStateDocument } from '../../features/teb-editor/ui/ModelStateDocument/ModelStateDocument';
 import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
 import { ProjectsDocument } from '../../features/teb-editor/ui/ProjectsDocument/ProjectsDocument';
+import { ResultsDocument } from '../../features/teb-editor/ui/ResultsDocument/ResultsDocument';
 import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
 import { SimulationChartsDocument } from '../../features/teb-editor/ui/SimulationChartsDocument/SimulationChartsDocument';
 import { StandardReportDocument } from '../../features/teb-editor/ui/StandardReportDocument/StandardReportDocument';
@@ -35,6 +36,7 @@ const DOCUMENT_VIEWS: Record<ActiveDocument, () => ReactNode> = {
   experiments: () => <ExperimentsDocument />,
   'input-form': () => <InputFormDocument />,
   'dynamic-form': () => <DynamicFormDocument />,
+  results: () => <ResultsDocument />,
 };
 
 function ActiveDocumentView() {

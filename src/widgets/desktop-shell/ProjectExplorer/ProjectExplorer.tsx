@@ -45,8 +45,13 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   const hasResults = useTebEditorStore((state) => state.simulationReport !== null);
   const selectProjectModel = useTebEditorStore((state) => state.selectProjectModel);
   const openForm = useTebEditorStore((state) => state.openForm);
+  const savedResults = useTebEditorStore((state) => state.simulationResults);
+  const openResult = useTebEditorStore((state) => state.openResult);
 
-  const projectTree = useMemo(() => (project ? buildProjectTree(project, projectModelIndex, hasResults) : null), [project, projectModelIndex, hasResults]);
+  const projectTree = useMemo(
+    () => (project ? buildProjectTree(project, projectModelIndex, hasResults, savedResults) : null),
+    [project, projectModelIndex, hasResults, savedResults],
+  );
   const view = explorerMode === 'project' && projectTree ? { ...EXPLORER_VIEWS.project, tree: projectTree } : EXPLORER_VIEWS[explorerMode];
   const filteredTree = useMemo(() => filterTree(view.tree, projectSearchQuery), [view.tree, projectSearchQuery]);
   const forceExpanded = projectSearchQuery.trim().length > 0;
@@ -84,6 +89,11 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
       setExplorerMode('libraries');
       focusProjectNode('project-tebs-library');
       expandTreeNodes(PROJECT_LIBRARY_PATH);
+      return;
+    }
+
+    if (node.resultId) {
+      void openResult(node.resultId);
       return;
     }
 

@@ -67,7 +67,10 @@ export const createExperimentSlice: StateCreator<TebEditorStore, [], [], Experim
       });
     } catch (error) {
       set({ experimentBusy: false, syncStatus: 'offline', syncMessage: `Эксперимент не выполнен: ${error instanceof Error ? error.message : String(error)}` });
+      return;
     }
+
+    await get().saveExperimentResult({ auto: true });
   },
 
   exportExperiment() {

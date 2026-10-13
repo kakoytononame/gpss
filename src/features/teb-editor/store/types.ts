@@ -24,6 +24,7 @@ import type {
 } from '../../../shared/types/teb';
 import type { GenerationResult, ProjectSummary, StudioProject, StudioTebLink } from '../../../shared/types/project';
 import type { ExperimentResult } from '../../../shared/types/experiment';
+import type { SimulationResultDetail, SimulationResultSummary } from '../../../shared/types/result';
 import type { SimulationReport, TransactionState } from '../../../shared/types/simulation';
 import type { SimulationMonitoring } from '../../../shared/api/simulationApi';
 import type { ExperimentPlan } from '../model/experimentPlan';
@@ -274,6 +275,29 @@ export interface FormSliceActions {
   planExperimentFromForm: () => Promise<void>;
 }
 
+export interface ResultSliceState {
+  /** Result tree of the open project (results without a project when none is open). */
+  simulationResults: SimulationResultSummary[];
+  /** Result shown by the "Результаты моделирования" document. */
+  selectedResult: SimulationResultDetail | null;
+  resultsBusy: boolean;
+}
+
+export interface ResultSliceActions {
+  loadResults: () => Promise<void>;
+  /** Loads a result and shows it in the "Результаты моделирования" document. */
+  openResult: (id: string) => Promise<void>;
+  /**
+   * Saves the last run as a single experiment (with the form's input data when the run used a form).
+   * `auto` keeps the run's status message and appends the save notice to it.
+   */
+  saveSimulationResult: (options?: { auto?: boolean }) => Promise<void>;
+  /** Saves the last series of experiments with its plan. */
+  saveExperimentResult: (options?: { auto?: boolean }) => Promise<void>;
+  renameResult: (id: string, name: string) => Promise<void>;
+  deleteResult: (id: string) => Promise<void>;
+}
+
 export interface PersistenceActions {
   resetWorkspace: () => void;
   saveWorkspaceSnapshot: () => Promise<void>;
@@ -289,7 +313,8 @@ export type TebEditorState = SyncState &
   DiagnosticsSliceState &
   ProjectSliceState &
   ExperimentSliceState &
-  FormSliceState;
+  FormSliceState &
+  ResultSliceState;
 
 export type TebEditorActions = SyncActions &
   WorkspaceLayoutActions &
@@ -300,6 +325,7 @@ export type TebEditorActions = SyncActions &
   ProjectSliceActions &
   ExperimentSliceActions &
   FormSliceActions &
+  ResultSliceActions &
   PersistenceActions;
 
 export type TebEditorStore = TebEditorState & TebEditorActions;

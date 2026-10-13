@@ -16,4 +16,6 @@ test('runs a series of experiments with the model', async ({ page }) => {
   await expect(results).toBeVisible({ timeout: 90_000 });
   await expect(results.locator('tbody tr').first()).toContainText('±');
   await expect(page.locator('.global-status')).toContainText('Серия выполнена');
+  // Without an open project the series is still kept in the results database.
+  await expect(page.locator('.global-status')).toContainText('Результат «Серия экспериментов от');
 });
