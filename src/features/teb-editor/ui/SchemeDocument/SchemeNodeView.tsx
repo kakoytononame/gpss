@@ -26,6 +26,7 @@ export function SchemeNodeView({ node, zoom, isSelected, isConnectionTarget, sho
         `scheme-node--${node.kind}`,
         hasGpssIcon && 'scheme-node--gpss-icon',
         node.isComposite && 'scheme-node--composite',
+        node.isBoundary && 'scheme-node--boundary',
         isSelected && 'is-selected',
         isConnectionTarget && 'is-connection-target',
       )}

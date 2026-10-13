@@ -16,7 +16,7 @@ import {
 const model = () => studioProject().Models[0];
 
 describe('project scheme view', () => {
-  it('maps TEB nodes and links of one level, hiding links to composite boundaries', () => {
+  it('maps TEB nodes and links of one level with the boundary of composite TEBs', () => {
     const view = toSchemeView(model().Scheme!);
 
     expect(view.nodes.map((node) => [node.id, node.kind, node.isComposite])).toEqual([
@@ -25,7 +25,12 @@ describe('project scheme view', () => {
       ['data', 'data', false],
     ]);
     expect(view.links).toEqual([{ id: 'l1', from: 'teb1', to: 'teb2' }]);
-    expect(toSchemeView(schemeAtPath(model(), ['teb2'])!).links).toEqual([]);
+    const inner = toSchemeView(schemeAtPath(model(), ['teb2'])!);
+    expect(inner.nodes.map((node) => [node.id, node.label, node.isBoundary ?? false])).toEqual([
+      ['teb3', 'Станок', false],
+      ['boundary:1', 'Вход №1', true],
+    ]);
+    expect(inner.links).toEqual([{ id: 'in', from: 'boundary:1', to: 'teb3' }]);
     expect(pathHeaders(model(), ['teb2'])).toEqual(['Цех']);
   });
 
@@ -49,10 +54,14 @@ describe('project scheme view', () => {
 
   it('keeps boundary links of composite levels and replaces nested levels immutably', () => {
     const inner = schemeAtPath(model(), ['teb2'])!;
-    const updated = applySchemeView(inner, toSchemeView(inner).nodes, []);
-    expect(updated.Links.map((link) => link.Id)).toEqual(['in']);
+    const view = toSchemeView(inner);
+    expect(applySchemeView(inner, view.nodes, view.links).Links.map((link) => link.Id)).toEqual(['in']);
+    // Deleting the boundary connection on the scheme removes it; the connector itself stays.
+    const updated = applySchemeView(inner, view.nodes, view.links.map((link) => ({ ...link, hidden: true })));
+    expect(updated.Links).toEqual([]);
+    expect(updated.Nodes.map((node) => node.Id)).toEqual(['teb3']);
 
-    const moved = { ...updated, Nodes: updated.Nodes.map((node) => ({ ...node, X: 7 })) };
+    const moved = { ...inner, Nodes: inner.Nodes.map((node) => ({ ...node, X: 7 })) };
     const next = replaceSchemeAtPath(model(), ['teb2'], moved);
     expect(findNode(next.Scheme, 'teb3')?.X).toBe(7);
     expect(findNode(model().Scheme, 'teb3')?.X).toBe(100);

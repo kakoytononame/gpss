@@ -43,7 +43,7 @@ describe('projects', () => {
 
     store().openSchemeNode('teb2');
     expect(store().schemePath).toEqual(['teb2']);
-    expect(store().schemeNodes.map((node) => node.id)).toEqual(['teb3']);
+    expect(store().schemeNodes.map((node) => node.id)).toEqual(['teb3', 'boundary:1']);
 
     store().leaveToSchemeLevel(0);
     expect(store().schemePath).toEqual([]);

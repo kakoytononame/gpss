@@ -378,3 +378,40 @@
 .right-dock-tabs button.is-active {
   background: #fff;
 }
+
+.link-properties {
+  display: grid;
+  gap: 4px;
+  padding: 0 8px 8px;
+  font-size: 0.82rem;
+}
+
+.link-properties__row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.link-properties__row select,
+.link-properties__row input {
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+.link-properties__model {
+  min-height: 110px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.link-properties__empty {
+  padding: 8px;
+  font-size: 0.82rem;
+  color: #6b7c8c;
+}

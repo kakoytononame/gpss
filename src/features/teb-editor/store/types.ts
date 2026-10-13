@@ -22,7 +22,7 @@ import type {
   TebTestItem,
   TebTestStatus,
 } from '../../../shared/types/teb';
-import type { GenerationResult, ProjectSummary, StudioProject } from '../../../shared/types/project';
+import type { GenerationResult, ProjectSummary, StudioProject, StudioTebLink } from '../../../shared/types/project';
 import type { SimulationReport } from '../../../shared/types/simulation';
 
 type Updater<T> = T | ((current: T) => T);
@@ -206,6 +206,8 @@ export interface ProjectSliceActions {
   /** Writes the TEB editor document into the project (TEB editor in project mode). */
   applyTebToProject: (message: string) => void;
   generateModelText: () => Promise<void>;
+  /** Changes a connection of the current scheme level (ports, priority, probability, model). */
+  updateProjectLink: (linkId: string, patch: Partial<Omit<StudioTebLink, 'Id' | 'FromNodeId' | 'ToNodeId'>>) => void;
 }
 
 export interface PersistenceActions {

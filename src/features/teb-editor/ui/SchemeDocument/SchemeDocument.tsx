@@ -226,6 +226,11 @@ export function SchemeDocument() {
       return;
     }
 
+    if (selection.type === 'node' && nodeById.get(selection.id)?.isBoundary) {
+      setStatusMessage('Входы и выходы композитного ТЭБа задаются на вкладках «Входы» и «Выходы» его свойств.', 'warning');
+      return;
+    }
+
     if (selection.type === 'node') {
       setNodes((currentNodes) => currentNodes.map((node) => (node.id === selection.id ? { ...node, hidden: true } : node)));
       setLinks((currentLinks) => currentLinks.map((link) => (link.from === selection.id || link.to === selection.id ? { ...link, hidden: true } : link)));

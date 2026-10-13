@@ -49,6 +49,10 @@ export interface TebPort {
   connectedBlock: string;
   connectionsLimit: string | number;
   description: string;
+  /** Outputs of project TEBs: how transactions leave through several connections. */
+  transferMode?: string;
+  /** Outputs of project TEBs: GPSS model of the transition ("Определяется моделью"). */
+  gpssModel?: string;
 }
 
 export interface TebParameter {
@@ -104,6 +108,8 @@ export interface SchemeNode {
   instanceCount?: number;
   /** Composite TEB: double-click opens its child scheme. */
   isComposite?: boolean;
+  /** Input / output of the enclosing composite TEB shown inside its scheme (not a TEB). */
+  isBoundary?: boolean;
   backgroundColor?: string;
   borderColor?: string;
   borderWidth?: number;

@@ -1,6 +1,25 @@
 import { createId } from '../../../shared/lib/utils';
-import type { ConnectedBlockMode, StudioModel, StudioTebLink, StudioTebNode, StudioTebPort, TebKind, TebScheme } from '../../../shared/types/project';
+import type {
+  TransferMode,
+  ConnectedBlockMode,
+  StudioModel,
+  StudioTebLink,
+  StudioTebNode,
+  StudioTebPort,
+  TebKind,
+  TebScheme,
+} from '../../../shared/types/project';
 import type { GpssEntity, SchemeLink, SchemeNode, SchemeNodeKind, TebDocument, TebPort } from '../../../shared/types/teb';
+
+/** Transaction transfer modes of TEB outputs with their GPSS Studio names. */
+export const TRANSFER_MODE_LABELS: Record<TransferMode, string> = {
+  DirectOrSplit: 'Прямой переход или копирование',
+  FirstAvail: 'Переход по первому доступному соединению',
+  Random: 'Случайный переход по любому соединению',
+  CustomModel: 'Определяется моделью',
+};
+
+const TRANSFER_MODES = Object.keys(TRANSFER_MODE_LABELS) as TransferMode[];
 
 /** Labels shown for the special "connected block" modes of TEB inputs and outputs. */
 export const FIRST_BLOCK_LABEL = 'Первый блок модели';
@@ -52,31 +71,62 @@ function viewKind(kind: TebKind): SchemeNodeKind {
 }
 
 /** Nodes and links of one scheme level for the structural scheme document. */
-export function toSchemeView(scheme: TebScheme): { nodes: SchemeNode[]; links: SchemeLink[] } {
-  const nodeIds = new Set(scheme.Nodes.map((node) => node.Id));
-  return {
-    nodes: scheme.Nodes.map((node) => ({
-      id: node.Id,
-      label: node.Header || node.NameInModel || 'ТЭБ',
-      kind: viewKind(node.Kind),
-      nameInModel: node.NameInModel ?? undefined,
-      x: node.X,
-      y: node.Y,
-      width: node.Width || 160,
-      height: node.Height || 60,
-      description: node.Description ?? undefined,
-      className: CLASS_TYPES[node.Kind],
-      classId: node.ClassId,
-      isLibraryClass: Boolean(node.LibraryId),
-      instanceCount: node.InstancesCount,
-      isComposite: node.Kind === 'composite',
-      backgroundColor: node.BackgroundColor ?? DEFAULT_COLORS[node.Kind].background,
-      borderColor: node.BorderColor ?? DEFAULT_COLORS[node.Kind].border,
-      textColor: node.TextColor ?? '#1d2d3a',
+const BOUNDARY_SIZE = { width: 96, height: 34 };
+const BOUNDARY_GAP = 56;
+
+/** Inputs and outputs of the enclosing composite TEB, placed at the left / right edge of the level. */
+function boundaryNodes(scheme: TebScheme): SchemeNode[] {
+  const right = Math.max(600, ...scheme.Nodes.map((node) => node.X + (node.Width || 160) + 80));
+  const place = (direction: 'input' | 'output') => scheme.Boundary.filter((item) => item.Direction === direction);
+  return [...place('input'), ...place('output')].map((connector, _, all) => {
+    const sameSide = all.filter((item) => item.Direction === connector.Direction);
+    const index = sameSide.indexOf(connector);
+    return {
+      id: connector.Id,
+      label: `${connector.Direction === 'input' ? 'Вход' : 'Выход'} №${connector.DefinitionId}`,
+      kind: 'data' as const,
+      x: connector.Direction === 'input' ? 8 : right,
+      y: 40 + index * BOUNDARY_GAP,
+      ...BOUNDARY_SIZE,
+      isBoundary: true,
+      backgroundColor: '#ffffff',
+      borderColor: '#7d8a96',
+      textColor: '#33414e',
       fontFamily: 'Arial',
-      fontSize: 12,
-    })),
-    // Links to the boundary of a composite TEB have no node on this level and are not drawn.
+      fontSize: 11,
+    };
+  });
+}
+
+/** Nodes and links of one scheme level for the structural scheme document. */
+export function toSchemeView(scheme: TebScheme): { nodes: SchemeNode[]; links: SchemeLink[] } {
+  const boundary = boundaryNodes(scheme);
+  const nodeIds = new Set([...scheme.Nodes.map((node) => node.Id), ...boundary.map((node) => node.id)]);
+  return {
+    nodes: [
+      ...scheme.Nodes.map((node) => ({
+        id: node.Id,
+        label: node.Header || node.NameInModel || 'ТЭБ',
+        kind: viewKind(node.Kind),
+        nameInModel: node.NameInModel ?? undefined,
+        x: node.X,
+        y: node.Y,
+        width: node.Width || 160,
+        height: node.Height || 60,
+        description: node.Description ?? undefined,
+        className: CLASS_TYPES[node.Kind],
+        classId: node.ClassId,
+        isLibraryClass: Boolean(node.LibraryId),
+        instanceCount: node.InstancesCount,
+        isComposite: node.Kind === 'composite',
+        backgroundColor: node.BackgroundColor ?? DEFAULT_COLORS[node.Kind].background,
+        borderColor: node.BorderColor ?? DEFAULT_COLORS[node.Kind].border,
+        textColor: node.TextColor ?? '#1d2d3a',
+        fontFamily: 'Arial',
+        fontSize: 12,
+      })),
+      ...boundary,
+    ],
     links: scheme.Links.filter((link) => nodeIds.has(link.FromNodeId) && nodeIds.has(link.ToNodeId)).map((link) => ({
       id: link.Id,
       from: link.FromNodeId,
@@ -136,7 +186,9 @@ function nextPortId(node: StudioTebNode): number {
  * nodes and links) to the scheme level of the project. Links to composite boundaries are kept.
  */
 export function applySchemeView(scheme: TebScheme, nodes: SchemeNode[], links: SchemeLink[]): TebScheme {
-  const views = new Map(nodes.filter((node) => !node.hidden).map((node) => [node.id, node]));
+  // Boundary connectors of composite TEBs are shown as nodes but belong to the enclosing TEB.
+  const views = new Map(nodes.filter((node) => !node.hidden && !node.isBoundary).map((node) => [node.id, node]));
+  const boundaryIds = new Set(scheme.Boundary.map((connector) => connector.Id));
   const result: TebScheme = { ...scheme, Nodes: [], Links: [] };
 
   for (const node of scheme.Nodes) {
@@ -157,10 +209,9 @@ export function applySchemeView(scheme: TebScheme, nodes: SchemeNode[], links: S
   const nodeById = new Map(result.Nodes.map((node) => [node.Id, node]));
   const visibleLinks = new Map(links.filter((link) => !link.hidden).map((link) => [link.id, link]));
   for (const link of scheme.Links) {
-    const isBoundaryLink = !scheme.Nodes.some((node) => node.Id === link.FromNodeId) || !scheme.Nodes.some((node) => node.Id === link.ToNodeId);
-    const survives = isBoundaryLink
-      ? nodeById.has(link.FromNodeId) || nodeById.has(link.ToNodeId)
-      : visibleLinks.has(link.Id) && nodeById.has(link.FromNodeId) && nodeById.has(link.ToNodeId);
+    const exists = (id: string) => nodeById.has(id) || boundaryIds.has(id);
+    const isShown = links.some((view) => view.id === link.Id);
+    const survives = exists(link.FromNodeId) && exists(link.ToNodeId) && (!isShown || visibleLinks.has(link.Id));
     if (survives) {
       result.Links.push(link);
     }
@@ -168,6 +219,11 @@ export function applySchemeView(scheme: TebScheme, nodes: SchemeNode[], links: S
 
   for (const view of visibleLinks.values()) {
     if (scheme.Links.some((link) => link.Id === view.id)) {
+      continue;
+    }
+
+    if (boundaryIds.has(view.from) || boundaryIds.has(view.to)) {
+      result.Links.push(boundaryLink(view, scheme, nodeById));
       continue;
     }
 
@@ -205,6 +261,33 @@ export function applySchemeView(scheme: TebScheme, nodes: SchemeNode[], links: S
   return result;
 }
 
+/** New connection from an input of the enclosing composite TEB or to one of its outputs. */
+function boundaryLink(view: SchemeLink, scheme: TebScheme, nodeById: Map<string, StudioTebNode>): StudioTebLink {
+  const from = nodeById.get(view.from);
+  const to = nodeById.get(view.to);
+  if (from && from.Outputs.length === 0) {
+    from.Outputs = [port(nextPortId(from), 'LastBlock')];
+  }
+
+  if (to && to.Inputs.length === 0) {
+    to.Inputs = [port(nextPortId(to), 'FirstBlock')];
+  }
+
+  return {
+    Id: view.id,
+    FromNodeId: view.from,
+    FromPortId: from ? from.Outputs[0].Id : (scheme.Boundary.find((item) => item.Id === view.from)?.DefinitionId ?? 0),
+    ToNodeId: view.to,
+    ToPortId: to ? to.Inputs[0].Id : (scheme.Boundary.find((item) => item.Id === view.to)?.DefinitionId ?? 0),
+    Priority: 0,
+    Probability: 0,
+    OrderIndex: 0,
+    Description: null,
+    GpssText: null,
+    Points: [],
+  };
+}
+
 /** Replaces the scheme level at `path` inside the model (immutable update). */
 export function replaceSchemeAtPath(model: StudioModel, path: string[], scheme: TebScheme): StudioModel {
   if (path.length === 0) {
@@ -234,7 +317,7 @@ function connectedBlockText(item: StudioTebPort): string {
   }
 }
 
-function portView(item: StudioTebPort): TebPort {
+function portView(item: StudioTebPort, isOutput: boolean): TebPort {
   return {
     id: String(item.Id),
     nameInModel: String(item.Id),
@@ -242,6 +325,7 @@ function portView(item: StudioTebPort): TebPort {
     connectedBlock: connectedBlockText(item),
     connectionsLimit: item.ConnectionsLimit,
     description: item.Description ?? '',
+    ...(isOutput ? { transferMode: item.TransferMode, gpssModel: item.GpssText ?? '' } : {}),
   };
 }
 
@@ -257,6 +341,8 @@ function portFromView(view: TebPort, previous: StudioTebPort[], newId: () => num
     Label: mode === 'Label' ? text : null,
     ConnectionsLimit: Number(view.connectionsLimit) || 0,
     Description: view.description || null,
+    TransferMode: TRANSFER_MODES.includes(view.transferMode as TransferMode) ? (view.transferMode as TransferMode) : (old?.TransferMode ?? 'DirectOrSplit'),
+    GpssText: view.gpssModel === undefined ? (old?.GpssText ?? null) : view.gpssModel || null,
   };
 }
 
@@ -279,8 +365,8 @@ export function tebNodeToDocument(node: StudioTebNode): TebDocument {
       value: entity.Value ?? (entity.Cells ? `${entity.Cells.length}×${entity.Cells[0]?.length ?? 0}` : ''),
       description: entity.Description ?? '',
     })),
-    inputs: node.Inputs.map(portView),
-    outputs: node.Outputs.map(portView),
+    inputs: node.Inputs.map((item) => portView(item, false)),
+    outputs: node.Outputs.map((item) => portView(item, true)),
     parameters: node.Parameters.map((parameter) => ({
       id: String(parameter.Id),
       type: parameter.Type,

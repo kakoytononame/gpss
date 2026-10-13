@@ -221,7 +221,12 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
       }
 
       const node = schemeAtPath(project.Models[projectModelIndex], schemePath)?.Nodes.find((item) => item.Id === nodeId);
-      if (node?.Kind === 'composite' && node.Child) {
+      if (!node) {
+        // Boundary connector of the composite TEB: nothing to open.
+        return;
+      }
+
+      if (node.Kind === 'composite' && node.Child) {
         get().enterComposite(nodeId);
         return;
       }
@@ -291,6 +296,20 @@ export const createProjectSlice: StateCreator<TebEditorStore, [], [], ProjectSli
         syncStatus: 'saved',
         syncMessage: message,
       }));
+    },
+
+    updateProjectLink(linkId, patch) {
+      get().flushSchemeToProject();
+      const { project, projectModelIndex, schemePath } = get();
+      const model = project?.Models[projectModelIndex];
+      const scheme = schemeAtPath(model, schemePath);
+      if (!project || !model || !scheme?.Links.some((link) => link.Id === linkId)) {
+        return;
+      }
+
+      const updated = { ...scheme, Links: scheme.Links.map((link) => (link.Id === linkId ? { ...link, ...patch } : link)) };
+      const models = project.Models.map((item, index) => (index === projectModelIndex ? replaceSchemeAtPath(item, schemePath, updated) : item));
+      set({ project: { ...project, Models: models }, projectDirty: true, syncStatus: 'saved', syncMessage: 'Свойства связи изменены.' });
     },
 
     async generateModelText() {

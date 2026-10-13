@@ -386,3 +386,9 @@
   border-radius: 2px;
   background: linear-gradient(135deg, transparent 45%, rgba(0, 0, 0, 0.45) 46% 54%, transparent 55%);
 }
+
+.scheme-node--boundary {
+  border-style: dashed;
+  border-radius: 17px;
+  font-style: italic;
+}

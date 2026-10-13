@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTebEditorStore } from '../../../features/teb-editor/store/useTebEditorStore';
 import propertiesIcon from '../../../shared/assets/icons/gpss-native/properties_32.png';
 import tebsPropertiesIcon from '../../../shared/assets/icons/gpss-native/tebsproperties_32.png';
+import { LinkPropertiesView } from './LinkPropertiesView';
 import { PropertyValue } from './PropertyValue';
 import { buildPropertyRows, filterPropertyRows, SHAPE_OPTIONS, type EditableSchemeField } from './propertyRows';
 
@@ -49,6 +50,7 @@ export function PropertiesView() {
   const schemeNodes = useTebEditorStore((state) => state.schemeNodes);
   const setSchemeNodes = useTebEditorStore((state) => state.setSchemeNodes);
   const saveWorkspaceSnapshot = useTebEditorStore((state) => state.saveWorkspaceSnapshot);
+  const hasProject = useTebEditorStore((state) => state.project !== null);
   const [search, setSearch] = useState('');
   const [shapeGalleryOpen, setShapeGalleryOpen] = useState(false);
 
@@ -81,7 +83,8 @@ export function PropertiesView() {
         <img src={tebsPropertiesIcon} alt="" aria-hidden="true" />
         <input type="search" placeholder="Поиск свойств" aria-label="Поиск свойств" value={search} onChange={(event) => setSearch(event.target.value)} />
       </div>
-      <div className="properties-grid" role="table" aria-label="Свойства">
+      {hasProject && schemeSelection?.type === 'link' ? <LinkPropertiesView linkId={schemeSelection.id} /> : null}
+      <div className="properties-grid" role="table" aria-label="Свойства" hidden={hasProject && schemeSelection?.type === 'link'}>
         {rows.map((row, index) =>
           row.kind === 'group' ? (
             <div className="property-group" role="row" key={`${row.title}-${index}`}>
