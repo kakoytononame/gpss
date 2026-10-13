@@ -2,6 +2,26 @@
 
 export type SimulationRunState = 'idle' | 'paused' | 'completed' | 'error';
 
+/** Transaction in the debugger "model state" window. */
+export interface TransactionState {
+  Number: number;
+  Priority: number;
+  AssemblySet: number;
+  CurrentBlock: number;
+  NextBlock: number;
+  Chain: string;
+  MoveTime: number | null;
+  TransitTime: number;
+  Parameters: Record<string, number>;
+}
+
+/** Stop condition: transaction number (0 = any), block number and its source line. */
+export interface BreakpointInfo {
+  Transaction: number;
+  Block: number;
+  Line: number;
+}
+
 export interface TranslationError {
   Line: number;
   Message: string;
@@ -63,6 +83,11 @@ export interface SimulationResult {
   RuntimeError: string | null;
   Journal: string[];
   Report: SimulationReport | null;
+  /** Debugger data (missing in responses of older servers). */
+  Transactions?: TransactionState[];
+  Breakpoints?: BreakpointInfo[];
+  BlockLines?: number[];
+  StopReason?: string | null;
 }
 
 export interface ExampleModel {

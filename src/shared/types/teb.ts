@@ -8,7 +8,7 @@ export type Direction = 'up' | 'down';
 export type SourceKind = 'idle' | 'api' | 'sample' | 'project';
 /** `offline` is reserved for failed server synchronisation; `warning` is a local, non-blocking notice. */
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'warning' | 'offline';
-export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts' | 'projects';
+export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts' | 'projects' | 'model-state';
 export type SimulationState = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';
 export type RightPanelTab = 'properties' | 'teb-tests';
 export type ExplorerMode = 'project' | 'libraries';
@@ -186,6 +186,8 @@ export interface WorkspaceSnapshot {
   simulationReport?: SimulationReport | null;
   /** Simulation project open in the workspace (reloaded from the server on restore). */
   projectId?: string | null;
+  /** Lines of the model text with breakpoints. */
+  breakpointLines?: number[];
 }
 
 export type CollectionRow<K extends CollectionKey = CollectionKey> = TebDocument[K][number];

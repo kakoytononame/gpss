@@ -45,7 +45,7 @@ public sealed class SimulationController : ControllerBase
     public ActionResult<SimulationResult> CreateSession([FromBody] SimulationModelRequest request)
     {
         ValidateModel(request);
-        return Ok(_sessions.Create(request.Text, string.IsNullOrWhiteSpace(request.ModelName) ? "Модель" : request.ModelName.Trim()));
+        return Ok(_sessions.Create(request.Text, string.IsNullOrWhiteSpace(request.ModelName) ? "Модель" : request.ModelName.Trim(), request.BreakpointLines));
     }
 
     /// <summary>Current state and report of a session.</summary>

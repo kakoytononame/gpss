@@ -18,6 +18,38 @@
   user-select: none;
 }
 
+.gpss-code-editor__gutter > div {
+  position: relative;
+  padding-left: 16px;
+  cursor: pointer;
+}
+
+.gpss-code-editor__gutter > div:hover::before,
+.gpss-code-editor__gutter .has-breakpoint::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(198, 40, 40, 0.3);
+  transform: translateY(-50%);
+}
+
+.gpss-code-editor__gutter .has-breakpoint::before {
+  background: #c62828;
+}
+
+.gpss-code-editor__gutter .is-current {
+  background: #fde68a;
+  color: #1f2937;
+}
+
+.gpss-line.is-current {
+  background: rgba(253, 230, 138, 0.6);
+}
+
 .gpss-code-editor__gutter .is-error {
   color: #c62828;
   font-weight: 700;

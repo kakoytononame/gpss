@@ -25,7 +25,21 @@ public sealed class SimulationResult
     public IReadOnlyList<string> Journal { get; init; } = [];
 
     public SimulationReport? Report { get; init; }
+
+    /// <summary>Transactions of the model (debugger "model state"), at most <see cref="SimulationSession.MaxListedTransactions"/>.</summary>
+    public IReadOnlyList<Runtime.TransactionState> Transactions { get; init; } = [];
+
+    /// <summary>Stop conditions: transaction number (0 = any) and block number.</summary>
+    public IReadOnlyList<BreakpointInfo> Breakpoints { get; init; } = [];
+
+    /// <summary>Source line of every block (index = block number - 1).</summary>
+    public IReadOnlyList<int> BlockLines { get; init; } = [];
+
+    /// <summary>Set when the run stopped at a stop condition.</summary>
+    public string? StopReason { get; init; }
 }
+
+public sealed record BreakpointInfo(int Transaction, int Block, int Line);
 
 /// <summary>
 /// A translated model with its simulation state. Mirrors a GPSS World "simulation object":
@@ -34,6 +48,7 @@ public sealed class SimulationResult
 public sealed class SimulationSession
 {
     private const int MaxStepEntries = 10_000;
+    public const int MaxListedTransactions = 300;
     private readonly List<string> _journal = [];
     private int _lastStartCount = 1;
 
@@ -55,7 +70,8 @@ public sealed class SimulationSession
     public static GpssModel Translate(string text) => Translator.Translate(text);
 
     /// <summary>Translates the model and, on success, runs its control statements (INITIAL, START, ...).</summary>
-    public static (SimulationSession? Session, SimulationResult Result) Create(string text, string modelName, string? id = null)
+    /// <param name="breakpointLines">Source lines of blocks with a stop condition, set before the model's statements run.</param>
+    public static (SimulationSession? Session, SimulationResult Result) Create(string text, string modelName, string? id = null, IReadOnlyCollection<int>? breakpointLines = null)
     {
         var journal = new List<string> { "Трансляция модели начата." };
         var model = Translator.Translate(text);
@@ -70,6 +86,10 @@ public sealed class SimulationSession
         journal.Add($"Трансляция завершена. Блоков: {model.Blocks.Count}.");
         var session = new SimulationSession(id ?? Guid.NewGuid().ToString("N"), modelName, model);
         session._journal.AddRange(journal);
+        foreach (var block in model.Blocks.Where(block => breakpointLines?.Contains(block.Line) == true))
+        {
+            session.Engine.SetBreakpoint(0, block.Number, enabled: true);
+        }
 
         if (!model.ControlStatements.Any(statement => statement.Kind is ControlKind.Start or ControlKind.Step))
         {
@@ -91,7 +111,7 @@ public sealed class SimulationSession
 
         if (errors.Count > 0 || statements.Count != 1 || !Keywords.Commands.Contains(statements[0].Operation))
         {
-            _journal.Add($"Неизвестная команда: {commandText.Trim()}. Доступны START, STEP, HALT, CONTINUE, RESET, CLEAR, SHOW, INITIAL, RMULT.");
+            _journal.Add($"Неизвестная команда: {commandText.Trim()}. Доступны START, STEP, HALT, CONTINUE, RESET, CLEAR, SHOW, INITIAL, RMULT, STOP.");
             return Result(runtimeError: "Неизвестная команда.");
         }
 
@@ -192,6 +212,9 @@ public sealed class SimulationSession
                 _journal.Add($"{expressionText} = {value.ToString("0.######", CultureInfo.InvariantCulture)}");
                 break;
             }
+            case ControlKind.Stop:
+                ApplyStop(Operand(0), Operand(1), Operand(2));
+                break;
             case ControlKind.Rmult:
                 for (var index = 0; index < operands.Count; index++)
                 {
@@ -244,6 +267,30 @@ public sealed class SimulationSession
         }
     }
 
+    /// <summary>STOP: without operands removes all stop conditions; STOP [A],B[,OFF] sets or removes one.</summary>
+    private void ApplyStop(string transactionText, string blockText, string mode)
+    {
+        if (transactionText.Length == 0 && blockText.Length == 0)
+        {
+            Engine.ClearBreakpoints();
+            _journal.Add("Все условия останова сняты (STOP).");
+            return;
+        }
+
+        var block = blockText.Length == 0 ? 0 : Model.Labels.TryGetValue(blockText, out var labelled) ? labelled
+            : int.TryParse(blockText, out var number) ? number : throw new SimulationException($"STOP: метка {blockText} не определена.");
+        var transaction = transactionText.Length == 0 ? 0 : int.TryParse(transactionText, out var xact) ? xact : throw new SimulationException("STOP: номер транзакта должен быть числом.");
+        var enabled = !mode.Equals("OFF", StringComparison.OrdinalIgnoreCase);
+        if (block == 0)
+        {
+            throw new SimulationException("STOP: не задан блок (операнд B).");
+        }
+
+        Engine.SetBreakpoint(transaction, block, enabled);
+        var who = transaction == 0 ? "любого транзакта" : $"транзакта {transaction}";
+        _journal.Add(enabled ? $"Условие останова: вход {who} в блок {block}." : $"Условие останова для {who} в блоке {block} снято.");
+    }
+
     private void ReportRunState(RunState state)
     {
         if (state == RunState.Completed)
@@ -251,6 +298,10 @@ public sealed class SimulationSession
             _journal.Add("Счётчик завершений достиг нуля.");
             _journal.Add($"Моделирование завершено. Время {Clock()}.");
             _journal.Add("Стандартный отчёт сформирован.");
+        }
+        else if (Engine.StopReason is { } reason)
+        {
+            _journal.Add($"{reason} Используйте STEP или CONTINUE.");
         }
         else
         {
@@ -280,6 +331,11 @@ public sealed class SimulationSession
             RuntimeError = runtimeError,
             Journal = journal,
             Report = StandardReportBuilder.Build(Engine, ModelName),
+            Transactions = Engine.TransactionStates(MaxListedTransactions),
+            Breakpoints = Engine.Breakpoints.OrderBy(item => item.Block)
+                .Select(item => new BreakpointInfo(item.Transaction, item.Block, Model.Blocks[item.Block - 1].Line)).ToList(),
+            BlockLines = Model.Blocks.Select(block => block.Line).ToList(),
+            StopReason = Engine.State == RunState.Paused ? Engine.StopReason : null,
         };
     }
 }

@@ -64,7 +64,7 @@ describe('createSimulationApi', () => {
     const backend = mockBackend();
     const api = createSimulationApi('');
 
-    await api.createSession('GENERATE 1', 'Модель');
+    await api.createSession('GENERATE 1', 'Модель', [3]);
     await api.execute('abc', 'START 1');
     await api.translate('GENERATE 1');
 
@@ -73,7 +73,7 @@ describe('createSimulationApi', () => {
       '/api/alina-gpss/studio/simulation/sessions/abc/commands',
       '/api/alina-gpss/studio/simulation/translate',
     ]);
-    expect(backend.requests[0].body).toEqual({ text: 'GENERATE 1', modelName: 'Модель' });
+    expect(backend.requests[0].body).toEqual({ text: 'GENERATE 1', modelName: 'Модель', BreakpointLines: [3] });
     expect(backend.requests[1].body).toEqual({ command: 'START 1' });
   });
 });

@@ -14,6 +14,11 @@ interface GpssCodeEditorProps {
   placeholder?: string;
   /** 1-based lines with translation errors. */
   errorLines?: ReadonlySet<number>;
+  /** 1-based lines with breakpoints; clicking a line number toggles one. */
+  breakpointLines?: readonly number[];
+  /** Line where the simulation stopped. */
+  currentLine?: number | null;
+  onToggleBreakpoint?: (line: number) => void;
   onChange: (value: string) => void;
   /** Called when "go to definition" (F12) cannot find the name under the caret. */
   onDefinitionMissing?: (name: string) => void;
@@ -26,7 +31,7 @@ const LINE_HEIGHT = 1.5;
  * numbers, error lines and F12 "Перейти к определению".
  */
 export const GpssCodeEditor = forwardRef<GpssCodeEditorHandle, GpssCodeEditorProps>(function GpssCodeEditor(
-  { value, fontSize, label, placeholder, errorLines, onChange, onDefinitionMissing },
+  { value, fontSize, label, placeholder, errorLines, breakpointLines = [], currentLine = null, onChange, onDefinitionMissing, onToggleBreakpoint },
   ref,
 ) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -94,17 +99,26 @@ export const GpssCodeEditor = forwardRef<GpssCodeEditorHandle, GpssCodeEditorPro
 
   return (
     <div className="gpss-code-editor">
-      <div className="gpss-code-editor__gutter" ref={gutterRef} style={style} aria-hidden="true">
-        {lines.map((_, index) => (
-          <div key={index} className={errorLines?.has(index + 1) ? 'is-error' : undefined}>
-            {index + 1}
-          </div>
-        ))}
+      <div className="gpss-code-editor__gutter" ref={gutterRef} style={style}>
+        {lines.map((_, index) => {
+          const line = index + 1;
+          const className = [errorLines?.has(line) && 'is-error', breakpointLines.includes(line) && 'has-breakpoint', currentLine === line && 'is-current']
+            .filter(Boolean)
+            .join(' ');
+          return (
+            <div key={index} className={className || undefined} onClick={() => onToggleBreakpoint?.(line)} title="Точка останова (щелчок)">
+              {line}
+            </div>
+          );
+        })}
       </div>
       <div className="gpss-code-editor__body">
         <pre className="gpss-code-editor__highlight" ref={highlightRef} style={style} aria-hidden="true">
           {lines.map((line, index) => (
-            <div key={index} className={errorLines?.has(index + 1) ? 'gpss-line is-error' : 'gpss-line'}>
+            <div
+              key={index}
+              className={['gpss-line', errorLines?.has(index + 1) && 'is-error', currentLine === index + 1 && 'is-current'].filter(Boolean).join(' ')}
+            >
               {tokenizeLine(line).map((token, tokenIndex) => (
                 <span key={tokenIndex} className={`gpss-token gpss-token--${token.kind}`}>
                   {token.text}

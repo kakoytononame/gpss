@@ -21,6 +21,16 @@ export function ModelTextDocument() {
   const saveWorkspaceSnapshot = useTebEditorStore((state) => state.saveWorkspaceSnapshot);
   const validateModelText = useTebEditorStore((state) => state.validateModelText);
   const startSimulation = useTebEditorStore((state) => state.startSimulation);
+  const breakpointLines = useTebEditorStore((state) => state.breakpointLines);
+  const toggleBreakpoint = useTebEditorStore((state) => state.toggleBreakpoint);
+  // The simulation stopped before a block: highlight the line of that block.
+  const currentLine = useTebEditorStore((state) => {
+    const model = state.modelState;
+    const next = model?.stopReason
+      ? model.transactions.find((transaction) => model.stopReason?.includes(`транзакт ${transaction.Number} `))?.NextBlock
+      : undefined;
+    return next ? (model?.blockLines[next - 1] ?? null) : null;
+  });
   const editorRef = useRef<GpssCodeEditorHandle | null>(null);
   const [namesVisible, setNamesVisible] = useState(false);
   const [nameFilter, setNameFilter] = useState('');
@@ -69,6 +79,9 @@ export function ModelTextDocument() {
           label="Текст GPSS модели"
           placeholder="; Текст модели GPSS World. Пример загружается с сервера моделирования."
           errorLines={errorLines}
+          breakpointLines={breakpointLines}
+          currentLine={currentLine}
+          onToggleBreakpoint={(line) => void toggleBreakpoint(line)}
           onChange={setModelText}
           onDefinitionMissing={(name) => setStatusMessage(`Определение «${name}» в тексте модели не найдено.`, 'warning')}
         />

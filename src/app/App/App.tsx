@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ModelLogDocument } from '../../features/teb-editor/ui/ModelLogDocument/ModelLogDocument';
+import { ModelStateDocument } from '../../features/teb-editor/ui/ModelStateDocument/ModelStateDocument';
 import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
 import { ProjectsDocument } from '../../features/teb-editor/ui/ProjectsDocument/ProjectsDocument';
 import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
@@ -27,6 +28,7 @@ const DOCUMENT_VIEWS: Record<ActiveDocument, () => ReactNode> = {
   'model-log': () => <ModelLogDocument />,
   charts: () => <SimulationChartsDocument />,
   projects: () => <ProjectsDocument />,
+  'model-state': () => <ModelStateDocument />,
 };
 
 function ActiveDocumentView() {

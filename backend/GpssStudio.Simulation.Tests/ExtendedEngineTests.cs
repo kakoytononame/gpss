@@ -309,3 +309,60 @@ public sealed class ExtendedEngineTests
         public double MatrixValue(string matrix, int row, int column) => row * 10 + column;
     }
 }
+
+public sealed class DebuggerTests
+{
+    private const string Model = """
+               GENERATE 10,,,3
+               QUEUE  Line
+               SEIZE  Server
+        Serve  DEPART Line
+               ADVANCE 25
+               RELEASE Server
+               TERMINATE 1
+        """;
+
+    [Fact]
+    public void Stop_HaltsBeforeTheBlockAndContinuePassesIt()
+    {
+        var (session, _) = SimulationTestHelpers.Run(Model);
+
+        session.Execute("STOP ,Serve");
+        var stopped = session.Execute("START 3");
+
+        Assert.Equal("paused", stopped.State);
+        Assert.Contains("перед входом в блок 4 DEPART (Serve)", stopped.StopReason);
+        Assert.Equal(10, stopped.Clock);
+        Assert.Equal([new BreakpointInfo(0, 4, 4)], stopped.Breakpoints);
+        var first = Assert.Single(stopped.Transactions, transaction => transaction.Number == 1);
+        Assert.Equal((3, 4, "Текущих событий"), (first.CurrentBlock, first.NextBlock, first.Chain));
+
+        var next = session.Execute("CONTINUE");
+        Assert.Equal("paused", next.State);
+        Assert.Equal(35, next.Clock);
+        Assert.Contains(next.Transactions, transaction => transaction.Chain == "Ожидает устройство Server");
+
+        session.Execute("STOP");
+        Assert.Equal("completed", session.Execute("CONTINUE").State);
+    }
+
+    [Fact]
+    public void Stop_ForOneTransactionAndOff()
+    {
+        var (session, _) = SimulationTestHelpers.Run(Model);
+
+        session.Execute("STOP 2,Serve");
+        Assert.Equal(35, session.Execute("START 3").Clock);
+        session.Execute("STOP 2,Serve,OFF");
+        Assert.Empty(session.Snapshot().Breakpoints);
+        Assert.Equal("Неизвестная метка", session.Execute("STOP ,Nowhere").RuntimeError is { } error && error.Contains("Nowhere") ? "Неизвестная метка" : "нет ошибки");
+    }
+
+    [Fact]
+    public void Result_ListsBlockLines()
+    {
+        var (session, _) = SimulationTestHelpers.Run(Model);
+
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7], session.Snapshot().BlockLines);
+    }
+}

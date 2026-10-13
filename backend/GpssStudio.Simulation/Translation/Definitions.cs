@@ -96,6 +96,9 @@ public enum ControlKind
     Step,
     Halt,
     Continue,
+
+    /// <summary>STOP [A],[B][,OFF]: stop condition (breakpoint) for transaction A entering block B.</summary>
+    Stop,
 }
 
 /// <summary>Control statement executed after translation, in model order.</summary>

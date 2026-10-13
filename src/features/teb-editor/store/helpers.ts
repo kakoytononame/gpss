@@ -125,6 +125,7 @@ export function snapshotFromState(state: TebEditorState): WorkspaceSnapshot {
     modelText: state.modelText,
     simulationReport: state.simulationReport,
     projectId: state.project?.Id ?? null,
+    breakpointLines: [...state.breakpointLines],
   };
 }
 
@@ -164,6 +165,7 @@ export function stateFromWorkspaceSnapshot(snapshot: WorkspaceSnapshot, state: T
     modelText: snapshot.modelText || state.modelText,
     simulationSessionId: snapshot.modelText && snapshot.modelText !== state.modelText ? null : state.simulationSessionId,
     simulationReport: snapshot.simulationReport ?? state.simulationReport,
+    breakpointLines: snapshot.breakpointLines ?? state.breakpointLines,
     syncStatus: 'saved',
     syncMessage,
     ...(teb === state.teb ? {} : createHistory(teb)),

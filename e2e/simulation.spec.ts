@@ -33,8 +33,11 @@ test.describe('GPSS simulation', () => {
     await page.getByTestId('ribbon-command-cmd-conduct').click();
     await page.getByTestId('ribbon-command-cmd-step').click();
 
-    await expect(page.getByRole('textbox', { name: 'Редактор журнала моделирования' })).toHaveValue(/Транзакт \d+ вошёл в блок/);
+    // STEP opens the debugger's model state; the trace goes to the journal.
+    await expect(page.getByRole('table', { name: 'Транзакты модели' })).toBeVisible();
     await expect(page.getByRole('status')).toContainText('приостановлено');
+    await page.locator('.tree-row', { hasText: 'Журнал моделирования' }).click();
+    await expect(page.getByRole('textbox', { name: 'Редактор журнала моделирования' })).toHaveValue(/Транзакт \d+ вошёл в блок/);
   });
 
   test('reports translation errors with line numbers', async ({ page }) => {

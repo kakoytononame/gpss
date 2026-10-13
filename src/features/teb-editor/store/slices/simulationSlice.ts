@@ -82,6 +82,15 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
         simulationSessionId: result.SessionId ?? state.simulationSessionId,
         simulationState: RUN_STATE[result.State],
         simulationReport: result.Report ?? state.simulationReport,
+        modelState: result.BlockLines
+          ? {
+              clock: result.Clock,
+              terminationCount: result.TerminationCount,
+              transactions: result.Transactions ?? [],
+              blockLines: result.BlockLines,
+              stopReason: result.StopReason ?? null,
+            }
+          : state.modelState,
         reportCellEdits: reportChanged ? {} : state.reportCellEdits,
         modelLogText: appendLogLines(
           state.modelLogText,
@@ -98,7 +107,9 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
             : test,
         ),
         syncStatus: failed ? 'warning' : 'saved',
-        syncMessage: failed ? (result.RuntimeError ?? `Ошибки трансляции: ${result.Errors.length}. См. панель замечаний.`) : successMessage,
+        syncMessage: failed
+          ? (result.RuntimeError ?? `Ошибки трансляции: ${result.Errors.length}. См. панель замечаний.`)
+          : (result.StopReason ?? successMessage),
       };
     });
   };
@@ -114,7 +125,9 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
   };
 
   const createSession = async () => {
-    const result = await api().createSession(get().modelText, MODEL_NAME);
+    const { project, projectModelIndex, modelText, breakpointLines } = get();
+    const modelName = project?.Models[projectModelIndex]?.Name ?? MODEL_NAME;
+    const result = await api().createSession(modelText, modelName, breakpointLines);
     applyResult(result, result.State === 'completed' ? 'Моделирование завершено.' : 'Модель оттранслирована.');
     return result;
   };
@@ -183,6 +196,8 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
     simulationReport: null,
     simulationBusy: false,
     commandLineFocusRequest: 0,
+    breakpointLines: [],
+    modelState: null,
 
     async loadExampleModel() {
       if (get().modelText.trim()) {
@@ -201,7 +216,7 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
 
     setModelText(text) {
       // A changed model invalidates the translated session.
-      set({ modelText: text, simulationSessionId: null, syncMessage: 'Текст модели изменен.' });
+      set({ modelText: text, simulationSessionId: null, modelState: null, syncMessage: 'Текст модели изменен.' });
     },
 
     async validateModelText() {
@@ -262,7 +277,7 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
         default:
           await get().executeSimulationCommand(COMMAND_TEXT[command] ?? command.toUpperCase());
           if (command === 'step') {
-            get().activateDocument('model-log');
+            get().activateDocument('model-state');
           }
       }
     },
@@ -279,6 +294,42 @@ export const createSimulationSlice: StateCreator<TebEditorStore, [], [], Simulat
 
     requestCommandLineFocus() {
       set((state) => ({ commandLineFocusRequest: state.commandLineFocusRequest + 1 }));
+    },
+
+    async toggleBreakpoint(line) {
+      const { breakpointLines, modelState, simulationSessionId } = get();
+      const block = modelState ? modelState.blockLines.indexOf(line) + 1 : 0;
+      if (modelState && block === 0) {
+        set({ syncStatus: 'warning', syncMessage: `В строке ${line} нет блока: точку останова поставить нельзя.` });
+        return;
+      }
+
+      const enabled = !breakpointLines.includes(line);
+      set({
+        breakpointLines: enabled ? [...breakpointLines, line].sort((a, b) => a - b) : breakpointLines.filter((item) => item !== line),
+        syncStatus: 'saved',
+        syncMessage: enabled ? `Точка останова в строке ${line}.` : `Точка останова в строке ${line} снята.`,
+      });
+
+      // The running session gets the stop condition at once; new sessions receive all breakpoint lines.
+      if (simulationSessionId && block > 0) {
+        try {
+          await execute(enabled ? `STOP ,${block}` : `STOP ,${block},OFF`);
+        } catch (error) {
+          failRequest(error);
+        }
+      }
+    },
+
+    async clearBreakpoints() {
+      set({ breakpointLines: [], syncStatus: 'saved', syncMessage: 'Все точки останова сняты.' });
+      if (get().simulationSessionId) {
+        try {
+          await execute('STOP');
+        } catch (error) {
+          failRequest(error);
+        }
+      }
     },
   };
 };

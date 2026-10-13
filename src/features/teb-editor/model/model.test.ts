@@ -64,3 +64,20 @@ describe('model log', () => {
     expect(appendLogLines('', ['a', 'b'])).toBe('a\nb');
   });
 });
+
+describe('report export', () => {
+  const tables = [{ id: 'queues', label: 'Очереди', columns: ['Имя', 'Вход'], rows: [['BUF; 1', '5']] }];
+
+  it('writes CSV for Excel with BOM, semicolons, quoting and user edits', async () => {
+    const { reportToCsv } = await import('./report');
+    const csv = reportToCsv('Столовая', tables, { 'queues:0:1': '7' });
+
+    expect(csv.startsWith(String.fromCharCode(0xfeff) + 'Стандартный отчёт: Столовая')).toBe(true);
+    expect(csv).toContain('Очереди\r\nИмя;Вход\r\n"BUF; 1";7');
+  });
+
+  it('copies tables as tab-separated text', async () => {
+    const { reportToTsv } = await import('./report');
+    expect(reportToTsv(tables, {})).toBe('Очереди\nИмя\tВход\nBUF; 1\t5');
+  });
+});

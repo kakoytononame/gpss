@@ -88,8 +88,7 @@ function createRibbonCommands(): RibbonCommands {
     notify('Открыт режим отладки внешних процедур.');
   };
   const startDebugging = () => {
-    // Debugging = step-by-step execution with a trace in the journal.
-    activate('model-log');
+    // Debugging = step-by-step execution; the model state shows where the transactions are.
     void store().runSimulationCommand('step');
   };
   const startSimulation = () => void store().startSimulation();
@@ -191,6 +190,14 @@ function createRibbonCommands(): RibbonCommands {
         commands: [
           { id: 'generate-model', label: 'Сгенерировать текст модели', icon: newModelIcon, onClick: () => void store().generateModelText() },
           { id: 'save-project', label: 'Сохранить проект', icon: saveIcon, onClick: () => void store().saveProject() },
+        ],
+      },
+      {
+        title: 'Отладка',
+        className: 'ribbon-group--debug',
+        commands: [
+          { id: 'model-state', label: 'Состояние модели', icon: debugSimIcon, onClick: () => activate('model-state') },
+          { id: 'clear-breakpoints', label: 'Снять точки останова', icon: stopSimIcon, onClick: () => void store().clearBreakpoints() },
         ],
       },
       {
@@ -297,19 +304,19 @@ function createRibbonCommands(): RibbonCommands {
         title: 'Операции',
         className: 'ribbon-group--report-operations',
         commands: [
-          { id: 'report-copy-rows', label: 'Копировать ряды', icon: reportCopyIcon, onClick: () => notify('Ряды отчёта скопированы в буфер демо-режима.') },
+          { id: 'report-copy-rows', label: 'Копировать ряды', icon: reportCopyIcon, onClick: () => void store().copyReport() },
           { id: 'report-find', label: 'Найти', icon: reportFindIcon, onClick: () => notify('Поиск по отчёту подготовлен.') },
           {
             id: 'report-show-chart',
             label: 'Показать графики таблиц',
             icon: reportChartIcon,
-            onClick: () => notify('Графики таблиц подготовлены для отображения.'),
+            onClick: () => activate('charts'),
           },
           {
             id: 'report-export-excel',
             label: 'Экспортировать в Excel',
             icon: reportExcelIcon,
-            onClick: () => notify('Экспорт стандартного отчёта в Excel подготовлен.'),
+            onClick: () => store().exportReport(),
           },
         ],
       },

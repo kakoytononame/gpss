@@ -1,0 +1,72 @@
+.model-state {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+  font-size: 0.82rem;
+}
+
+.model-state__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 0;
+}
+
+.model-state__summary dt {
+  color: #5b6b7a;
+}
+
+.model-state__summary dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.model-state__stop {
+  margin: 0;
+  padding: 4px 8px;
+  border-left: 3px solid #d97706;
+  background: #fff7e6;
+}
+
+.model-state__chains {
+  margin: 0;
+  color: #46596b;
+}
+
+.model-state__filter {
+  max-width: 280px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+.model-state__table {
+  overflow: auto;
+  max-height: 560px;
+  border: 1px solid var(--line);
+}
+
+.model-state__table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.model-state__table th,
+.model-state__table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #edf1f5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.model-state__table th {
+  position: sticky;
+  top: 0;
+  background: #eef3f8;
+}
+
+.model-state__empty {
+  font-size: 0.85rem;
+  color: #5b6b7a;
+}

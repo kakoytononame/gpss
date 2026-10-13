@@ -53,6 +53,9 @@ public sealed class SimulationEngine : IEvaluationContext
     private readonly Dictionary<int, Transaction> _liveTransactions = [];
     private readonly Dictionary<int, DataStream> _streams = [];
     private const int MaxTraceLinesPerRun = 10_000;
+    private readonly HashSet<(int Transaction, int Block)> _breakpoints = [];
+    private (int Transaction, int Block)? _resumeAfterBreak;
+    private bool _breakHit;
     private int _traceLines;
 
     /// <summary>Time series for result charts, keyed "Q:name", "S:name", "F:name".</summary>
@@ -92,6 +95,12 @@ public sealed class SimulationEngine : IEvaluationContext
 
     /// <summary>Receives a line for every block entry while stepping (STEP).</summary>
     public Action<string>? Trace { get; set; }
+
+    /// <summary>Stop conditions (STOP command): transaction number (0 = any) and block number.</summary>
+    public IReadOnlyCollection<(int Transaction, int Block)> Breakpoints => _breakpoints;
+
+    /// <summary>Why the last run stopped before completion (stop condition), or null.</summary>
+    public string? StopReason { get; private set; }
 
     /// <summary>Receives block entries of transactions switched on by TRACE.</summary>
     public Action<string>? Journal { get; set; }
@@ -245,6 +254,7 @@ public sealed class SimulationEngine : IEvaluationContext
         _random.Reset();
         _liveTransactions.Clear();
         _streams.Clear();
+        _resumeAfterBreak = null;
         Series.Clear();
         CreateDefinedEntities();
 
@@ -286,6 +296,8 @@ public sealed class SimulationEngine : IEvaluationContext
         _stepBudget = stepBudget;
         _entriesThisRun = 0;
         _traceLines = 0;
+        _breakHit = false;
+        StopReason = null;
         _runStopwatch.Restart();
         State = RunState.Paused;
 
@@ -352,7 +364,7 @@ public sealed class SimulationEngine : IEvaluationContext
 
             MoveTransaction(transaction, out var yielded);
 
-            if (TerminationCount <= 0 || _stepBudget <= 0)
+            if (TerminationCount <= 0 || _stepBudget <= 0 || _breakHit)
             {
                 return false;
             }
@@ -394,6 +406,11 @@ public sealed class SimulationEngine : IEvaluationContext
             }
 
             var block = BlockAt(transaction.NextBlock, transaction);
+            if (ShouldBreak(transaction, block))
+            {
+                return moved;
+            }
+
             if (!block.CanEnter(this, transaction))
             {
                 block.OnRefused(this, transaction);
@@ -445,6 +462,112 @@ public sealed class SimulationEngine : IEvaluationContext
                     return true;
             }
         }
+    }
+
+    /// <summary>
+    /// Stop condition: the run halts before the transaction enters the block. When the run continues,
+    /// the same transaction passes this block once.
+    /// </summary>
+    private bool ShouldBreak(Transaction transaction, Block block)
+    {
+        if (_breakpoints.Count == 0 || !(_breakpoints.Contains((0, block.Number)) || _breakpoints.Contains((transaction.Number, block.Number))))
+        {
+            return false;
+        }
+
+        if (_resumeAfterBreak == (transaction.Number, block.Number))
+        {
+            _resumeAfterBreak = null;
+            return false;
+        }
+
+        _resumeAfterBreak = (transaction.Number, block.Number);
+        _breakHit = true;
+        StopReason = $"Останов: транзакт {transaction.Number} перед входом в блок {block.Number} {block.Operation}{(block.Label is null ? string.Empty : $" ({block.Label})")}. Время {AbsoluteClock:F3}.";
+        return true;
+    }
+
+    public void SetBreakpoint(int transaction, int block, bool enabled)
+    {
+        if (block < 1 || block > _model.Blocks.Count)
+        {
+            throw new SimulationException($"STOP: блок {block} не существует.");
+        }
+
+        if (enabled)
+        {
+            _breakpoints.Add((transaction, block));
+        }
+        else
+        {
+            _breakpoints.Remove((transaction, block));
+        }
+    }
+
+    public void ClearBreakpoints() => _breakpoints.Clear();
+
+    /// <summary>Where every transaction of the model is: chain, current and next block, timing and parameters.</summary>
+    public IReadOnlyList<TransactionState> TransactionStates(int limit)
+    {
+        var places = new Dictionary<Transaction, string>();
+        foreach (var transaction in _currentChain)
+        {
+            places[transaction] = "Текущих событий";
+        }
+
+        foreach (var transaction in _retryChain)
+        {
+            places[transaction] = "Ожидает условия (TEST, GATE)";
+        }
+
+        foreach (var transaction in _futureChain)
+        {
+            places[transaction] = "Будущих событий";
+        }
+
+        foreach (var facility in _facilities.Values)
+        {
+            foreach (var transaction in facility.DelayChain)
+            {
+                places[transaction] = $"Ожидает устройство {facility.Name}";
+            }
+
+            foreach (var transaction in facility.InterruptChain)
+            {
+                places[transaction] = $"Прерван на устройстве {facility.Name}";
+            }
+        }
+
+        foreach (var storage in _storages.Values)
+        {
+            foreach (var (transaction, _) in storage.DelayChain)
+            {
+                places[transaction] = $"Ожидает память {storage.Name}";
+            }
+        }
+
+        foreach (var chain in _userChains.Values)
+        {
+            foreach (var transaction in chain.Members)
+            {
+                places[transaction] = $"Список пользователя {chain.Name}";
+            }
+        }
+
+        return _liveTransactions.Values
+            .OrderBy(transaction => transaction.Number)
+            .Take(limit)
+            .Select(transaction => new TransactionState(
+                transaction.Number,
+                transaction.Priority,
+                transaction.AssemblySet,
+                transaction.CurrentBlock,
+                transaction.NextBlock,
+                places.GetValueOrDefault(transaction, transaction.CurrentBlock > 0 ? $"Задержан в блоке {transaction.CurrentBlock}" : "Не вошёл в модель"),
+                transaction.OnFutureChain ? transaction.MoveTime : null,
+                AbsoluteClock - transaction.MarkTime,
+                transaction.Parameters.ToDictionary(pair => pair.Key, pair => pair.Value)))
+            .ToList();
     }
 
     private string DescribeEntry(Transaction transaction, Block block) =>

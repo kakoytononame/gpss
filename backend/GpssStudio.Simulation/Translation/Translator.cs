@@ -181,6 +181,7 @@ public static class Translator
             "STEP" => ControlKind.Step,
             "HALT" => ControlKind.Halt,
             "CONTINUE" => ControlKind.Continue,
+            "STOP" => ControlKind.Stop,
             _ => throw new FormatException("неизвестная команда."),
         };
 

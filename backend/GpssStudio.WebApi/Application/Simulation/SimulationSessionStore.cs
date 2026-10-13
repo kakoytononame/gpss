@@ -13,10 +13,10 @@ public sealed class SimulationSessionStore
     private const int MaxSessions = 64;
     private readonly ConcurrentDictionary<string, SimulationSession> _sessions = new();
 
-    public SimulationResult Create(string text, string modelName)
+    public SimulationResult Create(string text, string modelName, IReadOnlyCollection<int>? breakpointLines = null)
     {
         EvictExpired();
-        var (session, result) = SimulationSession.Create(text, modelName);
+        var (session, result) = SimulationSession.Create(text, modelName, breakpointLines: breakpointLines);
 
         if (session is not null)
         {

@@ -55,3 +55,15 @@ public sealed class Transaction
         }
     }
 }
+
+/// <summary>Snapshot of a transaction for the "model state" window of the debugger.</summary>
+public sealed record TransactionState(
+    int Number,
+    int Priority,
+    int AssemblySet,
+    int CurrentBlock,
+    int NextBlock,
+    string Chain,
+    double? MoveTime,
+    double TransitTime,
+    IReadOnlyDictionary<string, double> Parameters);

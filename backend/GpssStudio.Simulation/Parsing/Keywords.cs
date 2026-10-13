@@ -24,13 +24,13 @@ public static class Keywords
 
     public static readonly HashSet<string> Commands = new(StringComparer.OrdinalIgnoreCase)
     {
-        "INITIAL", "START", "RESET", "CLEAR", "SIMULATE", "END", "RMULT", "SHOW", "HALT", "CONTINUE", "STEP",
+        "INITIAL", "START", "RESET", "CLEAR", "SIMULATE", "END", "RMULT", "SHOW", "HALT", "CONTINUE", "STEP", "STOP",
     };
 
     /// <summary>GPSS World commands that are recognised but not available in this environment.</summary>
     public static readonly HashSet<string> UnsupportedCommands = new(StringComparer.OrdinalIgnoreCase)
     {
-        "INTEGRATE", "INCLUDE", "CONDUCT", "REPORT", "STOP", "EXIT",
+        "INTEGRATE", "INCLUDE", "CONDUCT", "REPORT", "EXIT",
     };
 
     public static readonly HashSet<string> TestOperators = new(StringComparer.OrdinalIgnoreCase) { "L", "LE", "E", "NE", "G", "GE" };

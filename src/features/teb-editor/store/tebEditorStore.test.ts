@@ -279,3 +279,42 @@ describe('mutation ordering', () => {
     expect(order).toEqual(['states', 'states[1]']);
   });
 });
+
+describe('debugger', () => {
+  beforeEach(() => resetStore({ modelText: '  GENERATE 10\n  SEIZE F\n  TERMINATE 1\n  START 1' }));
+
+  const stopped = () =>
+    simulationResult({
+      State: 'paused',
+      StopReason: 'Останов: транзакт 1 перед входом в блок 2 SEIZE. Время 10.000.',
+      BlockLines: [1, 2, 3],
+      Breakpoints: [{ Transaction: 0, Block: 2, Line: 2 }],
+      Transactions: [
+        { Number: 1, Priority: 0, AssemblySet: 1, CurrentBlock: 1, NextBlock: 2, Chain: 'Текущих событий', MoveTime: null, TransitTime: 0, Parameters: {} },
+      ],
+    });
+
+  it('sends breakpoint lines with a new session and shows the model state', async () => {
+    const backend = mockBackend((request) => (request.url.endsWith('/sessions') ? { status: 200, body: stopped() } : undefined));
+    await store().toggleBreakpoint(2);
+    await store().startSimulation();
+
+    expect(backend.requests[0].body).toMatchObject({ BreakpointLines: [2] });
+    expect(store().modelState).toMatchObject({ clock: 1440, blockLines: [1, 2, 3], stopReason: expect.stringContaining('блок 2') });
+    expect(store().syncMessage).toContain('Останов');
+  });
+
+  it('sends STOP commands to a running session and refuses lines without blocks', async () => {
+    const backend = mockBackend((request) => (request.url.endsWith('/sessions') ? { status: 200, body: stopped() } : undefined));
+    await store().startSimulation();
+
+    await store().toggleBreakpoint(3);
+    expect(backend.requests.at(-1)?.body).toEqual({ command: 'STOP ,3' });
+    await store().toggleBreakpoint(3);
+    expect(backend.requests.at(-1)?.body).toEqual({ command: 'STOP ,3,OFF' });
+
+    await store().toggleBreakpoint(4);
+    expect(store().syncStatus).toBe('warning');
+    expect(store().breakpointLines).toEqual([]);
+  });
+});

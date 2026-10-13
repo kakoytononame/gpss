@@ -70,4 +70,16 @@ public sealed class SimulationApiTests : ApiTestBase
         Assert.Contains("KASSA1", example.GetProperty("Text").GetString());
         Assert.Equal(HttpStatusCode.NotFound, (await Client.GetAsync($"{SimulationPath}/examples/unknown")).StatusCode);
     }
+
+    [Fact]
+    public async Task CreateSession_WithBreakpointLines_StopsAndListsTransactions()
+    {
+        var body = await ReadJsonAsync(await Client.PostAsJsonAsync($"{SimulationPath}/sessions", new { text = Model + "  START 3", BreakpointLines = new[] { 3 } }));
+
+        Assert.Equal("paused", body.GetProperty("State").GetString());
+        Assert.Contains("перед входом в блок 3 ADVANCE", body.GetProperty("StopReason").GetString());
+        Assert.Equal(3, body.GetProperty("Breakpoints")[0].GetProperty("Block").GetInt32());
+        Assert.Equal(3, body.GetProperty("Transactions")[0].GetProperty("NextBlock").GetInt32());
+        Assert.Equal(5, body.GetProperty("BlockLines").GetArrayLength());
+    }
 }

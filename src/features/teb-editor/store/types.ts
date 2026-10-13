@@ -23,7 +23,7 @@ import type {
   TebTestStatus,
 } from '../../../shared/types/teb';
 import type { GenerationResult, ProjectSummary, StudioProject, StudioTebLink } from '../../../shared/types/project';
-import type { SimulationReport } from '../../../shared/types/simulation';
+import type { SimulationReport, TransactionState } from '../../../shared/types/simulation';
 
 type Updater<T> = T | ((current: T) => T);
 
@@ -123,6 +123,19 @@ export interface SimulationSliceState {
   simulationBusy: boolean;
   /** Incremented to ask the journal to focus its command line. */
   commandLineFocusRequest: number;
+  /** Lines of the model text with breakpoints (sent as stop conditions to the simulator). */
+  breakpointLines: number[];
+  /** Debugger "model state" from the last simulator response. */
+  modelState: ModelState | null;
+}
+
+export interface ModelState {
+  clock: number;
+  terminationCount: number;
+  transactions: TransactionState[];
+  /** Source line of every block (index = block number - 1). */
+  blockLines: number[];
+  stopReason: string | null;
 }
 
 export interface SimulationSliceActions {
@@ -136,6 +149,9 @@ export interface SimulationSliceActions {
   /** Executes any GPSS command, e.g. "START 5" or "SHOW Q$BUF1". */
   executeSimulationCommand: (commandText: string) => Promise<void>;
   requestCommandLineFocus: () => void;
+  /** Sets or removes a breakpoint on a line of the model text (the line must hold a block). */
+  toggleBreakpoint: (line: number) => Promise<void>;
+  clearBreakpoints: () => Promise<void>;
 }
 
 export interface SchemeSliceState {
@@ -164,6 +180,10 @@ export interface DiagnosticsSliceActions {
   setModelLogText: (text: string, message?: string) => void;
   appendModelLog: (line: string) => void;
   clearModelLog: () => void;
+  /** Downloads the standard report as a CSV file for Excel. */
+  exportReport: () => void;
+  /** Copies the standard report tables to the clipboard (tab-separated). */
+  copyReport: () => Promise<void>;
   setIssueFilter: (filter: IssueFilter) => void;
   setTebTestStatus: (id: string, status: TebTestStatus, message: string) => void;
 }
