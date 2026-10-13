@@ -42,9 +42,22 @@ export const initialTebState: TebEditorDataState = {
 };
 
 export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataState & TebEditorDataActions> = (set, get) => {
+  /**
+   * Commits a change: TEBs of the open project are written into the project document (saved with the
+   * project), other TEBs are sent to the TEB API.
+   */
+  const commit = (mutation: () => Promise<unknown>, successMessage: string): Promise<void> => {
+    if (get().source === 'project') {
+      get().applyTebToProject('ТЭБ проекта изменён. Сохраните проект, чтобы записать изменения.');
+      return Promise.resolve();
+    }
+
+    return runRemoteMutation(set, mutation, successMessage);
+  };
+
   /** Sends the whole collection after structural changes (add / remove / reorder). */
   const syncCollection = (collection: CollectionKey, successMessage: string) =>
-    runRemoteMutation(set, () => getApi(get()).updateClassProperty(collection, get().teb?.[collection] ?? []), successMessage);
+    commit(() => getApi(get()).updateClassProperty(collection, get().teb?.[collection] ?? []), successMessage);
 
   const setModelFontSize = (size: number, message: string) =>
     set({ modelFontSize: clamp(size, MIN_MODEL_FONT_SIZE, MAX_MODEL_FONT_SIZE), syncMessage: message });
@@ -87,6 +100,12 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
     },
 
     async refresh() {
+      const { source, editingNodeId } = get();
+      if (source === 'project' && editingNodeId) {
+        get().openProjectTeb(editingNodeId);
+        return;
+      }
+
       await get().load();
     },
 
@@ -160,7 +179,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
 
     async commitGeneralField(field) {
       const value = get().teb?.[field] ?? '';
-      await runRemoteMutation(set, () => getApi(get()).updateClassProperty(field, value), 'Свойство отправлено на сервер.');
+      await commit(() => getApi(get()).updateClassProperty(field, value), 'Свойство отправлено на сервер.');
     },
 
     updateGpssModelText(text) {
@@ -169,7 +188,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
 
     async commitGpssModelText() {
       const text = get().teb?.gpssModel.text ?? '';
-      await runRemoteMutation(set, () => getApi(get()).updateGpssModel(text), 'Текст GPSS модели отправлен на сервер.');
+      await commit(() => getApi(get()).updateGpssModel(text), 'Текст GPSS модели отправлен на сервер.');
     },
 
     async attachImage(file) {
@@ -185,7 +204,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
         `Изображение "${imageName}" загружено.`,
       );
 
-      await runRemoteMutation(set, () => getApi(get()).updateClassProperty('image', { imageName, imageUrl }), 'Изображение отправлено на сервер.');
+      await commit(() => getApi(get()).updateClassProperty('image', { imageName, imageUrl }), 'Изображение отправлено на сервер.');
     },
 
     async removeImage() {
@@ -198,13 +217,13 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
         'Изображение удалено.',
       );
 
-      await runRemoteMutation(set, () => getApi(get()).updateClassProperty('image', { imageName: '', imageUrl: '' }), 'Изображение удалено на сервере.');
+      await commit(() => getApi(get()).updateClassProperty('image', { imageName: '', imageUrl: '' }), 'Изображение удалено на сервере.');
     },
 
     async addParameter() {
       const parameter = createBlankParameter();
       updateTeb(set, (teb) => teb.parameters.push(parameter), 'Параметр добавлен локально.');
-      await runRemoteMutation(set, () => getApi(get()).addParameter(parameter), 'Параметр добавлен на сервере.');
+      await commit(() => getApi(get()).addParameter(parameter), 'Параметр добавлен на сервере.');
     },
 
     async removeParameter(index) {
@@ -213,7 +232,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
       }
 
       updateTeb(set, (teb) => teb.parameters.splice(index, 1), 'Параметр удален локально.');
-      await runRemoteMutation(set, () => getApi(get()).deleteParameter(index), 'Параметр удален на сервере.');
+      await commit(() => getApi(get()).deleteParameter(index), 'Параметр удален на сервере.');
     },
 
     async moveParameter(index, direction) {
@@ -222,7 +241,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
       }
 
       updateTeb(set, (teb) => (teb.parameters = reorderItems(teb.parameters, index, direction)), 'Параметры переупорядочены.');
-      await runRemoteMutation(set, () => getApi(get()).moveParameter(index, direction), 'Порядок параметров отправлен на сервер.');
+      await commit(() => getApi(get()).moveParameter(index, direction), 'Порядок параметров отправлен на сервер.');
     },
 
     updateParameter(index, field, value) {
@@ -241,13 +260,13 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
     async commitParameter(index) {
       const parameter = get().teb?.parameters[index];
       if (parameter) {
-        await runRemoteMutation(set, () => getApi(get()).updateParameter(index, parameter), 'Параметр отправлен на сервер.');
+        await commit(() => getApi(get()).updateParameter(index, parameter), 'Параметр отправлен на сервер.');
       }
     },
 
     async commitParameterValue(index) {
       const value = get().teb?.parameters[index]?.currentValue ?? '';
-      await runRemoteMutation(set, () => getApi(get()).setParameterValue(index, value), 'Текущее значение параметра отправлено на сервер.');
+      await commit(() => getApi(get()).setParameterValue(index, value), 'Текущее значение параметра отправлено на сервер.');
     },
 
     async addCollectionRow(collection) {
@@ -300,7 +319,7 @@ export const createTebSlice: StateCreator<TebEditorStore, [], [], TebEditorDataS
     async commitCollectionField(collection, index) {
       const row = get().teb?.[collection][index];
       if (row) {
-        await runRemoteMutation(set, () => getApi(get()).updateClassProperty(`${collection}[${index}]`, row), 'Изменение строки отправлено на сервер.');
+        await commit(() => getApi(get()).updateClassProperty(`${collection}[${index}]`, row), 'Изменение строки отправлено на сервер.');
       }
     },
   };

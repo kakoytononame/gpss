@@ -27,6 +27,7 @@ const SOURCE_LABELS: Record<SourceKind, string> = {
   api: 'API',
   sample: 'Демо',
   idle: 'Старт',
+  project: 'Проект',
 };
 
 const SYNC_LABELS: Record<SyncStatus, string> = {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import openProjectIcon from '../../../../shared/assets/icons/open-project.png';
 import exampleAgro from '../../../../shared/assets/start-page/example-agro.png';
@@ -24,6 +25,12 @@ interface ExampleProject {
 }
 
 const BUNDLED_PROJECT_ID = 'canteen';
+const RECENT_PROJECTS_LIMIT = 6;
+
+function formatLaunch(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }).replace(',', '');
+}
 
 const recentProjects: RecentProject[] = [
   {
@@ -73,14 +80,42 @@ const exampleProjects: ExampleProject[] = [
 export function StartPageDocument() {
   const activateDocument = useTebEditorStore((state) => state.activateDocument);
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
+  const serverProjects = useTebEditorStore((state) => state.projects);
+  const currentProjectId = useTebEditorStore((state) => state.project?.Id);
+  const loadProjects = useTebEditorStore((state) => state.loadProjects);
+  const openServerProject = useTebEditorStore((state) => state.openProject);
 
-  /** Only the "Столовая" demo project is bundled with the web version. */
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
+
+  // Projects stored on the server replace the demo list once there are any.
+  const recent: RecentProject[] =
+    serverProjects.length > 0
+      ? serverProjects.slice(0, RECENT_PROJECTS_LIMIT).map((project) => ({
+          id: project.Id,
+          title: project.Name,
+          lastLaunch: formatLaunch(project.UpdatedAt),
+          location: `Сервер, моделей: ${project.ModelCount}`,
+          isSelected: project.Id === currentProjectId,
+        }))
+      : recentProjects;
+
+  /** The "Столовая" demo is bundled; the other GPSS Studio samples are imported on the projects page. */
   function openProject(projectId: string, message: string) {
-    if (projectId === BUNDLED_PROJECT_ID) {
-      activateDocument('scheme');
+    if (serverProjects.some((project) => project.Id === projectId)) {
+      void openServerProject(projectId);
+      return;
     }
 
-    setStatusMessage(message, 'saved');
+    if (projectId === BUNDLED_PROJECT_ID) {
+      activateDocument('scheme');
+      setStatusMessage(message, 'saved');
+      return;
+    }
+
+    activateDocument('projects');
+    setStatusMessage(`${message} Импортируйте проект из GPSS Studio (ZIP-архив папки проекта).`, 'saved');
   }
 
   return (
@@ -89,7 +124,7 @@ export function StartPageDocument() {
         <h2 className="start-page__title">Последние открытые проекты:</h2>
 
         <div className="recent-projects">
-          {recentProjects.map((project) => (
+          {recent.map((project) => (
             <button
               className={`recent-project ${project.isSelected ? 'is-selected' : ''}`}
               key={project.id}

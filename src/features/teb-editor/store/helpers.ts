@@ -124,6 +124,7 @@ export function snapshotFromState(state: TebEditorState): WorkspaceSnapshot {
     tebTests: deepClone(state.tebTests),
     modelText: state.modelText,
     simulationReport: state.simulationReport,
+    projectId: state.project?.Id ?? null,
   };
 }
 

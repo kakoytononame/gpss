@@ -73,7 +73,14 @@ function journalCommand(id: JournalCommand, label: string, icon: string): Ribbon
 function createRibbonCommands(): RibbonCommands {
   const store = useTebEditorStore.getState;
   const notify = (message: string) => store().setStatusMessage(message, 'saved');
-  const save = () => void store().saveWorkspaceSnapshot();
+  /** Saves the open project (if any) and the workspace layout. */
+  const save = () => {
+    if (store().project) {
+      void store().saveProject();
+    }
+
+    void store().saveWorkspaceSnapshot();
+  };
   const activate = (documentId: ActiveDocument) => store().activateDocument(documentId);
 
   const openExternalProcedureDebugging = () => {
@@ -133,8 +140,16 @@ function createRibbonCommands(): RibbonCommands {
       {
         title: 'Проекты',
         commands: [
-          { id: 'new-project', label: 'Создать проект', icon: newProjectIcon, onClick: () => store().resetWorkspace() },
-          { id: 'open-project', label: 'Открыть проект / Управление', icon: openProjectIcon, onClick: () => void store().loadWorkspaceSnapshot() },
+          {
+            id: 'new-project',
+            label: 'Создать проект',
+            icon: newProjectIcon,
+            onClick: () => {
+              activate('projects');
+              notify('Введите имя нового проекта или импортируйте проект GPSS Studio.');
+            },
+          },
+          { id: 'open-project', label: 'Открыть проект / Управление', icon: openProjectIcon, onClick: () => activate('projects') },
         ],
       },
       {
@@ -168,6 +183,14 @@ function createRibbonCommands(): RibbonCommands {
               notify('Открыты параметры модели.');
             },
           },
+        ],
+      },
+      {
+        title: 'Схема',
+        className: 'ribbon-group--scheme',
+        commands: [
+          { id: 'generate-model', label: 'Сгенерировать текст модели', icon: newModelIcon, onClick: () => void store().generateModelText() },
+          { id: 'save-project', label: 'Сохранить проект', icon: saveIcon, onClick: () => void store().saveProject() },
         ],
       },
       {

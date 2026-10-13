@@ -1,3 +1,4 @@
+import type { StudioProject } from '../../../shared/types/project';
 import type { ActiveDocument } from '../../../shared/types/teb';
 import csProjectIcon from '../../../shared/assets/icons/gpss-native/csproject_16.png';
 import entityIcon from '../../../shared/assets/icons/gpss-native/entity_16.png';
@@ -31,6 +32,8 @@ export interface TreeNode {
   iconAsset?: string;
   tebIconShape?: string;
   documentId?: ActiveDocument;
+  /** Model of the open project selected by this node. */
+  modelIndex?: number;
   children?: TreeNode[];
 }
 
@@ -263,6 +266,73 @@ export const PROJECT_TREE: TreeNode[] = [
     ],
   },
 ];
+
+/**
+ * "Текущий проект" tree of an open simulation project: its models (the current one with scheme, text,
+ * results and forms) and TEB libraries. Document nodes keep the ids of {@link PROJECT_TREE}.
+ */
+export function buildProjectTree(project: StudioProject, modelIndex: number, hasResults: boolean): TreeNode[] {
+  const models = project.Models.map<TreeNode>((model, index) => {
+    if (index !== modelIndex) {
+      return { id: `project-model-${index}`, label: model.Name, icon: 'model', iconAsset: simModelCurrentIcon, modelIndex: index };
+    }
+
+    const children: TreeNode[] = [
+      ...(model.Scheme ? [{ id: 'scheme', label: 'Структурная схема', icon: 'scheme', iconAsset: schemeIcon, documentId: 'scheme' as const }] : []),
+      { id: 'model-text', label: 'Текст модели', icon: 'text', iconAsset: modelTextIcon, documentId: 'model-text' },
+    ];
+    return { id: 'current-model', label: `${model.Name} (текущая модель)`, icon: 'model', iconAsset: simModelCurrentIcon, children };
+  });
+
+  const current = project.Models[modelIndex];
+  const results: TreeNode[] = hasResults
+    ? [
+        {
+          id: 'model-run',
+          label: 'Моделирование',
+          icon: 'run',
+          iconAsset: simulationIcon,
+          children: [
+            { id: 'std-report', label: 'Стандартный отчёт', icon: 'table', iconAsset: stdReportIcon, documentId: 'std-report' },
+            { id: 'model-log', label: 'Журнал моделирования', icon: 'text', iconAsset: stdJournalIcon, documentId: 'model-log' },
+            { id: 'charts', label: 'Графики результатов', icon: 'table', iconAsset: resultsChartIcon, documentId: 'charts' },
+          ],
+        },
+      ]
+    : [];
+  const forms: TreeNode[] = (current?.Forms ?? []).map((form, index) => ({ id: `project-form-${index}`, label: form, icon: 'form', iconAsset: formIcon }));
+
+  return [
+    {
+      id: 'project-home',
+      label: project.Name,
+      icon: 'none',
+      documentId: 'projects',
+      children: [
+        { id: 'models-root', label: 'Модели', icon: 'model', iconAsset: projectModelsIcon, children: [...models, ...results] },
+        ...(forms.length > 0 ? [{ id: 'forms-root', label: 'Формы', icon: 'form', iconAsset: formCollectionIcon, children: forms }] : []),
+        {
+          id: 'libraries-root',
+          label: 'Библиотеки ТЭБов проекта',
+          icon: 'library',
+          iconAsset: tebsLibraryCollectionIcon,
+          children: project.Libraries.map((library) => ({
+            id: `project-library-${library.Id}`,
+            label: `${library.Name} (${library.Classes.length})`,
+            icon: 'library',
+            iconAsset: tebsLibraryIcon,
+            children: library.Classes.map((item) => ({
+              id: `project-library-class-${item.Template.ClassId}`,
+              label: item.Template.Header,
+              icon: 'library',
+              iconAsset: simpleTebIcon,
+            })),
+          })),
+        },
+      ],
+    },
+  ];
+}
 
 /** Library items that can be dragged onto the structural scheme and open the TEB editor. */
 export function isLibraryItem(nodeId: string): boolean {

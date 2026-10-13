@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import type { StudioProject, StudioTebNode, StudioTebPort } from '../shared/types/project';
 import type { SimulationResult } from '../shared/types/simulation';
 
 /** Class payload in the shape returned by the ASP.NET backend (PascalCase). */
@@ -129,4 +130,75 @@ export function mockBackend(respond: Responder = () => undefined) {
 
   vi.stubGlobal('fetch', fetchMock);
   return { requests, fetchMock, mutations: () => requests.filter((request) => request.method !== 'GET') };
+}
+
+/** Two-level project: arrivals → composite "Цех" (one elementary TEB inside) plus a data TEB. */
+export function studioProject(): StudioProject {
+  const port = (Id: number, Mode: StudioTebPort['Mode']): StudioTebPort => ({
+    Id,
+    Mode,
+    Label: null,
+    ConnectionsLimit: 0,
+    TransferMode: 'DirectOrSplit',
+    Side: 1,
+    Position: 0.5,
+  });
+  const node = (Id: string, Header: string, overrides: Partial<StudioTebNode> = {}): StudioTebNode => ({
+    Id,
+    Kind: 'simple',
+    Header,
+    NameInModel: Id,
+    ClassId: `class-${Id}`,
+    InstancesCount: 1,
+    X: 100,
+    Y: 100,
+    Width: 160,
+    Height: 60,
+    GpssText: ' GENERATE 5',
+    Entities: [],
+    Inputs: [],
+    Outputs: [],
+    Parameters: [],
+    States: [],
+    ...overrides,
+  });
+
+  return {
+    Id: 'project-1',
+    Name: 'Мастерская',
+    Description: 'Тест',
+    Models: [
+      {
+        Name: 'Модель 1',
+        IsCurrent: true,
+        Forms: [],
+        ModelText: '* сохранённый текст\n GENERATE 1\n TERMINATE 1\n',
+        Scheme: {
+          Nodes: [
+            node('teb1', 'Поступление', { Outputs: [port(2, 'LastBlock')] }),
+            node('teb2', 'Цех', {
+              Kind: 'composite',
+              X: 1500,
+              Y: 900,
+              Inputs: [port(1, 'FirstBlock')],
+              Child: {
+                Nodes: [node('teb3', 'Станок', { GpssText: ' SEIZE M\n ADVANCE 3\n RELEASE M\n TERMINATE 1', Inputs: [port(1, 'FirstBlock')] })],
+                Links: [
+                  { Id: 'in', FromNodeId: 'boundary:1', FromPortId: 0, ToNodeId: 'teb3', ToPortId: 1, Priority: 0, Probability: 0, OrderIndex: 0, Points: [] },
+                ],
+                Decors: [],
+                Boundary: [{ Id: 'boundary:1', Direction: 'input', DefinitionId: 1 }],
+              },
+            }),
+            node('data', 'Данные', { Kind: 'data', GpssText: null, Entities: [{ Type: 'Matrix', Name: 'Plan', Cells: [['1', '2']] }] }),
+          ],
+          Links: [{ Id: 'l1', FromNodeId: 'teb1', FromPortId: 2, ToNodeId: 'teb2', ToPortId: 1, Priority: 0, Probability: 0, OrderIndex: 0, Points: [] }],
+          Decors: [],
+          Boundary: [],
+        },
+      },
+    ],
+    Libraries: [],
+    ImportNotes: [],
+  };
 }

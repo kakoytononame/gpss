@@ -44,6 +44,11 @@ export const createPersistenceSlice: StateCreator<TebEditorStore, [], [], Persis
 
   async loadWorkspaceSnapshot({ quiet = false } = {}) {
     const localSnapshot = readWorkspaceSnapshot();
+    const reopenProject = async (projectId?: string | null) => {
+      if (projectId && get().project?.Id !== projectId) {
+        await get().openProject(projectId, { keepLayout: true });
+      }
+    };
 
     if (localSnapshot) {
       set((state) =>
@@ -59,12 +64,17 @@ export const createPersistenceSlice: StateCreator<TebEditorStore, [], [], Persis
       if (remoteSnapshot) {
         writeWorkspaceSnapshot(remoteSnapshot);
         set((state) => stateFromWorkspaceSnapshot(remoteSnapshot, state, 'Рабочая область восстановлена из базы данных.'));
-      } else if (!localSnapshot && !quiet) {
+        await reopenProject(remoteSnapshot.projectId);
+      } else if (localSnapshot) {
+        await reopenProject(localSnapshot.projectId);
+      } else if (!quiet) {
         set({ syncStatus: 'idle', syncMessage: 'Сохраненный снимок рабочей области не найден.' });
       }
     } catch (error) {
       // With a local copy the workspace is already restored; an unreachable server is not worth an alert.
-      if (!localSnapshot && !quiet) {
+      if (localSnapshot) {
+        await reopenProject(localSnapshot.projectId).catch(() => undefined);
+      } else if (!quiet) {
         set({ syncStatus: 'offline', syncMessage: syncFailureMessage(error) });
       }
     }

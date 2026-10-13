@@ -67,11 +67,18 @@ export function containsPoint(node: SchemeNode, point: Point): boolean {
   return point.x >= node.x && point.x <= node.x + node.width && point.y >= node.y && point.y <= node.y + node.height;
 }
 
+export interface CanvasExtent {
+  width: number;
+  height: number;
+}
+
+export const DEFAULT_CANVAS: CanvasExtent = { width: SCHEME_WIDTH, height: SCHEME_HEIGHT };
+
 /** Top-left position that keeps a node of the given size inside the canvas. */
-export function clampNodePosition(x: number, y: number, width: number, height: number): Point {
+export function clampNodePosition(x: number, y: number, width: number, height: number, canvas: CanvasExtent = DEFAULT_CANVAS): Point {
   return {
-    x: clamp(x, SCHEME_MARGIN, SCHEME_WIDTH - width - SCHEME_MARGIN),
-    y: clamp(y, SCHEME_MARGIN, SCHEME_HEIGHT - height - SCHEME_MARGIN),
+    x: clamp(x, SCHEME_MARGIN, canvas.width - width - SCHEME_MARGIN),
+    y: clamp(y, SCHEME_MARGIN, canvas.height - height - SCHEME_MARGIN),
   };
 }
 

@@ -4,10 +4,11 @@ export type EditorMode = 'class' | 'instance';
 export type TabId = 'general' | 'gpss-model' | 'gpss-objects' | 'inputs' | 'outputs' | 'parameters' | 'states';
 export type CollectionKey = 'gpssEntities' | 'inputs' | 'outputs' | 'states';
 export type Direction = 'up' | 'down';
-export type SourceKind = 'idle' | 'api' | 'sample';
+/** `project`: the TEB editor shows a TEB of the open simulation project (edited locally, saved with the project). */
+export type SourceKind = 'idle' | 'api' | 'sample' | 'project';
 /** `offline` is reserved for failed server synchronisation; `warning` is a local, non-blocking notice. */
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'warning' | 'offline';
-export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts';
+export type ActiveDocument = 'editor' | 'scheme' | 'start' | 'model-text' | 'std-report' | 'model-log' | 'charts' | 'projects';
 export type SimulationState = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';
 export type RightPanelTab = 'properties' | 'teb-tests';
 export type ExplorerMode = 'project' | 'libraries';
@@ -101,6 +102,8 @@ export interface SchemeNode {
   classId?: string;
   isLibraryClass?: boolean;
   instanceCount?: number;
+  /** Composite TEB: double-click opens its child scheme. */
+  isComposite?: boolean;
   backgroundColor?: string;
   borderColor?: string;
   borderWidth?: number;
@@ -175,6 +178,8 @@ export interface WorkspaceSnapshot {
   tebTests?: TebTestItem[];
   modelText?: string;
   simulationReport?: SimulationReport | null;
+  /** Simulation project open in the workspace (reloaded from the server on restore). */
+  projectId?: string | null;
 }
 
 export type CollectionRow<K extends CollectionKey = CollectionKey> = TebDocument[K][number];

@@ -44,7 +44,8 @@ export function createHttpClient(baseUrl: string, fetchImpl: typeof fetch = (...
   return async (path, options = {}) => {
     const headers = new Headers(options.headers);
 
-    if (options.body && !headers.has('Content-Type')) {
+    // FormData sets its own multipart boundary; everything else sent by the app is JSON.
+    if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
 

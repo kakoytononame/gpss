@@ -70,11 +70,23 @@ docker compose --project-name gpss logs --follow
 4. «Графики результатов» (дерево проекта или кнопка «Показать графики таблиц» на вкладке отчёта): загрузка устройств, длины и времена очередей, динамика очередей и памяти во времени, гистограммы таблиц, входы в блоки.
 5. «Журнал моделирования» — журнал и командная строка GPSS: `START n`, `STEP n` (пошаговое выполнение с трассировкой), `HALT`, `CONTINUE`, `RESET`, `CLEAR`, `SHOW выражение`, `INITIAL`, `RMULT`. Те же команды доступны на вкладке ленты «Моделирование».
 
-Поддерживаемые блоки: `GENERATE, TERMINATE, ADVANCE, SEIZE, RELEASE, PREEMPT, RETURN, FAVAIL, FUNAVAIL, QUEUE, DEPART, ENTER, LEAVE, SAVAIL, SUNAVAIL, TRANSFER` (безусловный, вероятностный, `BOTH`, `ALL`, `PICK`, `SBR`, `P`), `TEST, GATE, LOGIC, SAVEVALUE, ASSIGN, MARK, PRIORITY, SPLIT, ASSEMBLE, GATHER, LOOP, BUFFER, TABULATE, LINK, UNLINK, ADOPT, INDEX`.
+Поддерживаемые блоки: `GENERATE, TERMINATE, ADVANCE, SEIZE, RELEASE, PREEMPT, RETURN, FAVAIL, FUNAVAIL, QUEUE, DEPART, ENTER, LEAVE, SAVAIL, SUNAVAIL, TRANSFER` (безусловный, вероятностный, `BOTH`, `ALL`, `PICK`, `SBR`, `P`), `TEST, GATE, LOGIC, SAVEVALUE, MSAVEVALUE, ASSIGN, MARK, PRIORITY, SPLIT, ASSEMBLE, GATHER, MATCH, LOOP, BUFFER, TABULATE, LINK, UNLINK, ADOPT, INDEX, COUNT, SELECT, DISPLACE, JOIN, REMOVE, EXAMINE, SCAN, ALTER, PLUS, EXECUTE, TRACE, UNTRACE`, а также `OPEN, READ, WRITE, SEEK, CLOSE` (файлы хранятся в памяти сеанса).
 
-Операторы: `STORAGE, TABLE, QTABLE, VARIABLE, FVARIABLE, BVARIABLE, FUNCTION` (D, C, L, E), `EQU, INITIAL, START, RESET, CLEAR, SHOW, RMULT`. Выражения поддерживают арифметику, сравнения, СЧА (`Q$, QA$, QM$, QT$, F$, FC$, FR$, S$, R$, SR$, X$, P$/Pn, FN$, V$, N$, W$, LS$, TB$, RNn, AC1, C1, M1, XN1, PR, TG1` и др.) и процедуры `Exponential, Uniform, Normal, Triangular, Poisson, Duniform, Lognormal`, а также математические функции.
+Операторы: `STORAGE, TABLE, QTABLE, VARIABLE, FVARIABLE, BVARIABLE, FUNCTION` (D, C, L, E; точки могут быть выражениями), `MATRIX, EQU, INITIAL` (в т. ч. `MX$`), `START, RESET, CLEAR, SHOW, RMULT`. Выражения вычисляются с приоритетами операций GPSS World (`^`; `# * / \`; `@`; `+ -`; сравнения; `= !=`; `&`/`'AND'`; `|`/`'OR'`), поддерживают СЧА (`Q$, QA$, QM$, QT$, F$, FC$, FR$, S$, R$, SR$, X$, MX$(m,n), P$/Pn, FN$, V$, BV$, N$, W$, LS$, TB$, CH$, CA$, CT$, GN$, GT$, MB$, RNn, AC1, C1, M1, XN1, PR, TG1` и др.), косвенную адресацию (`Q*Param`, `*Param`) и процедуры `Exponential, Uniform, Normal, Triangular, Poisson, Duniform, Lognormal`, а также математические функции. Объекты адресуются номерами: имя, его номер из `EQU` и число в параметре транзакта указывают на один и тот же объект, как в GPSS World.
 
-Блоки `COUNT, SELECT, MSAVEVALUE, MATCH`, файловые операции и матрицы транслятор распознаёт и сообщает, что они не поддерживаются. Бесконечные циклы и накопление транзактов останавливаются защитными пределами с сообщением в журнале.
+Не поддерживаются PLUS-процедуры (`PROCEDURE`), непрерывные переменные (`INTEGRATE`) и `INCLUDE`; транслятор сообщает об этом. Бесконечные циклы и накопление транзактов останавливаются защитными пределами с сообщением в журнале.
+
+## Проекты GPSS Studio
+
+Проекты хранятся на сервере (PostgreSQL) в формате, повторяющем структуру проекта GPSS Studio: модели, структурные схемы из ТЭБов (элементарных, композитных, ТЭБов с данными), связи между входами и выходами, библиотеки ТЭБов, текст модели.
+
+1. «Главная → Открыть проект / Управление» открывает документ «Проекты».
+2. «Импорт проекта GPSS Studio» принимает ZIP-архив папки проекта (с `Project.gsproj`, `SimModels/…/Diagram.gsdiagram`, `ModelText.gps`, `TebsLibraries/*.tlib`) или отдельный файл модели `.gps`/`.txt`. Имена файлов в архиве допускаются в UTF-8 и CP866.
+3. Схема модели открывается в документе «Структурная схема»; двойной щелчок по композитному ТЭБу открывает его схему, строка навигации возвращает на верхние уровни, двойной щелчок по элементарному ТЭБу открывает его в «Редакторе ТЭБа» (изменения записываются в проект).
+4. «Сгенерировать текст модели» (схема, лента «Моделирование → Схема» или документ «Проекты») собирает текст GPSS по правилам GPSS Studio: корректировка имён (`teb4_Метка`), области действия ТЭБов с данными, переходы по выходам (прямой/копии `SPLIT`, первый доступный, случайный, по модели связи), модели связей, переход через границы композитных ТЭБов, перенос `START` в конец. Ошибки и предупреждения генератора попадают в «Замечания и ошибки» с указанием ТЭБа.
+5. «Сохранить проект» записывает проект на сервер; открытый проект восстанавливается вместе с рабочей областью.
+
+Подробное сравнение с GPSS Studio — в [GPSS_STUDIO_PORT.md](GPSS_STUDIO_PORT.md).
 
 ## API
 
@@ -86,6 +98,9 @@ Swagger UI: `http://127.0.0.1:3001/swagger`.
 - `POST /api/alina-gpss/studio/simulation/sessions` — создать сеанс моделирования (трансляция + управляющие операторы модели);
 - `POST /api/alina-gpss/studio/simulation/sessions/{id}/commands` — команда GPSS в сеансе;
 - `GET /api/alina-gpss/studio/simulation/examples/{id}` — примеры моделей;
+- `GET/POST /api/alina-gpss/studio/projects`, `GET/PUT/DELETE /api/alina-gpss/studio/projects/{id}` — проекты;
+- `POST /api/alina-gpss/studio/projects/import` — импорт проекта GPSS Studio (multipart, поле `file`: ZIP, `.gps`, `.txt`, до 25 МБ);
+- `POST /api/alina-gpss/studio/projects/{id}/models/{n}/generate`, `POST /api/alina-gpss/studio/projects/generate` — генерация текста модели по сохранённой или переданной схеме;
 - `GET /api/health` — состояние API и соединения с PostgreSQL.
 
 Ошибки возвращаются в формате RFC 7807 (`application/problem+json`): 400 для неверных данных, 404 для отсутствующих объектов.
@@ -96,8 +111,8 @@ Swagger UI: `http://127.0.0.1:3001/swagger`.
 
 ```powershell
 docker compose --project-name gpss up --detach --build
-docker compose --project-name gpss --profile test run --rm api-tests   # 36 тестов симулятора + 50 интеграционных тестов API на PostgreSQL
-docker compose --project-name gpss --profile test run --rm e2e         # 8 сквозных тестов в браузере (Playwright)
+docker compose --project-name gpss --profile test run --rm api-tests   # 59 тестов симулятора + 27 тестов импорта и генерации + 55 интеграционных тестов API
+docker compose --project-name gpss --profile test run --rm e2e         # 10 сквозных тестов в браузере (Playwright)
 ```
 
 Для разработки фронтенда (нужен Node.js 20+):
@@ -106,9 +121,18 @@ docker compose --project-name gpss --profile test run --rm e2e         # 8 ск�
 npm ci
 npm run typecheck   # TypeScript
 npm run lint        # ESLint
-npm test            # 62 модульных и компонентных теста (Vitest + Testing Library)
+npm test            # 75 модульных и компонентных тестов (Vitest + Testing Library)
 npm run test:e2e    # Playwright против запущенного стека
 ```
+
+Проверка на примерах из дистрибутива GPSS Studio (примеры не входят в репозиторий, скрипт скачивает установщик с официального ресурса разработчика и распаковывает только примеры в `vendor/`):
+
+```sh
+scripts/fetch-gpss-studio-samples.sh
+GPSS_STUDIO_SAMPLES=$PWD/vendor/gpss-studio-samples dotnet test backend/GpssStudio.Projects.Tests
+```
+
+Для каждого примера импортируется проект, по схеме генерируется текст модели, и результат моделирования сравнивается с текстом модели, сохранённым GPSS Studio (совпадает модельное время завершения).
 
 ## Структура проекта
 
@@ -117,11 +141,13 @@ npm run test:e2e    # Playwright против запущенного стека
 - `src/widgets` — крупные панели интерфейса GPSS Studio (лента, дерево проекта, свойства, замечания);
 - `src/shared` — общие типы, API-клиенты, компоненты и графические ресурсы;
 - `backend/GpssStudio.Simulation` — интерпретатор GPSS: транслятор, блоки, движок, стандартный отчёт, примеры моделей;
+- `backend/GpssStudio.Projects` — форматы проектов GPSS Studio (импорт) и генератор текста модели по структурной схеме;
 - `backend/GpssStudio.WebApi` — ASP.NET Core Web API, сервисы, EF Core, схема БД (создаётся при старте API);
-- `backend/*.Tests` — тесты симулятора и интеграционные тесты API;
+- `backend/*.Tests` — тесты симулятора, импорта и генерации, интеграционные тесты API;
 - `e2e` — сквозные тесты Playwright;
 - `docker` — конфигурация nginx;
 - `scripts/windows` — переносимый запуск и упаковка проекта;
+- `scripts/fetch-gpss-studio-samples.sh` — загрузка примеров GPSS Studio для проверок;
 - `docker-compose.yml` — frontend, backend, PostgreSQL и тестовые сервисы (профиль `test`).
 
 ## Хранение данных

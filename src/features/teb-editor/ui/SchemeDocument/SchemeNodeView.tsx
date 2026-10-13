@@ -25,6 +25,7 @@ export function SchemeNodeView({ node, zoom, isSelected, isConnectionTarget, sho
         'scheme-node',
         `scheme-node--${node.kind}`,
         hasGpssIcon && 'scheme-node--gpss-icon',
+        node.isComposite && 'scheme-node--composite',
         isSelected && 'is-selected',
         isConnectionTarget && 'is-connection-target',
       )}
@@ -47,6 +48,7 @@ export function SchemeNodeView({ node, zoom, isSelected, isConnectionTarget, sho
       role="button"
       tabIndex={0}
       aria-label={node.label}
+      title={node.isComposite ? 'Композитный ТЭБ: двойной щелчок открывает его схему' : undefined}
       aria-pressed={isSelected}
       onDoubleClick={onOpen}
       onPointerDown={(event) => onPointerDown(node, event)}

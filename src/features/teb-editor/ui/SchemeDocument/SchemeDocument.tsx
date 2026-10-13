@@ -3,6 +3,7 @@ import { readLibraryPayload } from '../../../../shared/lib/libraryDrag';
 import { clamp } from '../../../../shared/lib/utils';
 import type { SchemeNode } from '../../../../shared/types/teb';
 import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
+import { pathHeaders, schemeExtent } from '../../model/projectScheme';
 import { SIMULATION_STATE_LABELS } from '../../model/simulationLabels';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import {
@@ -10,12 +11,11 @@ import {
   clampNodePosition,
   containsPoint,
   createNodeFromLibraryItem,
+  DEFAULT_CANVAS,
   linkPath,
   MAX_SCHEME_ZOOM,
   MIN_SCHEME_ZOOM,
   pointForPort,
-  SCHEME_HEIGHT,
-  SCHEME_WIDTH,
   SCHEME_ZOOM_STEP,
   type Point,
   type SchemePort,
@@ -37,7 +37,8 @@ interface ConnectionDrag {
   current: Point;
 }
 
-const TOOLTIP_MAX_X = 1240;
+/** The connection tooltip stays this far from the right edge of the canvas. */
+const TOOLTIP_RIGHT_MARGIN = 60;
 
 function isEditableElement(element: Element | null): boolean {
   return (
@@ -49,7 +50,6 @@ function isEditableElement(element: Element | null): boolean {
 }
 
 export function SchemeDocument() {
-  const activateDocument = useTebEditorStore((state) => state.activateDocument);
   const startSimulation = useTebEditorStore((state) => state.startSimulation);
   const stopSimulation = useTebEditorStore((state) => state.stopSimulation);
   const setStatusMessage = useTebEditorStore((state) => state.setStatusMessage);
@@ -62,12 +62,24 @@ export function SchemeDocument() {
   const setSelection = useTebEditorStore((state) => state.setSchemeSelection);
   const resetScheme = useTebEditorStore((state) => state.resetScheme);
   const openRightPanel = useTebEditorStore((state) => state.openRightPanel);
+  const openSchemeNode = useTebEditorStore((state) => state.openSchemeNode);
+  const project = useTebEditorStore((state) => state.project);
+  const projectModel = useTebEditorStore((state) => state.project?.Models[state.projectModelIndex]);
+  const schemePath = useTebEditorStore((state) => state.schemePath);
+  const projectBusy = useTebEditorStore((state) => state.projectBusy);
+  const projectDirty = useTebEditorStore((state) => state.projectDirty);
+  const leaveToSchemeLevel = useTebEditorStore((state) => state.leaveToSchemeLevel);
+  const generateModelText = useTebEditorStore((state) => state.generateModelText);
+  const saveProject = useTebEditorStore((state) => state.saveProject);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [nodeDrag, setNodeDrag] = useState<NodeDrag | null>(null);
   const [connectionDrag, setConnectionDrag] = useState<ConnectionDrag | null>(null);
   const [zoom, setZoom] = useState(1);
 
   const visibleNodes = useMemo(() => nodes.filter((node) => !node.hidden), [nodes]);
+  // Imported schemes can be larger than the default canvas; the surface grows with its content.
+  const surface = useMemo(() => (project ? schemeExtent(nodes, DEFAULT_CANVAS) : DEFAULT_CANVAS), [nodes, project]);
+  const levelHeaders = useMemo(() => pathHeaders(projectModel, schemePath), [projectModel, schemePath]);
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const selectedNode = selection?.type === 'node' ? (nodeById.get(selection.id) ?? null) : null;
   const connectionTarget = connectionDrag ? findConnectionTarget(connectionDrag) : null;
@@ -77,15 +89,15 @@ export function SchemeDocument() {
   }
 
   function readCanvasPoint(clientX: number, clientY: number): Point {
-    const canvas = canvasRef.current;
-    if (!canvas) {
+    const element = canvasRef.current;
+    if (!element) {
       return { x: 0, y: 0 };
     }
 
-    const rect = canvas.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
     return {
-      x: clamp((canvas.scrollLeft + clientX - rect.left) / zoom, 0, SCHEME_WIDTH),
-      y: clamp((canvas.scrollTop + clientY - rect.top) / zoom, 0, SCHEME_HEIGHT),
+      x: clamp((element.scrollLeft + clientX - rect.left) / zoom, 0, surface.width),
+      y: clamp((element.scrollTop + clientY - rect.top) / zoom, 0, surface.height),
     };
   }
 
@@ -124,7 +136,9 @@ export function SchemeDocument() {
     const point = readCanvasPoint(event.clientX, event.clientY);
     setNodes((currentNodes) =>
       currentNodes.map((node) =>
-        node.id === nodeDrag.id ? { ...node, ...clampNodePosition(point.x - nodeDrag.offsetX, point.y - nodeDrag.offsetY, node.width, node.height) } : node,
+        node.id === nodeDrag.id
+          ? { ...node, ...clampNodePosition(point.x - nodeDrag.offsetX, point.y - nodeDrag.offsetY, node.width, node.height, surface) }
+          : node,
       ),
     );
   }
@@ -246,9 +260,47 @@ export function SchemeDocument() {
   return (
     <section className="placeholder-document">
       <div className="placeholder-document__header">
-        <h2>Структурная схема</h2>
+        {project ? (
+          <nav className="scheme-breadcrumb" aria-label="Уровень схемы">
+            <button type="button" onClick={() => leaveToSchemeLevel(0)} disabled={schemePath.length === 0}>
+              {project.Name} › {projectModel?.Name ?? 'Модель'}
+            </button>
+            {levelHeaders.map((header, index) => (
+              <button type="button" key={schemePath[index]} onClick={() => leaveToSchemeLevel(index + 1)} disabled={index === levelHeaders.length - 1}>
+                › {header}
+              </button>
+            ))}
+            {projectDirty ? <span className="scheme-breadcrumb__dirty">изменён</span> : null}
+          </nav>
+        ) : (
+          <h2>Структурная схема</h2>
+        )}
         <div className="placeholder-document__actions">
-          <IconButton label="Открыть ТЭБ" title="Перейти к редактору ТЭБа" disabled={!selectedNode} onClick={() => activateDocument('editor')} />
+          {project ? (
+            <>
+              <IconButton
+                label="Сгенерировать текст модели"
+                title="Собрать текст GPSS модели по структурной схеме"
+                disabled={projectBusy}
+                onClick={() => void generateModelText()}
+              />
+              <IconButton
+                label="Сохранить проект"
+                title="Сохранить проект на сервере"
+                disabled={projectBusy || !projectDirty}
+                onClick={() => void saveProject()}
+              />
+              {schemePath.length > 0 ? (
+                <IconButton label="Наверх" title="Перейти на уровень выше" onClick={() => leaveToSchemeLevel(schemePath.length - 1)} />
+              ) : null}
+            </>
+          ) : null}
+          <IconButton
+            label={selectedNode?.isComposite ? 'Открыть схему' : 'Открыть ТЭБ'}
+            title={selectedNode?.isComposite ? 'Открыть схему композитного ТЭБа' : 'Перейти к редактору ТЭБа'}
+            disabled={!selectedNode}
+            onClick={() => selectedNode && openSchemeNode(selectedNode.id)}
+          />
           <IconButton label="Старт" title="Запустить моделирование" onClick={() => void startSimulation()} />
           <IconButton label="Стоп" title="Остановить моделирование" onClick={() => void stopSimulation()} />
           <IconButton label="Удалить" title="Удалить выбранный объект" disabled={!selection} onClick={deleteSelection} />
@@ -268,10 +320,10 @@ export function SchemeDocument() {
           onDragOver={(event) => event.preventDefault()}
           onDrop={handleDrop}
         >
-          <div className="scheme-surface" style={{ width: `${SCHEME_WIDTH * zoom}px`, height: `${SCHEME_HEIGHT * zoom}px` }}>
+          <div className="scheme-surface" style={{ width: `${surface.width * zoom}px`, height: `${surface.height * zoom}px` }}>
             <svg
               className="scheme-links"
-              viewBox={`0 0 ${SCHEME_WIDTH} ${SCHEME_HEIGHT}`}
+              viewBox={`0 0 ${surface.width} ${surface.height}`}
               preserveAspectRatio="none"
               role="img"
               aria-label="Связи структурной схемы"
@@ -334,7 +386,7 @@ export function SchemeDocument() {
                   showPorts={isSelected || Boolean(connectionDrag)}
                   onPointerDown={handleNodePointerDown}
                   onPortPointerDown={handlePortPointerDown}
-                  onOpen={() => activateDocument('editor')}
+                  onOpen={() => openSchemeNode(node.id)}
                 />
               );
             })}
@@ -343,7 +395,7 @@ export function SchemeDocument() {
               <div
                 className="scheme-connection-tooltip"
                 style={{
-                  left: `${Math.min(TOOLTIP_MAX_X * zoom, connectionDrag.current.x * zoom + 18)}px`,
+                  left: `${Math.min((surface.width - TOOLTIP_RIGHT_MARGIN) * zoom, connectionDrag.current.x * zoom + 18)}px`,
                   top: `${Math.max(8, connectionDrag.current.y * zoom - 8)}px`,
                 }}
               >

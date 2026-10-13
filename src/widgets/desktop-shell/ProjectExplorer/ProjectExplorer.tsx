@@ -4,7 +4,7 @@ import arrowDownIcon from '../../../shared/assets/icons/gpss-native/arrowdown_16
 import closeIcon from '../../../shared/assets/icons/gpss-native/closeblack_13.png';
 import pinIcon from '../../../shared/assets/icons/gpss-native/ribbonpin.png';
 import type { ExplorerMode } from '../../../shared/types/teb';
-import { filterTree, LIBRARIES_TREE, PROJECT_TREE, type TreeNode } from './explorerTrees';
+import { buildProjectTree, filterTree, LIBRARIES_TREE, PROJECT_TREE, type TreeNode } from './explorerTrees';
 import { TreeBranch } from './TreeBranch';
 import './ProjectExplorer.css';
 
@@ -40,8 +40,13 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   const expandTreeNodes = useTebEditorStore((state) => state.expandTreeNodes);
   const setProjectSearchQuery = useTebEditorStore((state) => state.setProjectSearchQuery);
   const setExplorerMode = useTebEditorStore((state) => state.setExplorerMode);
+  const project = useTebEditorStore((state) => state.project);
+  const projectModelIndex = useTebEditorStore((state) => state.projectModelIndex);
+  const hasResults = useTebEditorStore((state) => state.simulationReport !== null);
+  const selectProjectModel = useTebEditorStore((state) => state.selectProjectModel);
 
-  const view = EXPLORER_VIEWS[explorerMode];
+  const projectTree = useMemo(() => (project ? buildProjectTree(project, projectModelIndex, hasResults) : null), [project, projectModelIndex, hasResults]);
+  const view = explorerMode === 'project' && projectTree ? { ...EXPLORER_VIEWS.project, tree: projectTree } : EXPLORER_VIEWS[explorerMode];
   const filteredTree = useMemo(() => filterTree(view.tree, projectSearchQuery), [view.tree, projectSearchQuery]);
   const forceExpanded = projectSearchQuery.trim().length > 0;
 
@@ -69,6 +74,11 @@ export function ProjectExplorer({ autoHide, onToggleAutoHide }: ProjectExplorerP
   }, [projectSearchFocusRequest]);
 
   function handleOpenNode(node: TreeNode) {
+    if (node.modelIndex !== undefined) {
+      selectProjectModel(node.modelIndex);
+      return;
+    }
+
     if (node.id === 'library') {
       setExplorerMode('libraries');
       focusProjectNode('project-tebs-library');

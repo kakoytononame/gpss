@@ -22,6 +22,7 @@ import type {
   TebTestItem,
   TebTestStatus,
 } from '../../../shared/types/teb';
+import type { GenerationResult, ProjectSummary, StudioProject } from '../../../shared/types/project';
 import type { SimulationReport } from '../../../shared/types/simulation';
 
 type Updater<T> = T | ((current: T) => T);
@@ -167,6 +168,46 @@ export interface DiagnosticsSliceActions {
   setTebTestStatus: (id: string, status: TebTestStatus, message: string) => void;
 }
 
+export interface ProjectSliceState {
+  projects: ProjectSummary[];
+  projectsLoading: boolean;
+  /** Simulation project open in the workspace (GPSS Studio format). */
+  project: StudioProject | null;
+  projectModelIndex: number;
+  /** Composite TEBs entered from the root scheme of the model. */
+  schemePath: string[];
+  /** The project has changes not yet saved on the server. */
+  projectDirty: boolean;
+  projectBusy: boolean;
+  generation: GenerationResult | null;
+  /** Project TEB shown in the TEB editor. */
+  editingNodeId: string | null;
+}
+
+export interface ProjectSliceActions {
+  loadProjects: () => Promise<void>;
+  createProject: (name: string, description?: string) => Promise<void>;
+  /** Imports a GPSS Studio project archive (.zip) or a model file (.gps / .txt). */
+  importProject: (file: File) => Promise<void>;
+  /** `keepLayout` leaves the open documents unchanged (used when the workspace is restored). */
+  openProject: (id: string, options?: { keepLayout?: boolean }) => Promise<void>;
+  closeProject: () => void;
+  saveProject: () => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  selectProjectModel: (index: number) => void;
+  enterComposite: (nodeId: string) => void;
+  /** Goes up the composite hierarchy to the given depth (0 = root scheme). */
+  leaveToSchemeLevel: (depth: number) => void;
+  /** Double click on a scheme node: enters a composite TEB or opens the TEB editor. */
+  openSchemeNode: (nodeId: string) => void;
+  /** Writes the edits of the structural scheme document into the project document. */
+  flushSchemeToProject: () => void;
+  openProjectTeb: (nodeId: string) => void;
+  /** Writes the TEB editor document into the project (TEB editor in project mode). */
+  applyTebToProject: (message: string) => void;
+  generateModelText: () => Promise<void>;
+}
+
 export interface PersistenceActions {
   resetWorkspace: () => void;
   saveWorkspaceSnapshot: () => Promise<void>;
@@ -174,7 +215,13 @@ export interface PersistenceActions {
   loadWorkspaceSnapshot: (options?: { quiet?: boolean }) => Promise<void>;
 }
 
-export type TebEditorState = SyncState & WorkspaceLayoutState & TebEditorDataState & SimulationSliceState & SchemeSliceState & DiagnosticsSliceState;
+export type TebEditorState = SyncState &
+  WorkspaceLayoutState &
+  TebEditorDataState &
+  SimulationSliceState &
+  SchemeSliceState &
+  DiagnosticsSliceState &
+  ProjectSliceState;
 
 export type TebEditorActions = SyncActions &
   WorkspaceLayoutActions &
@@ -182,6 +229,7 @@ export type TebEditorActions = SyncActions &
   SimulationSliceActions &
   SchemeSliceActions &
   DiagnosticsSliceActions &
+  ProjectSliceActions &
   PersistenceActions;
 
 export type TebEditorStore = TebEditorState & TebEditorActions;

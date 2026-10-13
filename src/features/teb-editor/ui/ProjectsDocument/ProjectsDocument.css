@@ -1,0 +1,132 @@
+.projects-document__file {
+  display: none;
+}
+
+.projects-document__body {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.projects-card {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px;
+}
+
+.projects-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.projects-card__header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.projects-card__header p,
+.projects-card__note,
+.projects-card__empty {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #46596b;
+}
+
+.projects-card__notes {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.8rem;
+  color: #8a5a00;
+}
+
+.projects-create {
+  display: flex;
+  gap: 4px;
+}
+
+.projects-create input {
+  min-width: 200px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.projects-create button,
+.projects-table__actions button {
+  padding: 3px 10px;
+  border: 1px solid #9eb6cc;
+  background: linear-gradient(#fdfeff, #e3edf6);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.projects-create button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.projects-table__actions button.is-danger {
+  border-color: #d6a3a3;
+  color: #9b1c1c;
+}
+
+.projects-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.projects-table th,
+.projects-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e3e9ef;
+  text-align: left;
+  vertical-align: top;
+}
+
+.projects-table th {
+  background: #eef3f8;
+  font-weight: 600;
+}
+
+.projects-table tbody tr {
+  cursor: pointer;
+}
+
+.projects-table tbody tr:hover {
+  background: #f3f8fd;
+}
+
+.projects-table tbody tr.is-selected {
+  background: #dcebf8;
+}
+
+.projects-table__description {
+  max-width: 420px;
+  color: #46596b;
+}
+
+.projects-table__actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.projects-table__actions button + button {
+  margin-left: 4px;
+}
+
+@media (max-width: 860px) {
+  .projects-card__header {
+    flex-direction: column;
+  }
+
+  .projects-create input {
+    min-width: 0;
+    flex: 1;
+  }
+}
