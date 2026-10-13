@@ -14,6 +14,28 @@ export interface StudioProject {
   Models: StudioModel[];
   Libraries: TebLibrary[];
   ImportNotes: string[];
+  /** Final report of the project (missing in documents of older servers). */
+  Report?: ProjectReport;
+}
+
+export type ReportFragmentKind = 'heading' | 'text' | 'code' | 'table' | 'image';
+
+/** Fragment of the final report: text, preformatted text, table or picture (PNG data URI). */
+export interface ReportFragment {
+  Id: string;
+  Kind: ReportFragmentKind;
+  Title: string;
+  Text?: string | null;
+  Columns?: string[];
+  Rows?: string[][];
+  Image?: string | null;
+  /** Where the fragment was taken from (result and tab). */
+  Source?: string | null;
+}
+
+export interface ProjectReport {
+  Title: string;
+  Fragments: ReportFragment[];
 }
 
 export interface StudioModel {

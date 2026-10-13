@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ModelLogDocument } from '../../features/teb-editor/ui/ModelLogDocument/ModelLogDocument';
 import { ExperimentsDocument } from '../../features/teb-editor/ui/ExperimentsDocument/ExperimentsDocument';
+import { FinalReportDocument } from '../../features/teb-editor/ui/FinalReportDocument/FinalReportDocument';
 import { DynamicFormDocument } from '../../features/teb-editor/ui/FormDocuments/DynamicFormDocument';
 import { InputFormDocument } from '../../features/teb-editor/ui/FormDocuments/InputFormDocument';
 import { ModelStateDocument } from '../../features/teb-editor/ui/ModelStateDocument/ModelStateDocument';
@@ -37,6 +38,7 @@ const DOCUMENT_VIEWS: Record<ActiveDocument, () => ReactNode> = {
   'input-form': () => <InputFormDocument />,
   'dynamic-form': () => <DynamicFormDocument />,
   results: () => <ResultsDocument />,
+  'final-report': () => <FinalReportDocument />,
 };
 
 function ActiveDocumentView() {

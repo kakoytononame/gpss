@@ -372,6 +372,7 @@ export function buildProjectTree(project: StudioProject, modelIndex: number, has
         { id: 'models-root', label: 'Модели', icon: 'model', iconAsset: projectModelsIcon, children: [...models, ...results] },
         ...(forms.length > 0 ? [{ id: 'forms-root', label: 'Формы', icon: 'form', iconAsset: formCollectionIcon, children: forms }] : []),
         resultsRoot,
+        { id: 'final-report', label: 'Итоговый отчёт', icon: 'table', iconAsset: stdReportIcon, documentId: 'final-report' },
         {
           id: 'libraries-root',
           label: 'Библиотеки ТЭБов проекта',

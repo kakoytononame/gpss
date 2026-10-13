@@ -12,6 +12,47 @@ public sealed class StudioProject
 
     /// <summary>Notes produced while importing (unsupported parts, missing files).</summary>
     public List<string> ImportNotes { get; set; } = [];
+
+    /// <summary>Final ("virtual") report of the project: fragments added from simulation results.</summary>
+    public ProjectReport Report { get; set; } = new();
+}
+
+/// <summary>Final report of a project (GPSS Studio "Отчёт"): a title and an ordered list of fragments.</summary>
+public sealed class ProjectReport
+{
+    public string Title { get; set; } = string.Empty;
+    public List<ReportFragment> Fragments { get; set; } = [];
+}
+
+public static class ReportFragmentKinds
+{
+    public const string Heading = "heading";
+    public const string Text = "text";
+
+    /// <summary>Preformatted text, e.g. a model text.</summary>
+    public const string Code = "code";
+    public const string Table = "table";
+
+    /// <summary>Picture (a chart rendered to PNG) kept as a data URI.</summary>
+    public const string Image = "image";
+}
+
+public sealed class ReportFragment
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Kind { get; set; } = ReportFragmentKinds.Text;
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Text of heading, text and code fragments.</summary>
+    public string? Text { get; set; }
+    public List<string> Columns { get; set; } = [];
+    public List<List<string>> Rows { get; set; } = [];
+
+    /// <summary>Data URI of an image fragment.</summary>
+    public string? Image { get; set; }
+
+    /// <summary>Where the fragment was taken from (result and tab), shown as a caption.</summary>
+    public string? Source { get; set; }
 }
 
 public sealed class StudioModel

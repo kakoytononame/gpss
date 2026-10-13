@@ -21,7 +21,8 @@ export type ActiveDocument =
   | 'experiments'
   | 'input-form'
   | 'dynamic-form'
-  | 'results';
+  | 'results'
+  | 'final-report';
 export type SimulationState = 'idle' | 'running' | 'paused' | 'completed' | 'stopped' | 'error';
 export type RightPanelTab = 'properties' | 'teb-tests';
 export type ExplorerMode = 'project' | 'libraries';

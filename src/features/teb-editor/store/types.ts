@@ -22,12 +22,13 @@ import type {
   TebTestItem,
   TebTestStatus,
 } from '../../../shared/types/teb';
-import type { GenerationResult, ProjectSummary, StudioProject, StudioTebLink } from '../../../shared/types/project';
+import type { GenerationResult, ProjectSummary, ReportFragment, StudioProject, StudioTebLink } from '../../../shared/types/project';
 import type { ExperimentResult } from '../../../shared/types/experiment';
 import type { SimulationResultDetail, SimulationResultSummary } from '../../../shared/types/result';
 import type { SimulationReport, TransactionState } from '../../../shared/types/simulation';
 import type { SimulationMonitoring } from '../../../shared/api/simulationApi';
 import type { ExperimentPlan } from '../model/experimentPlan';
+import type { ReportFragmentDraft } from '../model/finalReport';
 
 type Updater<T> = T | ((current: T) => T);
 
@@ -298,6 +299,20 @@ export interface ResultSliceActions {
   deleteResult: (id: string) => Promise<void>;
 }
 
+export interface FinalReportSliceActions {
+  /** Opens the "Итоговый отчёт" document. */
+  openFinalReport: () => void;
+  /** Appends fragments (tables, texts, charts of a result tab) to the report of the open project. */
+  addReportFragments: (fragments: ReportFragmentDraft[]) => void;
+  addReportText: (kind: 'heading' | 'text') => void;
+  updateReportFragment: (id: string, patch: Partial<Pick<ReportFragment, 'Title' | 'Text'>>) => void;
+  moveReportFragment: (id: string, direction: Direction) => void;
+  removeReportFragment: (id: string) => void;
+  setReportTitle: (title: string) => void;
+  /** Downloads the report as an HTML page or as a Word document (MHTML with the charts). */
+  exportFinalReport: (format: 'html' | 'word') => void;
+}
+
 export interface PersistenceActions {
   resetWorkspace: () => void;
   saveWorkspaceSnapshot: () => Promise<void>;
@@ -326,6 +341,7 @@ export type TebEditorActions = SyncActions &
   ExperimentSliceActions &
   FormSliceActions &
   ResultSliceActions &
+  FinalReportSliceActions &
   PersistenceActions;
 
 export type TebEditorStore = TebEditorState & TebEditorActions;

@@ -68,6 +68,33 @@ public sealed class ProjectApiTests : ApiTestBase
     }
 
     [Fact]
+    public async Task Save_KeepsTheFinalReportOfTheProject()
+    {
+        var project = await ReadJsonAsync(await Client.PostAsJsonAsync(ProjectsPath, new { Name = "Отчёт" }));
+        var id = project.GetProperty("Id").GetString();
+        Assert.Empty(project.GetProperty("Report").GetProperty("Fragments").EnumerateArray());
+
+        var report = new
+        {
+            Title = "Итоговый отчёт",
+            Fragments = new object[]
+            {
+                new { Id = "f1", Kind = "table", Title = "Устройства", Columns = new[] { "Имя", "Загрузка" }, Rows = new[] { new[] { "KASSA", "0.8" } }, Source = "Эксперимент 1" },
+                new { Id = "f2", Kind = "image", Title = "Очередь", Image = "data:image/png;base64,iVBORw0KGgo=" },
+            },
+        };
+        var saved = await Client.PutAsJsonAsync($"{ProjectsPath}/{id}", new { Id = id, Name = "Отчёт", Models = new[] { new { Name = "М" } }, Report = report });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+
+        var loaded = (await ReadJsonAsync(await Client.GetAsync($"{ProjectsPath}/{id}"))).GetProperty("Report");
+        Assert.Equal("Итоговый отчёт", loaded.GetProperty("Title").GetString());
+        var fragments = loaded.GetProperty("Fragments");
+        Assert.Equal(["table", "image"], fragments.EnumerateArray().Select(item => item.GetProperty("Kind").GetString()));
+        Assert.Equal("0.8", fragments[0].GetProperty("Rows")[0][1].GetString());
+        Assert.Equal("data:image/png;base64,iVBORw0KGgo=", fragments[1].GetProperty("Image").GetString());
+    }
+
+    [Fact]
     public async Task GenerateForStoredModel_ReturnsRunnableText()
     {
         var project = await ReadJsonAsync(await Client.PostAsJsonAsync(ProjectsPath, new { Name = "Касса" }));

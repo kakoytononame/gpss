@@ -182,6 +182,21 @@ test.describe('Simulation projects', () => {
     await expect(details.getByRole('tabpanel', { name: 'Исходные данные' })).toContainText('8');
     await details.getByRole('tab', { name: 'Динамика показателей' }).click();
     await expect(details.getByRole('tabpanel', { name: 'Динамика показателей' })).toContainText('Причал (S$Berth)');
+
+    // The chart of the tab goes to the final report as a picture; the report is exported for Word.
+    await details.getByRole('button', { name: 'Добавить в отчёт' }).click();
+    await expect(page.locator('.global-status')).toContainText('добавлено фрагментов: 1');
+    await page.locator('.tree-row', { hasText: 'Итоговый отчёт' }).click();
+    const fragment = page.getByRole('listitem', { name: 'Фрагмент 1' });
+    await expect(fragment.getByRole('textbox', { name: 'Заголовок фрагмента' })).toHaveValue('Причал (S$Berth)');
+    await expect(fragment.locator('img')).toHaveAttribute('src', /^data:image\/png;base64,/);
+
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Сохранить отчёт как документ Word (.doc) с графиками' }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toBe(`Отчёт по проекту «${name}».doc`);
+    const content = await (await file.createReadStream()).toArray();
+    expect(Buffer.concat(content).toString('utf8')).toContain('Content-Location: file:///C:/gpss-report/image001.png');
     await page.request.delete(`${PROJECTS}/${created.Id}`);
   });
 });

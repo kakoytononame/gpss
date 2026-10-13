@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { SimulationResultDetail } from '../../../../shared/types/result';
-import { simulationResult } from '../../../../test/fixtures';
+import { simulationResult, studioProject } from '../../../../test/fixtures';
 import { resetStore, store } from '../../../../test/store';
 import { ResultsDocument } from './ResultsDocument';
 
@@ -63,5 +63,22 @@ describe('ResultsDocument', () => {
 
     expect(renameResult).toHaveBeenCalledWith('r1', 'Новое имя');
     expect(store().selectedResult).toBeNull();
+  });
+
+  it('adds what the tab shows to the final report of the project', async () => {
+    resetStore({ project: studioProject(), selectedResult: SINGLE });
+    render(<ResultsDocument />);
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Исходные данные' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Добавить в отчёт' }));
+
+    await vi.waitFor(() => expect(store().project?.Report?.Fragments).toHaveLength(1));
+    expect(store().project?.Report?.Fragments[0]).toMatchObject({
+      Kind: 'table',
+      Title: 'Исходные данные',
+      Columns: ['Исходные данные', 'Параметр', 'Операнд', 'Значение'],
+      Rows: [['(2) INITIAL', 'Интервал', 'B', '30']],
+      Source: 'Эксперимент «Порт» — Исходные данные',
+    });
   });
 });

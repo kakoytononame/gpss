@@ -154,3 +154,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.results-tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.results-tabs button.results-tabs__add {
+  margin-left: auto;
+  border-color: #6fa36f;
+  background: linear-gradient(#fbfffb, #dff0df);
+}
+
+.results-tabs button.results-tabs__add:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}

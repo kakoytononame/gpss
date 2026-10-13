@@ -37,6 +37,7 @@ describe('simulation result helpers', () => {
     const results = home.children?.find((node) => node.id === 'results-root');
 
     expect(results?.documentId).toBe('results');
+    expect(home.children?.find((node) => node.id === 'final-report')?.documentId).toBe('final-report');
     expect(results?.children?.map((node) => [node.label, node.children?.map((item) => item.resultId)])).toEqual([
       ['Одиночные эксперименты', ['a', 'c']],
       ['Серии экспериментов', ['b']],

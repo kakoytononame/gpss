@@ -1,0 +1,130 @@
+.final-report-document__body {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  font-size: 0.82rem;
+}
+
+.final-report-document__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.final-report-document__title input {
+  flex: 1;
+  max-width: 640px;
+  padding: 3px 6px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.final-report-document__empty {
+  margin: 4px 0;
+  color: #667788;
+}
+
+.final-report-fragments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.final-report-fragment {
+  max-width: 980px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 6px 8px;
+}
+
+.final-report-fragment header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.final-report-fragment header input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 4px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.final-report-fragment__kind {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: #eef3f8;
+  color: #3d5770;
+  font-size: 0.75rem;
+}
+
+.final-report-fragment--heading .final-report-fragment__kind {
+  margin-right: auto;
+}
+
+.final-report-fragment__tools {
+  display: flex;
+  gap: 2px;
+}
+
+.final-report-fragment__tools button {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #9eb6cc;
+  background: linear-gradient(#fdfeff, #e3edf6);
+  font: inherit;
+  cursor: pointer;
+}
+
+.final-report-fragment__tools button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.final-report-fragment__source {
+  margin: 0 0 4px;
+  color: #667788;
+  font-size: 0.75rem;
+}
+
+.final-report-fragment__heading {
+  width: 100%;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.final-report-fragment textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font: inherit;
+  resize: vertical;
+}
+
+.final-report-fragment pre {
+  max-height: 260px;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  border: 1px solid #edf1f5;
+  background: #fbfcfd;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.8rem;
+}
+
+.final-report-fragment img {
+  max-width: 100%;
+  border: 1px solid #edf1f5;
+}

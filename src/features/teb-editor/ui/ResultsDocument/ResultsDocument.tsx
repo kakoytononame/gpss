@@ -1,8 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
+import { svgToPngDataUrl } from '../../../../shared/lib/chartImage';
 import type { SeriesResultPayload, SimulationResultDetail, SimulationResultKind, SingleResultPayload } from '../../../../shared/types/result';
 import type { SimulationReport } from '../../../../shared/types/simulation';
 import { IconButton } from '../../../../shared/ui/IconButton/IconButton';
 import { FACTOR_KIND_LABELS } from '../../model/experimentPlan';
+import { fragmentsFromElement } from '../../model/finalReport';
 import { formatResultDate, groupResults, RESULT_KIND_LABELS } from '../../model/simulationResults';
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import { ExperimentResultChart, ExperimentResultTable } from '../ExperimentsDocument/ExperimentResultView';
@@ -260,25 +262,53 @@ const SERIES_TABS: Array<ResultTab<SeriesResultPayload>> = [
 
 function ResultTabs<T>({ tabs, payload, result }: { tabs: Array<ResultTab<T>>; payload: T; result: SimulationResultDetail }) {
   const [tabId, setTabId] = useState(tabs[0].id);
+  const [adding, setAdding] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const addReportFragments = useTebEditorStore((state) => state.addReportFragments);
   const tab = tabs.find((item) => item.id === tabId) ?? tabs[0];
+
+  /** Adds what the tab shows (tables, model text, charts as pictures) to the final report. */
+  async function addToReport() {
+    if (!panelRef.current) {
+      return;
+    }
+
+    setAdding(true);
+    try {
+      addReportFragments(await fragmentsFromElement(panelRef.current, tab.label, `${result.Name} — ${tab.label}`, svgToPngDataUrl));
+    } finally {
+      setAdding(false);
+    }
+  }
 
   return (
     <>
-      <div className="results-tabs" role="tablist" aria-label="Вкладки результата">
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={item.id === tab.id}
-            className={item.id === tab.id ? 'is-active' : undefined}
-            onClick={() => setTabId(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div className="results-tabs">
+        <div className="results-tabs__list" role="tablist" aria-label="Вкладки результата">
+          {tabs.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={item.id === tab.id}
+              className={item.id === tab.id ? 'is-active' : undefined}
+              onClick={() => setTabId(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="results-tabs__add"
+          title="Добавить таблицы, текст и графики вкладки в итоговый отчёт"
+          disabled={adding}
+          onClick={() => void addToReport()}
+        >
+          Добавить в отчёт
+        </button>
       </div>
-      <div className="results-tab-content" role="tabpanel" aria-label={tab.label}>
+      <div ref={panelRef} className="results-tab-content" role="tabpanel" aria-label={tab.label}>
         {tab.render(payload, result)}
       </div>
     </>
@@ -307,6 +337,7 @@ export function ResultsDocument() {
   const saveExperimentResult = useTebEditorStore((state) => state.saveExperimentResult);
   const renameResult = useTebEditorStore((state) => state.renameResult);
   const deleteResult = useTebEditorStore((state) => state.deleteResult);
+  const openFinalReport = useTebEditorStore((state) => state.openFinalReport);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const grouped = groupResults(results);
 
@@ -334,6 +365,7 @@ export function ResultsDocument() {
             disabled={!hasSeries}
             onClick={() => void saveExperimentResult()}
           />
+          <IconButton label="Итоговый отчёт" title="Открыть итоговый отчёт проекта" disabled={!projectName} onClick={openFinalReport} />
         </div>
       </div>
 
