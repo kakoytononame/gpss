@@ -392,3 +392,132 @@
   border-radius: 17px;
   font-style: italic;
 }
+
+/* ---------------------------------------------------------------- view tools */
+
+.scheme-workspace {
+  position: relative;
+}
+
+.scheme-canvas {
+  height: calc(100vh - 330px);
+  min-height: 460px;
+  cursor: grab;
+  background: #fbfcfe;
+}
+
+.scheme-canvas.is-panning {
+  cursor: grabbing;
+}
+
+.scheme-surface--grid {
+  background-image: radial-gradient(circle, #c9d6e3 1px, transparent 1.2px);
+  background-position: 0 0;
+}
+
+.scheme-link {
+  stroke-width: 3;
+  filter: drop-shadow(1px 2px 2px rgba(35, 80, 110, 0.22));
+  transition: stroke 0.12s ease;
+}
+
+.scheme-link.is-related {
+  stroke: #1f78c1;
+  stroke-width: 4;
+}
+
+.scheme-link-draft {
+  stroke-width: 3;
+  stroke-dasharray: 10 8;
+}
+
+.scheme-node {
+  border-radius: 6px;
+  box-shadow: 2px 4px 10px rgba(40, 70, 100, 0.22);
+  transition: box-shadow 0.12s ease, outline-color 0.12s ease;
+}
+
+.scheme-node:hover {
+  box-shadow: 3px 6px 14px rgba(40, 70, 100, 0.3);
+}
+
+.scheme-toolbar {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 10;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #b9cadb;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(30, 60, 90, 0.18);
+  font-size: 0.78rem;
+}
+
+.scheme-toolbar button {
+  min-width: 28px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.scheme-toolbar button:hover {
+  border-color: #9eb6cc;
+  background: #eef5fc;
+}
+
+.scheme-toolbar button.is-active {
+  border-color: #7aa7d4;
+  background: #dcebfa;
+}
+
+.scheme-toolbar__zoom {
+  min-width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scheme-minimap {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 10;
+  border: 1px solid #b9cadb;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(30, 60, 90, 0.18);
+  cursor: pointer;
+}
+
+.scheme-minimap__node {
+  stroke: #5b86ad;
+  stroke-width: 4;
+}
+
+.scheme-minimap__link {
+  stroke: #8fb3d3;
+  stroke-width: 5;
+}
+
+.scheme-minimap__view {
+  fill: rgba(47, 123, 216, 0.1);
+  stroke: #2f7bd8;
+  stroke-width: 8;
+}
+
+.scheme-hint {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  z-index: 10;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #6b7c8c;
+  font-size: 0.72rem;
+  pointer-events: none;
+}

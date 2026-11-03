@@ -11,15 +11,19 @@ import {
   clampNodePosition,
   containsPoint,
   createNodeFromLibraryItem,
+  curvedLinkPath,
   DEFAULT_CANVAS,
-  linkPath,
+  fitToViewport,
   MAX_SCHEME_ZOOM,
   MIN_SCHEME_ZOOM,
   pointForPort,
+  SCHEME_GRID,
   SCHEME_ZOOM_STEP,
+  snapToGrid,
   type Point,
   type SchemePort,
 } from './schemeGeometry';
+import { SchemeMinimap } from './SchemeMinimap';
 import { SchemeNodeView } from './SchemeNodeView';
 import '../BaseDocument/BaseDocument.css';
 import './SchemeDocument.css';
@@ -28,6 +32,14 @@ interface NodeDrag {
   id: string;
   offsetX: number;
   offsetY: number;
+}
+
+interface Pan {
+  startX: number;
+  startY: number;
+  scrollLeft: number;
+  scrollTop: number;
+  moved: boolean;
 }
 
 interface ConnectionDrag {
@@ -75,6 +87,12 @@ export function SchemeDocument() {
   const [nodeDrag, setNodeDrag] = useState<NodeDrag | null>(null);
   const [connectionDrag, setConnectionDrag] = useState<ConnectionDrag | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [showGrid, setShowGrid] = useState(true);
+  const [snap, setSnap] = useState(true);
+  const [viewport, setViewport] = useState({ left: 0, top: 0, width: 0, height: 0 });
+  const panRef = useRef<Pan | null>(null);
+  const [panning, setPanning] = useState(false);
+  const projectModelIndex = useTebEditorStore((state) => state.projectModelIndex);
 
   const visibleNodes = useMemo(() => nodes.filter((node) => !node.hidden), [nodes]);
   // Imported schemes can be larger than the default canvas; the surface grows with its content.
@@ -123,6 +141,20 @@ export function SchemeDocument() {
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const pan = panRef.current;
+    if (pan && canvasRef.current) {
+      const dx = event.clientX - pan.startX;
+      const dy = event.clientY - pan.startY;
+      if (!pan.moved && Math.hypot(dx, dy) > 3) {
+        pan.moved = true;
+        setPanning(true);
+      }
+
+      canvasRef.current.scrollLeft = pan.scrollLeft - dx;
+      canvasRef.current.scrollTop = pan.scrollTop - dy;
+      return;
+    }
+
     if (connectionDrag) {
       const current = readCanvasPoint(event.clientX, event.clientY);
       setConnectionDrag((drag) => (drag ? { ...drag, current } : null));
@@ -137,7 +169,16 @@ export function SchemeDocument() {
     setNodes((currentNodes) =>
       currentNodes.map((node) =>
         node.id === nodeDrag.id
-          ? { ...node, ...clampNodePosition(point.x - nodeDrag.offsetX, point.y - nodeDrag.offsetY, node.width, node.height, surface) }
+          ? {
+              ...node,
+              ...clampNodePosition(
+                snap ? snapToGrid(point.x - nodeDrag.offsetX) : point.x - nodeDrag.offsetX,
+                snap ? snapToGrid(point.y - nodeDrag.offsetY) : point.y - nodeDrag.offsetY,
+                node.width,
+                node.height,
+                surface,
+              ),
+            }
           : node,
       ),
     );
@@ -163,7 +204,32 @@ export function SchemeDocument() {
     setStatusMessage(existingLink ? 'Такая связь уже существует.' : 'Выход блока связан со входом выбранного блока.', 'saved');
   }
 
+  function handleCanvasPointerDown(event: PointerEvent<HTMLDivElement>) {
+    // Dragging the empty canvas scrolls it; a click without movement clears the selection.
+    const canvas = canvasRef.current;
+    if (!canvas || event.button > 1) {
+      return;
+    }
+
+    panRef.current = { startX: event.clientX, startY: event.clientY, scrollLeft: canvas.scrollLeft, scrollTop: canvas.scrollTop, moved: false };
+  }
+
+  function finishPan() {
+    const pan = panRef.current;
+    panRef.current = null;
+    setPanning(false);
+    if (pan && !pan.moved) {
+      setSelection(null);
+    }
+
+    return pan !== null;
+  }
+
   function handlePointerUp() {
+    if (finishPan()) {
+      return;
+    }
+
     if (connectionDrag) {
       finishConnection(connectionDrag);
       return;
@@ -173,6 +239,8 @@ export function SchemeDocument() {
   }
 
   function handlePointerLeave() {
+    panRef.current = null;
+    setPanning(false);
     if (connectionDrag) {
       setConnectionDrag(null);
       setStatusMessage('Создание связи отменено.', 'saved');
@@ -206,6 +274,63 @@ export function SchemeDocument() {
       canvas.scrollLeft = Math.max(0, logicalX * nextZoom - pointerX);
       canvas.scrollTop = Math.max(0, logicalY * nextZoom - pointerY);
     });
+  }
+
+  /** Zooms around the centre of the visible area. */
+  function zoomTo(nextZoom: number) {
+    const canvas = canvasRef.current;
+    const target = clamp(Number(nextZoom.toFixed(2)), MIN_SCHEME_ZOOM, MAX_SCHEME_ZOOM);
+    if (!canvas || target === zoom) {
+      return;
+    }
+
+    const centerX = (canvas.scrollLeft + canvas.clientWidth / 2) / zoom;
+    const centerY = (canvas.scrollTop + canvas.clientHeight / 2) / zoom;
+    setZoom(target);
+    window.requestAnimationFrame(() => {
+      canvas.scrollLeft = Math.max(0, centerX * target - canvas.clientWidth / 2);
+      canvas.scrollTop = Math.max(0, centerY * target - canvas.clientHeight / 2);
+    });
+  }
+
+  function fitScheme() {
+    const canvas = canvasRef.current;
+    if (!canvas || canvas.clientWidth === 0) {
+      return;
+    }
+
+    const fit = fitToViewport(visibleNodes, { width: canvas.clientWidth, height: canvas.clientHeight });
+    setZoom(fit.zoom);
+    window.requestAnimationFrame(() => {
+      canvas.scrollLeft = fit.scrollLeft;
+      canvas.scrollTop = fit.scrollTop;
+    });
+  }
+
+  function scrollToPoint(point: Point) {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.scrollLeft = Math.max(0, point.x * zoom - canvas.clientWidth / 2);
+      canvas.scrollTop = Math.max(0, point.y * zoom - canvas.clientHeight / 2);
+    }
+  }
+
+  function updateViewport() {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      setViewport({ left: canvas.scrollLeft / zoom, top: canvas.scrollTop / zoom, width: canvas.clientWidth / zoom, height: canvas.clientHeight / zoom });
+    }
+  }
+
+  function nudgeSelection(dx: number, dy: number) {
+    const current = useTebEditorStore.getState().schemeSelection;
+    if (current?.type !== 'node') {
+      return;
+    }
+
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => (node.id === current.id ? { ...node, ...clampNodePosition(node.x + dx, node.y + dy, node.width, node.height, surface) } : node)),
+    );
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
@@ -243,24 +368,55 @@ export function SchemeDocument() {
     setSelection(null);
   }
 
-  const deleteSelectionRef = useRef(deleteSelection);
+  const keyActionsRef = useRef({ deleteSelection, nudgeSelection, zoomTo, fitScheme, zoom });
   useEffect(() => {
-    deleteSelectionRef.current = deleteSelection;
+    keyActionsRef.current = { deleteSelection, nudgeSelection, zoomTo, fitScheme, zoom };
   });
 
+  // Every new scheme level (or project model) is shown whole.
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => keyActionsRef.current.fitScheme());
+    return () => window.cancelAnimationFrame(frame);
+  }, [project?.Id, projectModelIndex, schemePath.length]);
+
+  useEffect(() => {
+    updateViewport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, surface.width, surface.height]);
+
+  useEffect(() => {
+    const arrows: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Delete' || isEditableElement(document.activeElement) || !useTebEditorStore.getState().schemeSelection) {
+      if (isEditableElement(document.activeElement)) {
         return;
       }
 
-      event.preventDefault();
-      deleteSelectionRef.current();
+      const actions = keyActionsRef.current;
+      const selected = useTebEditorStore.getState().schemeSelection;
+      if (event.key === 'Delete' && selected) {
+        event.preventDefault();
+        actions.deleteSelection();
+      } else if (event.key in arrows && selected?.type === 'node') {
+        event.preventDefault();
+        const step = event.shiftKey ? SCHEME_GRID * 5 : event.altKey ? 1 : SCHEME_GRID;
+        actions.nudgeSelection(arrows[event.key][0] * step, arrows[event.key][1] * step);
+      } else if (event.key === 'Escape' && selected) {
+        setSelection(null);
+      } else if ((event.ctrlKey || event.metaKey) && (event.key === '=' || event.key === '+')) {
+        event.preventDefault();
+        actions.zoomTo(actions.zoom + SCHEME_ZOOM_STEP * 2);
+      } else if ((event.ctrlKey || event.metaKey) && event.key === '-') {
+        event.preventDefault();
+        actions.zoomTo(actions.zoom - SCHEME_ZOOM_STEP * 2);
+      } else if ((event.ctrlKey || event.metaKey) && event.key === '0') {
+        event.preventDefault();
+        actions.fitScheme();
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [setSelection]);
 
   return (
     <section className="placeholder-document">
@@ -315,17 +471,21 @@ export function SchemeDocument() {
 
       <div className="scheme-workspace">
         <div
-          className="scheme-canvas"
+          className={`scheme-canvas${panning ? ' is-panning' : ''}`}
           ref={canvasRef}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerLeave}
-          onPointerDown={() => setSelection(null)}
+          onPointerDown={handleCanvasPointerDown}
+          onScroll={updateViewport}
           onWheel={handleWheel}
           onDragOver={(event) => event.preventDefault()}
           onDrop={handleDrop}
         >
-          <div className="scheme-surface" style={{ width: `${surface.width * zoom}px`, height: `${surface.height * zoom}px` }}>
+          <div
+            className={`scheme-surface${showGrid ? ' scheme-surface--grid' : ''}`}
+            style={{ width: `${surface.width * zoom}px`, height: `${surface.height * zoom}px`, backgroundSize: `${SCHEME_GRID * 2 * zoom}px ${SCHEME_GRID * 2 * zoom}px` }}
+          >
             <svg
               className="scheme-links"
               viewBox={`0 0 ${surface.width} ${surface.height}`}
@@ -357,10 +517,11 @@ export function SchemeDocument() {
                   return null;
                 }
 
+                const related = selection?.type === 'node' && (link.from === selection.id || link.to === selection.id);
                 return (
                   <path
-                    className={`scheme-link ${selection?.type === 'link' && selection.id === link.id ? 'is-selected' : ''}`}
-                    d={linkPath(from, to)}
+                    className={`scheme-link ${selection?.type === 'link' && selection.id === link.id ? 'is-selected' : ''}${related ? ' is-related' : ''}`}
+                    d={curvedLinkPath(from, to)}
                     key={link.id}
                     markerEnd="url(#scheme-arrow)"
                     onPointerDown={(event) => {
@@ -412,6 +573,30 @@ export function SchemeDocument() {
             <div className="scheme-caption">Состояние моделирования: {SIMULATION_STATE_LABELS[simulationState]}</div>
           </div>
         </div>
+
+        <div className="scheme-toolbar" role="toolbar" aria-label="Вид схемы" onPointerDown={(event) => event.stopPropagation()}>
+          <button type="button" title="Уменьшить (Ctrl −)" aria-label="Уменьшить" onClick={() => zoomTo(zoom - SCHEME_ZOOM_STEP * 2)}>
+            −
+          </button>
+          <button type="button" className="scheme-toolbar__zoom" title="Масштаб 100 %" aria-label="Масштаб 100 %" onClick={() => zoomTo(1)}>
+            {Math.round(zoom * 100)} %
+          </button>
+          <button type="button" title="Увеличить (Ctrl +)" aria-label="Увеличить" onClick={() => zoomTo(zoom + SCHEME_ZOOM_STEP * 2)}>
+            +
+          </button>
+          <button type="button" title="Показать всю схему (Ctrl 0)" onClick={fitScheme}>
+            Вписать
+          </button>
+          <button type="button" className={showGrid ? 'is-active' : ''} aria-pressed={showGrid} title="Сетка" onClick={() => setShowGrid((value) => !value)}>
+            Сетка
+          </button>
+          <button type="button" className={snap ? 'is-active' : ''} aria-pressed={snap} title="Привязка к сетке при перемещении" onClick={() => setSnap((value) => !value)}>
+            Привязка
+          </button>
+        </div>
+
+        <SchemeMinimap nodes={visibleNodes} links={links} surface={surface} viewport={viewport} onNavigate={scrollToPoint} />
+        <div className="scheme-hint">Перетаскивание фона — прокрутка · Ctrl + колесо — масштаб · стрелки — сдвиг ТЭБа · Delete — удалить</div>
       </div>
     </section>
   );
