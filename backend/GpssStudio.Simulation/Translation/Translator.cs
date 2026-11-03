@@ -457,7 +457,7 @@ public static class Translator
                 return new LinkBlock
                 {
                     Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
-                    Entity = Entity(0), Order = order.ToUpperInvariant() is "FIFO" or "LIFO" ? order.ToUpperInvariant() : order, Alternate = OptionalBlock(2),
+                    Entity = Entity(0), Order = order.ToUpperInvariant() is "FIFO" or "LIFO" or "PR" ? order.ToUpperInvariant() : order, Alternate = OptionalBlock(2),
                 };
             }
             case "UNLINK":
@@ -468,6 +468,9 @@ public static class Translator
                     Operation = s.Operation, Label = common.label, Line = common.line, OperandText = common.text,
                     Entity = Entity(0), Destination = BlockRef.Parse(Require(s, 1, "метка назначения"), model.Labels),
                     Count = countText.Length == 0 || countText.Equals("ALL", StringComparison.OrdinalIgnoreCase) ? null : ExpressionParser.Parse(countText),
+                    FromBack = s.Operand(3).Equals("BACK", StringComparison.OrdinalIgnoreCase),
+                    MatchParameter = s.HasOperand(3) && !s.Operand(3).Equals("BACK", StringComparison.OrdinalIgnoreCase) ? ParameterRef.Parse(s.Operand(3)) : null,
+                    MatchValue = Optional(4),
                     Alternate = OptionalBlock(5),
                 };
             }

@@ -225,11 +225,18 @@ public sealed class LinkBlock : EntityBlock
     }
 }
 
-/// <summary>UNLINK A,B,C[,D,E,F] — moves up to C transactions (or ALL) from user chain A to block B.</summary>
+/// <summary>
+/// UNLINK A,B,C[,D,E,F] — moves up to C transactions (or ALL) from user chain A to block B. D = BACK takes them
+/// from the end of the chain; D = parameter takes only those whose parameter equals E (or, without E, the same
+/// parameter of the active transaction). F is the destination of the active transaction when none was moved.
+/// </summary>
 public sealed class UnlinkBlock : EntityBlock
 {
     public required BlockRef Destination { get; init; }
     public Expr? Count { get; init; }
+    public bool FromBack { get; init; }
+    public ParameterRef? MatchParameter { get; init; }
+    public Expr? MatchValue { get; init; }
     public BlockRef? Alternate { get; init; }
 
     public override BlockOutcome Execute(SimulationEngine engine, Transaction transaction)
@@ -237,7 +244,15 @@ public sealed class UnlinkBlock : EntityBlock
         var chain = engine.UserChain(EntityName(engine, transaction));
         var limit = Count is null ? int.MaxValue : (int)engine.Eval(Count, transaction);
         var destination = Destination.Resolve(engine, transaction);
-        var moved = engine.UnlinkFromUserChain(chain, limit, destination);
+        Func<Transaction, bool>? match = null;
+        if (MatchParameter is not null)
+        {
+            var parameter = MatchParameter.Resolve(engine, transaction);
+            var value = MatchValue is null ? transaction.GetParameter(parameter) : engine.Eval(MatchValue, transaction);
+            match = member => member.GetParameter(parameter) == value;
+        }
+
+        var moved = engine.UnlinkFromUserChain(chain, limit, destination, match, FromBack);
 
         if (moved == 0 && Alternate is not null)
         {

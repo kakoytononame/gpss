@@ -151,6 +151,8 @@ public sealed class CallExpr(string name, IReadOnlyList<Expr> arguments) : Expr
             "TRIANGULAR" => Triangular(context.Random(Stream()), Arg(1), Arg(2), Arg(3)),
             "POISSON" => Poisson(context, Stream(), Arg(1)),
             "LOGNORMAL" => Arg(1) + Math.Exp(Arg(2) + Arg(3) * StandardNormal(context, Stream())),
+            "GAMMA" => Arg(1) + Arg(2) * StandardGamma(context, Stream(), Arg(3)),
+            "WEIBULL" => Arg(1) + Arg(2) * Math.Pow(-Math.Log(1 - context.Random(Stream())), 1 / Positive(Arg(3), "WEIBULL")),
             "ABS" => Math.Abs(Arg(0)),
             "INT" => Math.Truncate(Arg(0)),
             "EXP" => Math.Exp(Arg(0)),
@@ -168,7 +170,7 @@ public sealed class CallExpr(string name, IReadOnlyList<Expr> arguments) : Expr
 
     public static readonly HashSet<string> KnownProcedures = new(StringComparer.OrdinalIgnoreCase)
     {
-        "EXPONENTIAL", "UNIFORM", "DUNIFORM", "NORMAL", "TRIANGULAR", "POISSON", "LOGNORMAL",
+        "EXPONENTIAL", "UNIFORM", "DUNIFORM", "NORMAL", "TRIANGULAR", "POISSON", "LOGNORMAL", "GAMMA", "WEIBULL",
         "ABS", "INT", "EXP", "LOG", "SQR", "SQRT", "SIN", "COS", "TAN", "ATN", "MIN", "MAX",
     };
 
@@ -178,6 +180,39 @@ public sealed class CallExpr(string name, IReadOnlyList<Expr> arguments) : Expr
         var u1 = 1 - context.Random(stream);
         var u2 = context.Random(stream);
         return Math.Sqrt(-2 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2);
+    }
+
+    private static double Positive(double value, string procedure) =>
+        value > 0 ? value : throw new SimulationException($"Процедура {procedure}: параметр формы должен быть положительным.");
+
+    /// <summary>Gamma(shape, 1) by Marsaglia–Tsang; shapes below 1 use the U^(1/shape) boost.</summary>
+    private static double StandardGamma(IEvaluationContext context, int stream, double shape)
+    {
+        Positive(shape, "GAMMA");
+        if (shape < 1)
+        {
+            return StandardGamma(context, stream, shape + 1) * Math.Pow(1 - context.Random(stream), 1 / shape);
+        }
+
+        var d = shape - 1.0 / 3;
+        var c = 1 / Math.Sqrt(9 * d);
+        while (true)
+        {
+            double x, v;
+            do
+            {
+                x = StandardNormal(context, stream);
+                v = 1 + c * x;
+            }
+            while (v <= 0);
+
+            v = v * v * v;
+            var u = 1 - context.Random(stream);
+            if (Math.Log(u) < 0.5 * x * x + d - d * v + d * Math.Log(v))
+            {
+                return d * v;
+            }
+        }
     }
 
     private static double Triangular(double u, double min, double max, double mode)

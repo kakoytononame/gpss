@@ -940,6 +940,19 @@ public sealed class SimulationEngine : IEvaluationContext
     {
         if (facility.InterruptChain.Count > 0)
         {
+            // A waiting priority-mode PREEMPT of higher priority than the interrupted owner takes the facility
+            // first (preemptive priority discipline); the interrupted transaction stays on the interrupt chain.
+            if (facility.Available
+                && facility.DelayChain.First is { } waiting
+                && waiting.Value.Priority > facility.InterruptChain.Peek().Priority
+                && waiting.Value.NextBlock >= 1 && waiting.Value.NextBlock <= _model.Blocks.Count
+                && _model.Blocks[waiting.Value.NextBlock - 1] is PreemptBlock { PriorityMode: true })
+            {
+                facility.DelayChain.RemoveFirst();
+                AddToCurrentChain(waiting.Value);
+                return;
+            }
+
             var resumed = facility.InterruptChain.Pop();
             facility.Owner = resumed;
             if (resumed.PreemptedRemainingTime is { } remaining)
@@ -1047,8 +1060,22 @@ public sealed class SimulationEngine : IEvaluationContext
 
     public void WaitOnStorage(Transaction transaction, Storage storage, int units)
     {
+        // Priority order, FIFO within a priority class (as the facility delay chain).
         RemoveFromCurrentChain(transaction);
-        storage.DelayChain.AddLast((transaction, units));
+        var node = storage.DelayChain.Last;
+        while (node is not null && node.Value.Transaction.Priority < transaction.Priority)
+        {
+            node = node.Previous;
+        }
+
+        if (node is null)
+        {
+            storage.DelayChain.AddFirst((transaction, units));
+        }
+        else
+        {
+            storage.DelayChain.AddAfter(node, (transaction, units));
+        }
     }
 
     public void EnterStorage(Storage storage, int units)
@@ -1180,11 +1207,31 @@ public sealed class SimulationEngine : IEvaluationContext
         {
             chain.Members.AddLast(transaction);
         }
+        else if (order == "PR")
+        {
+            // Priority order: behind transactions of the same or higher priority.
+            var node = chain.Members.Last;
+            while (node is not null && node.Value.Priority < transaction.Priority)
+            {
+                node = node.Previous;
+            }
+
+            if (node is null)
+            {
+                chain.Members.AddFirst(transaction);
+            }
+            else
+            {
+                chain.Members.AddAfter(node, transaction);
+            }
+        }
         else
         {
-            var key = transaction.GetParameter(order.StartsWith("P$", StringComparison.OrdinalIgnoreCase) ? order[2..] : order.TrimStart('P', 'p'));
+            // Ascending order of the parameter, behind transactions with an equal value.
+            var parameter = order.StartsWith("P$", StringComparison.OrdinalIgnoreCase) ? order[2..] : order;
+            var key = transaction.GetParameter(parameter);
             var node = chain.Members.First;
-            while (node is not null && node.Value.GetParameter(order) <= key)
+            while (node is not null && node.Value.GetParameter(parameter) <= key)
             {
                 node = node.Next;
             }
@@ -1202,17 +1249,31 @@ public sealed class SimulationEngine : IEvaluationContext
         chain.MaxContent = Math.Max(chain.MaxContent, chain.Members.Count);
     }
 
-    public int UnlinkFromUserChain(UserChain chain, int limit, int destination)
+    /// <summary>
+    /// Moves up to <paramref name="limit"/> transactions from the chain to <paramref name="destination"/>, from the
+    /// front (or from the back when <paramref name="fromBack"/>), only those matching <paramref name="match"/> if given.
+    /// </summary>
+    public int UnlinkFromUserChain(UserChain chain, int limit, int destination, Func<Transaction, bool>? match = null, bool fromBack = false)
     {
         var moved = 0;
-        while (moved < limit && chain.Members.First is { } first)
+        var node = fromBack ? chain.Members.Last : chain.Members.First;
+        while (moved < limit && node is not null)
         {
+            var next = fromBack ? node.Previous : node.Next;
+            if (match is not null && !match(node.Value))
+            {
+                node = next;
+                continue;
+            }
+
+            var member = node.Value;
             chain.ContentIntegral.Accumulate(AbsoluteClock, chain.Members.Count);
-            chain.TotalTime += AbsoluteClock - first.Value.UserChainEntryTime;
-            chain.Members.RemoveFirst();
-            first.Value.NextBlock = destination;
-            AddToCurrentChain(first.Value);
+            chain.TotalTime += AbsoluteClock - member.UserChainEntryTime;
+            chain.Members.Remove(node);
+            member.NextBlock = destination;
+            AddToCurrentChain(member);
             moved++;
+            node = next;
         }
 
         if (chain.Members.Count == 0)
