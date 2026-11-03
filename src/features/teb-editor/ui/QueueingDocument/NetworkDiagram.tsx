@@ -99,8 +99,9 @@ export function NetworkDiagram({ model, analysis, selected, onSelect }: NetworkD
 
       {model.Nodes.map((node) => {
         const place = position.get(node.Id)!;
-        const quality = analysis?.find((item) => item.NodeId === node.Id)?.Quality;
-        const utilization = analysis?.find((item) => item.NodeId === node.Id)?.Metrics.Utilization;
+        const result = analysis?.find((item) => item.NodeId === node.Id);
+        const quality = result?.Quality;
+        const utilization = result?.Metrics.Utilization;
         const servers = node.Servers === 0 ? 3 : Math.min(node.Servers, 4);
         return (
           <g
@@ -130,7 +131,7 @@ export function NetworkDiagram({ model, analysis, selected, onSelect }: NetworkD
               {truncate(node.Name || node.Id, 18)}
             </text>
             <text className="queueing-diagram__kendall" x={8} y={30}>
-              {kendallPreview(model, node)}
+              {result?.Kendall ?? kendallPreview(model, node)}
               {typeof utilization === 'number' ? `  ρ=${formatNumber(utilization, 2)}` : ''}
             </text>
           </g>
