@@ -6,6 +6,7 @@ import { DynamicFormDocument } from '../../features/teb-editor/ui/FormDocuments/
 import { InputFormDocument } from '../../features/teb-editor/ui/FormDocuments/InputFormDocument';
 import { ModelStateDocument } from '../../features/teb-editor/ui/ModelStateDocument/ModelStateDocument';
 import { ModelTextDocument } from '../../features/teb-editor/ui/ModelTextDocument/ModelTextDocument';
+import { QueueingDocument } from '../../features/teb-editor/ui/QueueingDocument/QueueingDocument';
 import { ProjectsDocument } from '../../features/teb-editor/ui/ProjectsDocument/ProjectsDocument';
 import { ResultsDocument } from '../../features/teb-editor/ui/ResultsDocument/ResultsDocument';
 import { SchemeDocument } from '../../features/teb-editor/ui/SchemeDocument/SchemeDocument';
@@ -39,6 +40,7 @@ const DOCUMENT_VIEWS: Record<ActiveDocument, () => ReactNode> = {
   'dynamic-form': () => <DynamicFormDocument />,
   results: () => <ResultsDocument />,
   'final-report': () => <FinalReportDocument />,
+  queueing: () => <QueueingDocument />,
 };
 
 function ActiveDocumentView() {

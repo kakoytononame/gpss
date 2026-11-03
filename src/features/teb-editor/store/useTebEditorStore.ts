@@ -6,6 +6,7 @@ import { createFormSlice } from './slices/formSlice';
 import { createLayoutSlice } from './slices/layoutSlice';
 import { createPersistenceSlice } from './slices/persistenceSlice';
 import { createProjectSlice } from './slices/projectSlice';
+import { createQueueingSlice } from './slices/queueingSlice';
 import { createResultSlice } from './slices/resultSlice';
 import { createSchemeSlice } from './slices/schemeSlice';
 import { createSimulationSlice } from './slices/simulationSlice';
@@ -29,6 +30,7 @@ export const useTebEditorStore = create<TebEditorStore>()((...args) => ({
   ...createDiagnosticsSlice(...args),
   ...createProjectSlice(...args),
   ...createExperimentSlice(...args),
+  ...createQueueingSlice(...args),
   ...createFormSlice(...args),
   ...createResultSlice(...args),
   ...createFinalReportSlice(...args),

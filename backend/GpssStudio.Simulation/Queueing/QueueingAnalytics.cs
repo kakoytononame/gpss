@@ -127,7 +127,7 @@ public static class QueueingAnalytics
 
         if (closed.Count > 0 && open.Count > 0)
         {
-            return context.Unavailable("Смешанная сеть (открытые и замкнутые классы): аналитическое решение не вычисляется, только моделирование.");
+            return Sanitize(context.Unavailable("Смешанная сеть (открытые и замкнутые классы): аналитическое решение не вычисляется, только моделирование."));
         }
 
         if (closed.Count > 1)
@@ -135,7 +135,34 @@ public static class QueueingAnalytics
             return context.Unavailable("Несколько замкнутых классов: многоклассовый анализ средних значений не реализован, только моделирование.");
         }
 
-        return closed.Count == 1 ? context.AnalyzeClosed(closed[0]) : context.AnalyzeOpen();
+        return Sanitize(closed.Count == 1 ? context.AnalyzeClosed(closed[0]) : context.AnalyzeOpen());
+    }
+
+    /// <summary>Infinite or undefined values (unstable systems) are reported as missing.</summary>
+    private static QueueingAnalysis Sanitize(QueueingAnalysis analysis)
+    {
+        static void Clean(object target)
+        {
+            foreach (var property in target.GetType().GetProperties().Where(property => property.PropertyType == typeof(double?) && property.CanWrite))
+            {
+                if (property.GetValue(target) is double value && !double.IsFinite(value))
+                {
+                    property.SetValue(target, null);
+                }
+            }
+        }
+
+        foreach (var node in analysis.Nodes)
+        {
+            Clean(node.Metrics);
+        }
+
+        foreach (var customerClass in analysis.Classes)
+        {
+            Clean(customerClass);
+        }
+
+        return analysis;
     }
 
     // ===================================================================== shared state

@@ -26,6 +26,7 @@ import nativeZoomInIcon from '../../../shared/assets/icons/gpss-native/zoomin16.
 import nativeZoomOutIcon from '../../../shared/assets/icons/gpss-native/zoomout16.png';
 import nativeZoomResetIcon from '../../../shared/assets/icons/gpss-native/zoomreset16.png';
 import modelSettingsIcon from '../../../shared/assets/icons/model-settings.png';
+import schemeIcon from '../../../shared/assets/icons/scheme.png';
 import newModelIcon from '../../../shared/assets/icons/new-model.png';
 import newProjectIcon from '../../../shared/assets/icons/new-project.png';
 import openFileIcon from '../../../shared/assets/icons/open-file.png';
@@ -196,6 +197,11 @@ function createRibbonCommands(): RibbonCommands {
         title: 'Эксперименты',
         className: 'ribbon-group--experiments',
         commands: [{ id: 'experiments', label: 'Серия экспериментов', icon: reportChartIcon, onClick: () => activate('experiments') }],
+      },
+      {
+        title: 'СМО',
+        className: 'ribbon-group--queueing',
+        commands: [{ id: 'queueing', label: 'Конструктор СМО', icon: schemeIcon, onClick: () => activate('queueing') }],
       },
       {
         title: 'Отладка',

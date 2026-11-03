@@ -802,7 +802,7 @@ public sealed class ModelGenerator
             Lines = StatementLine.ParseText(node.GpssText);
             LocalLabels = Lines.Where(line => line.Label is not null && line.Operation is not null && !OperandKinds.LabelIsEntity(line.Operation))
                 .Select(line => line.Label!).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            ReferencedNames = Lines.SelectMany(line => line.Operands).SelectMany(operand => operand.Split([',', ' ', '(', ')', '$', '+', '-', '#', '/', '*'], StringSplitOptions.RemoveEmptyEntries))
+            ReferencedNames = Lines.SelectMany(line => line.Operands).SelectMany(operand => operand.Split(new[] { ',', ' ', '(', ')', '$', '+', '-', '#', '/', '*' }, StringSplitOptions.RemoveEmptyEntries))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             HasControlStatements = Lines.Any(line => line.Operation is not null && ControlCommands.Contains(line.Operation));
         }

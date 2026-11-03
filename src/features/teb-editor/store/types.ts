@@ -1,3 +1,4 @@
+import type { QueueingSliceActions, QueueingSliceState } from './slices/queueingSlice';
 import type {
   ActiveDocument,
   CollectionKey,
@@ -334,6 +335,7 @@ export interface PersistenceActions {
 }
 
 export type TebEditorState = SyncState &
+  QueueingSliceState &
   WorkspaceLayoutState &
   TebEditorDataState &
   SimulationSliceState &
@@ -346,6 +348,7 @@ export type TebEditorState = SyncState &
   TebTestSliceState;
 
 export type TebEditorActions = SyncActions &
+  QueueingSliceActions &
   WorkspaceLayoutActions &
   TebEditorDataActions &
   SimulationSliceActions &
