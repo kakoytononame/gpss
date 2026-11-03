@@ -12,7 +12,11 @@
 - Итоговый отчёт: `StudioProject.Report` (бэкенд, хранится в документе проекта), `model/finalReport.ts` (сбор фрагментов из DOM вкладки, HTML, MHTML для Word), `shared/lib/chartImage.ts` (SVG графика → PNG через canvas), срез `store/slices/finalReportSlice.ts`, документ `ui/FinalReportDocument`, кнопка «Добавить в отчёт» на вкладках результата.
 - Тесты ТЭБов: `model/tebTests.ts` (проверки ТЭБов проекта по схеме и сообщениям генератора, проверки ТЭБа в редакторе), срез `store/slices/tebTestSlice.ts` (`runTebTests` вызывает `projects/generate`, `focusTebTest` открывает уровень схемы и выделяет ТЭБ), панель `widgets/desktop-shell/RightDockPanel/TestsView.tsx`. Демонстрационные тесты удалены.
 - Проверки на 6 примерах из дистрибутива (`scripts/fetch-gpss-studio-samples.sh`, `GPSS_STUDIO_SAMPLES=...`): генерация совпадает с текстами Studio, время завершения совпадает с журналами GPSS World, формы читаются и выполняются.
-- Тесты: движок 98, проекты 37 (52 с примерами), API 63, Vitest 126, Playwright 12 — все зелёные. `*.sh` хранятся с LF (`.gitattributes`), иначе на Windows-клонах `api-tests` в Docker падает на `set -e`.
+- Тесты: движок 98, проекты 37 (52 с примерами), API 63, Vitest 126, Playwright 12 — все зелёные. `*.sh` хранятся с LF (`.gitattributes`), иначе на Windows-клонах `api-tests` в Docker падает на `set -e
+`.
+
+- Конструктор СМО (`backend/GpssStudio.Simulation/Queueing`, `src/features/teb-editor/ui/QueueingDocument`, срез `store/slices/queueingSlice.ts`, API `/api/alina-gpss/studio/queueing`): описание классов и узлов → текст модели GPSS → теория (точные формулы и приближения) → прогоны с доверительными интервалами. Каталог `QueueingPresets` (29 систем) одновременно служит набором тестов `QueueingPresetTests`: точные формулы должны совпадать с моделированием. Попутно исправлено ядро: порядок цепи задержки памяти по приоритету, `LINK` по параметру/`PR`, `UNLINK` с `BACK` и отбором по параметру, выбор владельца после `RETURN` при `PREEMPT PR`, процедуры `Gamma`/`Weibull`.
+- Тесты: движок и конструктор 157, проекты 37, API 69, Vitest 133, Playwright 13. В облачной песочнице e2e-тест выгрузки отчёта в Word падает из-за имени скачанного файла («download») — это особенность здешнего Chromium.
 
 ## Что осталось
 
@@ -21,6 +25,7 @@
 3. ~~Тесты ТЭБов, связанные с проектом~~ — сделано.
 4. Анимационная форма, оптимизация IOSO (сейчас перебор по сетке), экспорт проекта обратно в формат GPSS Studio, `TEMPORARY MATRIX`, `EXPERIMENT/CONDUCT`, `INCLUDE`, `INTEGRATE`, подсказки и сворачивание строк в редакторе, управляющие комментарии отладчика.
 5. Обновить README/GPSS_STUDIO_PORT.md и счётчики тестов после каждого пункта.
+6. Конструктор СМО: fork–join, групповое обслуживание, неоднородные каналы; аналитика для отказов прибора и смешанных сетей; сохранение описаний СМО в проекте (сейчас — в localStorage браузера).
 
 ## Локальный ИИ-компонент аналитики (запрос пользователя, не начат)
 
@@ -32,5 +37,8 @@
 - Требования к ресурсам: 4 потока CPU и 3–4 ГБ ОЗУ для 3B-модели в Q4; ответ 10–30 с.
 
 ## Окружение песочницы (для следующего агента в облаке)
+
+Без Docker: `apt-get install dotnet-sdk-8.0 postgresql`, `service postgresql start`, пользователь `gpss/gpss`, `GPSS_TEST_DB="Host=localhost;Port=5432;Database=postgres;Username=gpss;Password=gpss"`. API: `dotnet run --no-launch-profile --project backend/GpssStudio.WebApi` с `ASPNETCORE_URLS=http://127.0.0.1:3001`, фронтенд `npx vite`. Playwright — с `launchOptions.executablePath: '/opt/pw-browsers/chromium'`.
+
 
 Docker запускается вручную (`dockerd`); образы содержат старый порт прокси, поэтому нужен проброс `scratchpad/scripts/portfwd.py 32909 <порт HTTPS_PROXY>` и override `compose.sandbox.yml` (`build.network: host`). Стек: БД 127.0.0.1:55432, API :3001, веб :8080.
