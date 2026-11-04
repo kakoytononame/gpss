@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { createQueueingApi } from '../../../../shared/api/queueingApi';
-import type { QueueingAnalysis, QueueingModel, QueueingPreset, QueueingRunResult } from '../../../../shared/types/queueing';
+import type { QueueingAnalysis, QueueingInsightsResponse, QueueingModel, QueueingPreset, QueueingRunResult } from '../../../../shared/types/queueing';
 import { withDocument } from '../../model/documents';
 import { DEFAULT_QUEUEING_MODEL, quickChecks } from '../../model/queueing';
 import type { TebEditorStore } from '../types';
@@ -17,7 +17,9 @@ export interface QueueingSliceState {
   /** The run was made for an earlier version of the description. */
   queueingRunStale: boolean;
   queueingErrors: string[];
-  queueingBusy: 'analyze' | 'simulate' | null;
+  queueingBusy: 'analyze' | 'simulate' | 'insights' | null;
+  /** Findings of the result analysis (and the language model's explanation). */
+  queueingInsights: QueueingInsightsResponse | null;
 }
 
 export interface QueueingSliceActions {
@@ -29,6 +31,8 @@ export interface QueueingSliceActions {
   /** Generates the GPSS model and opens it in "Текст модели". */
   openQueueingModelText: () => Promise<void>;
   resetQueueingModel: () => void;
+  /** Analyses the system and the last simulation: findings, recommendations, explanation. */
+  explainQueueingResults: () => Promise<void>;
 }
 
 function readModel(): QueueingModel {
@@ -63,6 +67,7 @@ export const createQueueingSlice: StateCreator<TebEditorStore, [], [], QueueingS
     queueingRunStale: false,
     queueingErrors: [],
     queueingBusy: null,
+    queueingInsights: null,
 
     async loadQueueingPresets() {
       if (get().queueingPresets.length > 0) {
@@ -91,7 +96,7 @@ export const createQueueingSlice: StateCreator<TebEditorStore, [], [], QueueingS
     setQueueingModel(update) {
       const model = update(get().queueingModel);
       writeModel(model);
-      set((state) => ({ queueingModel: model, queueingRunStale: state.queueingRun !== null }));
+      set((state) => ({ queueingModel: model, queueingRunStale: state.queueingRun !== null, queueingInsights: null }));
     },
 
     async analyzeQueueing() {
@@ -156,6 +161,22 @@ export const createQueueingSlice: StateCreator<TebEditorStore, [], [], QueueingS
         }));
       } catch (error) {
         set({ queueingErrors: [message(error)], syncStatus: 'offline', syncMessage: `Текст модели не сформирован: ${message(error)}` });
+      }
+    },
+
+    async explainQueueingResults() {
+      const { queueingModel: model, queueingRun: run, queueingRunStale: stale } = get();
+      set({ queueingBusy: 'insights', syncStatus: 'syncing', syncMessage: 'Анализ результатов...' });
+      try {
+        const insights = await api().insights(model, stale ? null : run);
+        set({
+          queueingInsights: insights,
+          queueingBusy: null,
+          syncStatus: insights.Error ? 'warning' : 'saved',
+          syncMessage: insights.Error ?? (insights.Explanation ? `Анализ выполнен (${insights.Provider}).` : 'Анализ выполнен.'),
+        });
+      } catch (error) {
+        set({ queueingBusy: null, syncStatus: 'offline', syncMessage: `Анализ не выполнен: ${message(error)}` });
       }
     },
 

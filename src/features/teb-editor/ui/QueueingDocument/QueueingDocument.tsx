@@ -17,6 +17,7 @@ import {
 import { useTebEditorStore } from '../../store/useTebEditorStore';
 import { DistributionEditor, OptionalDistribution } from './DistributionEditor';
 import { NetworkDiagram } from './NetworkDiagram';
+import { QueueingInsightsPanel } from './QueueingInsightsPanel';
 import { QueueingResults } from './QueueingResults';
 import '../BaseDocument/BaseDocument.css';
 import '../ExperimentsDocument/ExperimentsDocument.css';
@@ -321,6 +322,8 @@ export function QueueingDocument() {
   const simulate = useTebEditorStore((state) => state.simulateQueueing);
   const openModelText = useTebEditorStore((state) => state.openQueueingModelText);
   const reset = useTebEditorStore((state) => state.resetQueueingModel);
+  const insights = useTebEditorStore((state) => state.queueingInsights);
+  const explain = useTebEditorStore((state) => state.explainQueueingResults);
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
@@ -453,7 +456,10 @@ export function QueueingDocument() {
               ))}
             </ul>
           ) : (
-            <QueueingResults analysis={analysis} run={run} stale={stale} timeUnit={model.TimeUnit} />
+            <>
+              <QueueingInsightsPanel insights={insights} busy={busy === 'insights'} onAnalyze={() => void explain()} />
+              <QueueingResults analysis={analysis} run={run} stale={stale} timeUnit={model.TimeUnit} />
+            </>
           )}
         </section>
       </div>

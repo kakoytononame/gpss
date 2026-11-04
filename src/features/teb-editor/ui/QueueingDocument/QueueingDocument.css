@@ -316,3 +316,50 @@
     max-height: none;
   }
 }
+
+.queueing-insights header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.queueing-findings {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.queueing-findings li {
+  padding: 4px 8px;
+  border-left: 3px solid #9eb6cc;
+  background: #f6f9fc;
+}
+
+.queueing-findings li.is-critical {
+  border-left-color: #b42318;
+  background: #fdf1f0;
+}
+
+.queueing-findings li.is-warning {
+  border-left-color: #c08a1a;
+  background: #fff8e8;
+}
+
+.queueing-findings__severity {
+  margin-right: 6px;
+  color: #6b7c8c;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.queueing-explanation {
+  padding: 6px 8px;
+  border: 1px solid #d9e6f2;
+  background: #f7fbff;
+}
+
+.queueing-explanation p {
+  margin: 0 0 6px;
+}

@@ -1,4 +1,4 @@
-import type { GeneratedQueueingModel, QueueingAnalysis, QueueingModel, QueueingPreset, QueueingRunResult } from '../types/queueing';
+import type { GeneratedQueueingModel, QueueingAnalysis, QueueingInsightsResponse, QueueingModel, QueueingPreset, QueueingRunResult } from '../types/queueing';
 import { createHttpClient } from './httpClient';
 
 const BASE = '/api/alina-gpss/studio/queueing';
@@ -13,5 +13,8 @@ export function createQueueingApi(apiBaseUrl: string, fetchImpl?: typeof fetch) 
     generate: async (model: QueueingModel) => (await post('generate', model)) as GeneratedQueueingModel,
     analyze: async (model: QueueingModel) => (await post('analyze', model)) as QueueingAnalysis,
     simulate: async (model: QueueingModel) => (await post('simulate', model)) as QueueingRunResult,
+    /** Findings and recommendations; an explanation when a language model is configured on the server. */
+    insights: async (model: QueueingModel, run: QueueingRunResult | null) =>
+      (await request('/api/alina-gpss/studio/analysis/queueing', { method: 'POST', body: JSON.stringify({ Model: model, Run: run }) })) as QueueingInsightsResponse,
   };
 }

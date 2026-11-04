@@ -190,3 +190,21 @@ export interface GeneratedQueueingModel {
   Text: string;
   Warnings: string[];
 }
+
+export type InsightSeverity = 'Info' | 'Warning' | 'Critical';
+
+export interface QueueingInsight {
+  Severity: InsightSeverity;
+  NodeId: string | null;
+  Title: string;
+  Text: string;
+}
+
+export interface QueueingInsightsResponse {
+  Findings: QueueingInsight[];
+  /** Explanation written by the configured language model, if any. */
+  Explanation: string | null;
+  Provider: string | null;
+  ModelName: string | null;
+  Error: string | null;
+}

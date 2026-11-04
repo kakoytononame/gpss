@@ -70,6 +70,13 @@ function queueingBackend() {
       return { status: 200, body: RUN };
     }
 
+    if (request.url.endsWith('/analysis/queueing')) {
+      return {
+        status: 200,
+        body: { Findings: [{ Severity: 'Warning', NodeId: 'n1', Title: '«Касса» — узкое место', Text: 'Загрузка 80 %.' }], Explanation: 'Пояснение модели', Provider: 'локальная модель', ModelName: 'qwen2.5:3b', Error: null },
+      };
+    }
+
     if (request.url === `${BASE}/generate`) {
       return { status: 200, body: { Text: '; Модель СМО\n GENERATE 10', Warnings: [] } };
     }
@@ -138,6 +145,19 @@ describe('queueing slice and document', () => {
     expect(store().activeDocument).toBe('model-text');
     expect(store().modelText).toContain('Модель СМО');
     expect(backend.requests.some((request) => request.url === `${BASE}/simulate` && (request.body as QueueingModel).Nodes.length === 1)).toBe(true);
+  });
+
+  it('requests the analysis of the last run and shows the findings', async () => {
+    const backend = queueingBackend();
+    await store().simulateQueueing();
+    await store().explainQueueingResults();
+    expect(store().queueingInsights?.Explanation).toBe('Пояснение модели');
+    const request = backend.requests.find((item) => item.url.endsWith('/analysis/queueing'))!;
+    expect((request.body as { Run: QueueingRunResult | null }).Run?.Replications).toBe(5);
+
+    render(<QueueingDocument />);
+    expect(screen.getByText('«Касса» — узкое место.')).toBeInTheDocument();
+    expect(screen.getByText('Пояснение модели')).toBeInTheDocument();
   });
 
   it('shows validation problems instead of results', async () => {
