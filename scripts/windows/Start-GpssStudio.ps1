@@ -9,6 +9,9 @@ $ProgressPreference = 'SilentlyContinue'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $composeFile = Join-Path $projectRoot 'docker-compose.yml'
+# The source tree has backend/ and src/: images are built here. The run package (GPSS-Studio-*.zip from the
+# releases or the Docker workflow) has only docker-compose.yml with ready-made images: they are downloaded.
+$useReadyImages = -not (Test-Path -LiteralPath (Join-Path $projectRoot 'backend'))
 $applicationUrl = 'http://127.0.0.1:8080'
 $apiHealthUrl = 'http://127.0.0.1:3001/api/health'
 $composeArguments = @(
@@ -134,9 +137,31 @@ try {
         exit 0
     }
 
-    Write-Step 'Building and starting GPSS Studio'
     Set-Location -LiteralPath $projectRoot
-    Invoke-Compose -Arguments @('up', '--detach', '--build')
+    if ($useReadyImages) {
+        Write-Step 'Downloading GPSS Studio images'
+        & docker @composeArguments pull db api web
+        if ($LASTEXITCODE -ne 0) {
+            $localImages = & docker @composeArguments images --quiet api web 2>$null
+            if (-not $localImages) {
+                throw @'
+The images could not be downloaded. Check the internet connection.
+If the error says "denied" or "unauthorized", the images on GitHub are not public yet:
+open https://github.com/kakoytononame?tab=packages, open gpss-api and gpss-web,
+Package settings -> Change visibility -> Public, and run START_GPSS_STUDIO.cmd again.
+'@
+            }
+
+            Write-Host 'No connection: the images downloaded earlier are used.' -ForegroundColor Yellow
+        }
+
+        Write-Step 'Starting GPSS Studio'
+        Invoke-Compose -Arguments @('up', '--detach', '--no-build')
+    }
+    else {
+        Write-Step 'Building and starting GPSS Studio'
+        Invoke-Compose -Arguments @('up', '--detach', '--build')
+    }
 
     Write-Step 'Checking services'
     # /api/health answers 200 only when the API can reach PostgreSQL.
@@ -144,7 +169,9 @@ try {
     Wait-HttpEndpoint -Uri $applicationUrl -DisplayName 'Web application'
 
     Write-Host "`nGPSS Studio is running: $applicationUrl" -ForegroundColor Green
-    Write-Host 'Subsequent starts will be faster because Docker reuses its build cache.'
+    if (-not $useReadyImages) {
+        Write-Host 'Subsequent starts will be faster because Docker reuses its build cache.'
+    }
 
     if (-not $NoBrowser) {
         Start-Process $applicationUrl

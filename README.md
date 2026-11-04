@@ -2,7 +2,19 @@
 
 Веб-версия GPSS Studio состоит из React + TypeScript frontend, ASP.NET Core + EF Core backend и PostgreSQL. Для переноса и запуска все компоненты упакованы в Docker Compose.
 
-## Запуск одной кнопкой на Windows
+## Запуск из готовых образов (без сборки)
+
+Готовые образы собираются GitHub Actions (`.github/workflows/docker.yml`) при каждом push и публикуются в GitHub Container Registry: `ghcr.io/kakoytononame/gpss-api` и `ghcr.io/kakoytononame/gpss-web`. Вместе с ними собирается архив `GPSS-Studio-<версия>.zip`: кнопки `START_GPSS_STUDIO.cmd` / `STOP_GPSS_STUDIO.cmd` и `docker-compose.yml` с этими образами, без исходного кода.
+
+1. Установите Docker Desktop (один раз).
+2. Скачайте архив: вкладка Actions → последний запуск «Docker images» → Artifacts (или раздел Releases для версий `v*`).
+3. Распакуйте и дважды щёлкните `START_GPSS_STUDIO.cmd`: образы скачиваются (первый раз около 500 МБ), приложение открывается в браузере. На компьютере ничего не собирается.
+
+Если при скачивании образов Docker пишет `denied` или `unauthorized`, образы ещё не открыты для всех: на GitHub откройте профиль → Packages → `gpss-api` и `gpss-web` → Package settings → Change visibility → Public (один раз).
+
+Новая версия: `git tag v1.0.0 && git push origin v1.0.0` — образы получат теги `1.0.0` и `latest`, архив прикрепится к релизу.
+
+## Запуск одной кнопкой на Windows (сборка из исходников)
 
 На новом ноутбуке один раз установите [Docker Desktop](https://www.docker.com/products/docker-desktop/) с поддержкой WSL 2. Node.js, .NET SDK и PostgreSQL отдельно устанавливать не нужно.
 

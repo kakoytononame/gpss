@@ -1,0 +1,78 @@
+# GPSS Studio from ready-made images (no source code, nothing is built on this computer).
+# Start: START_GPSS_STUDIO.cmd (Windows) or: docker compose --project-name gpss up -d
+# The image tag is written here by the release workflow (.github/workflows/docker.yml).
+name: gpss
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gpss
+      POSTGRES_USER: gpss
+      POSTGRES_PASSWORD: gpss
+    ports:
+      - "127.0.0.1:${GPSS_DB_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gpss -d gpss"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: ghcr.io/kakoytononame/gpss-api:${GPSS_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=gpss;Username=gpss;Password=gpss
+      Cors__AllowedOrigins__0: http://localhost:8080
+      Cors__AllowedOrigins__1: http://127.0.0.1:8080
+      # Explanation of results by a language model: none | local | anthropic (see AI_ANALYSIS.md in the repository).
+      Analysis__Provider: ${GPSS_AI_PROVIDER:-none}
+      Analysis__Endpoint: ${GPSS_AI_ENDPOINT:-http://ollama:11434/v1}
+      Analysis__Model: ${GPSS_AI_MODEL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "127.0.0.1:3001:8080"
+
+  web:
+    image: ghcr.io/kakoytononame/gpss-web:${GPSS_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:8080:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ && wget -q -O /dev/null http://127.0.0.1/api/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 12
+
+  # Local language model (optional): set GPSS_AI_PROVIDER=local, GPSS_AI_MODEL=qwen2.5:3b and add --profile ai.
+  ollama:
+    profiles: ["ai"]
+    image: ollama/ollama:0.12.6
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+
+  ollama-pull:
+    profiles: ["ai"]
+    image: ollama/ollama:0.12.6
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${GPSS_AI_MODEL:-qwen2.5:3b}"]
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  postgres_data:
+  ollama_models:
