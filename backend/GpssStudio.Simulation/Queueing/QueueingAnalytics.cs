@@ -71,7 +71,7 @@ public sealed class NodeAnalysis
     public required string Discipline { get; init; }
     public AnalysisQuality Quality { get; set; }
     public string Method { get; set; } = string.Empty;
-    public List<string> Notes { get; } = [];
+    public List<string> Notes { get; init; } = [];
     public QueueingMetrics Metrics { get; set; } = new();
 }
 
@@ -99,7 +99,7 @@ public sealed class QueueingAnalysis
     /// <summary>How the network was decomposed (Jackson, QNA, MVA, ...).</summary>
     public string Network { get; set; } = string.Empty;
 
-    public List<string> Messages { get; } = [];
+    public List<string> Messages { get; init; } = [];
 }
 
 /// <summary>

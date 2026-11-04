@@ -31,6 +31,11 @@ services:
       Cors__AllowedOrigins__1: http://127.0.0.1:8080
       Cors__AllowedOrigins__2: http://localhost:5173
       Cors__AllowedOrigins__3: http://127.0.0.1:5173
+      # Explanation of results by a language model: none | local | anthropic (see AI_ANALYSIS.md).
+      Analysis__Provider: ${GPSS_AI_PROVIDER:-none}
+      Analysis__Endpoint: ${GPSS_AI_ENDPOINT:-http://ollama:11434/v1}
+      Analysis__Model: ${GPSS_AI_MODEL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "127.0.0.1:3001:8080"
 
@@ -76,5 +81,27 @@ services:
       E2E_BASE_URL: http://web
     ipc: host
 
+  # Local language model for explaining results (CPU, no external services):
+  #   GPSS_AI_PROVIDER=local GPSS_AI_MODEL=qwen2.5:3b docker compose --profile ai up -d --build
+  ollama:
+    profiles: ["ai"]
+    image: ollama/ollama:0.12.6
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+
+  # Downloads the model into the volume once (about 2 GB for qwen2.5:3b).
+  ollama-pull:
+    profiles: ["ai"]
+    image: ollama/ollama:0.12.6
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${GPSS_AI_MODEL:-qwen2.5:3b}"]
+    volumes:
+      - ollama_models:/root/.ollama
+
 volumes:
   postgres_data:
+  ollama_models:

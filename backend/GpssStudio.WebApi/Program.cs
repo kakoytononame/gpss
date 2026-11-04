@@ -1,3 +1,4 @@
+using GpssStudio.WebApi.Application.Analysis;
 using GpssStudio.WebApi.Application.Projects;
 using GpssStudio.WebApi.Application.Results;
 using GpssStudio.WebApi.Application.Simulation;
@@ -34,6 +35,19 @@ builder.Services.AddScoped<ITebService, TebService>();
 builder.Services.AddSingleton<SimulationSessionStore>();
 builder.Services.AddScoped<StudioProjectService>();
 builder.Services.AddScoped<SimulationResultService>();
+
+// Language model for explaining results: none (default), local (OpenAI-compatible server) or anthropic.
+var analysisOptions = builder.Configuration.GetSection("Analysis").Get<AnalysisOptions>() ?? new AnalysisOptions();
+builder.Services.AddSingleton(analysisOptions);
+builder.Services.AddHttpClient("analysis", client => client.Timeout = TimeSpan.FromSeconds(Math.Max(5, analysisOptions.TimeoutSeconds)));
+builder.Services.AddSingleton<ILanguageModel>(services => analysisOptions.Provider.ToLowerInvariant() switch
+{
+    "local" when !string.IsNullOrWhiteSpace(analysisOptions.Endpoint) && !string.IsNullOrWhiteSpace(analysisOptions.Model) =>
+        new LocalLanguageModel(services.GetRequiredService<IHttpClientFactory>().CreateClient("analysis"), analysisOptions),
+    "anthropic" => new AnthropicLanguageModel(analysisOptions),
+    _ => new NoLanguageModel(),
+});
+builder.Services.AddScoped<ResultAnalysisService>();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
