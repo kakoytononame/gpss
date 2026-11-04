@@ -2,6 +2,7 @@
 FROM mcr.microsoft.com/playwright:v1.56.1-jammy
 
 WORKDIR /e2e
+ENV LANG=C.UTF-8
 COPY package*.json ./
 RUN npm ci --ignore-scripts
 COPY playwright.config.ts tsconfig.node.json ./

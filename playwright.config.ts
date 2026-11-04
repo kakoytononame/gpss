@@ -16,6 +16,8 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080',
     viewport: { width: 1600, height: 900 },
     trace: 'retain-on-failure',
+    // Without a UTF-8 locale Chromium replaces non-ASCII download names (Cyrillic report names) with "download".
+    launchOptions: { env: { ...process.env, LANG: process.env.LANG || 'C.UTF-8' } },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 } } }],
 });
